@@ -75,7 +75,7 @@ td.gris{color:#6b7280;font-size:12px}
 <body>
 <header>
   <div><h1>🍄 Repositorio Fungiterra</h1><div class="header-sub">Cotizaciones · Estados · Pagos</div></div>
-  <a href="fungiterra_cotizador_v14.html" class="header-link">← Cotizador</a>
+  <a href="https://fungiterra-bot.github.io/fungiterra-sistema/fungiterra_cotizador_v14.html" class="header-link">← Cotizador</a>
 </header>
 
 <div class="layout">
@@ -290,7 +290,7 @@ function editarCotizacion(id){
   if(c.socio) params.set('socio',c.socio);
   if(c.total) params.set('total',c.total);
   if(c.productos&&c.productos!=='—') params.set('productos',c.productos);
-  window.open('fungiterra_cotizador_v14.html?'+params.toString(),'_blank');
+  window.open('https://fungiterra-bot.github.io/fungiterra-sistema/fungiterra_cotizador_v14.html?'+params.toString(),'_blank');
 }
 
 cargar();
