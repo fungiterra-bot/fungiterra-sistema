@@ -1,0 +1,315 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Repositorio — Fungiterra</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=DM+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{--azul:#1a3a5c;--verde:#2d6a2d;--gris:#f0f4f8;--border:#dde3e8;--text:#1a1a2e;--mono:'DM Mono',monospace;--sans:'DM Sans',sans-serif;}
+body{font-family:var(--sans);background:var(--gris);color:var(--text);font-size:14px}
+header{background:linear-gradient(135deg,#2d6a2d,#1a4a6b);color:white;padding:14px 24px;display:flex;align-items:center;justify-content:space-between}
+header h1{font-size:18px;font-weight:600}
+.header-sub{font-size:11px;opacity:.7;margin-top:2px}
+.header-link{color:rgba(255,255,255,.7);font-size:12px;text-decoration:none;border:1px solid rgba(255,255,255,.3);border-radius:6px;padding:5px 12px}
+.layout{display:flex;min-height:calc(100vh - 58px)}
+.lista-panel{flex:1;padding:20px 24px;min-width:0}
+.detalle-panel{width:0;overflow:hidden;background:white;border-left:2px solid var(--border);transition:width .25s ease;flex-shrink:0}
+.detalle-panel.abierto{width:400px}
+.detalle-inner{width:400px;padding:20px;overflow-y:auto;height:calc(100vh - 58px);position:sticky;top:0}
+.card{background:white;border-radius:10px;padding:16px;margin-bottom:14px;box-shadow:0 1px 4px rgba(0,0,0,.07)}
+.ct{font-size:10px;font-weight:700;color:#2d6a2d;text-transform:uppercase;letter-spacing:1px;margin-bottom:10px;padding-bottom:6px;border-bottom:1px solid #e8ecf0}
+.grid4{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:14px}
+.tarjeta{background:white;border-radius:10px;padding:14px;box-shadow:0 1px 4px rgba(0,0,0,.07)}
+.tarjeta-icono{font-size:16px;margin-bottom:4px}
+.tarjeta-valor{font-size:20px;font-weight:700;margin-bottom:2px}
+.tarjeta-label{font-size:11px;color:#6b7280}
+.filtros{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.filtros select,.filtros input{padding:7px 10px;font-size:12px;border:1.5px solid var(--border);border-radius:7px;font-family:var(--sans);background:white;outline:none}
+.filtros select:focus,.filtros input:focus{border-color:var(--verde)}
+.btn-act{padding:7px 12px;border-radius:7px;border:1.5px solid var(--border);background:white;cursor:pointer;font-family:var(--sans);font-size:12px}
+table{width:100%;border-collapse:collapse;font-size:13px}
+thead tr{background:#1a3a5c;color:white;font-size:11px;text-transform:uppercase;letter-spacing:.5px}
+th{padding:10px 12px;text-align:left;font-weight:600}
+th.r{text-align:right}th.c{text-align:center}
+tbody tr{border-bottom:1px solid #f0f4f8;cursor:pointer;transition:background .1s}
+tbody tr:hover{background:#f0f7ff}
+tbody tr.sel{background:#dbeafe;border-left:3px solid #2563a8}
+td{padding:9px 12px;vertical-align:middle}
+td.r{text-align:right;font-weight:600}td.c{text-align:center}
+td.mono{font-family:var(--mono);font-weight:700;color:#1a3a5c}
+td.gris{color:#6b7280;font-size:12px}
+.badge{border-radius:12px;padding:3px 10px;font-size:11px;font-weight:600;display:inline-block}
+.badge-gen{background:#fef3c7;color:#92400e}
+.badge-pag{background:#dcfce7;color:#166534}
+.badge-can{background:#f3f4f6;color:#6b7280}
+.btn{padding:7px 14px;border-radius:7px;border:1.5px solid var(--border);background:white;color:var(--text);cursor:pointer;font-family:var(--sans);font-size:12px;font-weight:500;transition:all .15s}
+.btn-v{background:#2d6a2d;color:white;border-color:#2d6a2d}.btn-v:hover{background:#245424}
+.btn-a{background:#1a3a5c;color:white;border-color:#1a3a5c}
+.btn-r{color:#e53e3e;border-color:#e53e3e}
+.btn-sm{padding:5px 10px;font-size:11px}
+.acciones{display:flex;gap:8px;flex-wrap:wrap;margin-top:14px;padding-top:14px;border-top:1px solid #f0f4f8}
+.d-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;padding-bottom:14px;border-bottom:2px solid #f0f4f8}
+.d-id{font-family:var(--mono);font-size:18px;font-weight:700;color:var(--azul)}
+.btn-x{background:none;border:none;font-size:22px;cursor:pointer;color:#9ca3af;line-height:1;padding:2px 6px;border-radius:4px}
+.btn-x:hover{background:#f0f4f8;color:#374151}
+.campo{margin-bottom:10px}
+.campo label{display:block;font-size:10px;color:#9ca3af;text-transform:uppercase;letter-spacing:.6px;margin-bottom:2px}
+.campo .v{font-size:13px;font-weight:500}
+.sep{border:none;border-top:1px solid #f0f4f8;margin:14px 0}
+.prods{font-size:12px;line-height:1.9;background:#f8fafc;border-radius:7px;padding:10px 12px;color:#374151}
+.total-big{font-size:24px;font-weight:700;color:#2d6a2d;margin-top:10px}
+.spinner{display:inline-block;width:14px;height:14px;border:2px solid #ccc;border-top-color:#2d6a2d;border-radius:50%;animation:spin .7s linear infinite;vertical-align:middle;margin-right:6px}
+@keyframes spin{to{transform:rotate(360deg)}}
+.empty{text-align:center;padding:36px;color:#9ca3af;font-size:13px}
+#toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);padding:10px 20px;border-radius:20px;font-size:13px;font-weight:600;box-shadow:0 4px 14px rgba(0,0,0,.2);z-index:9999;opacity:0;transition:opacity .3s;pointer-events:none;color:white}
+@media(max-width:720px){
+  .layout{flex-direction:column}
+  .detalle-panel.abierto{width:100%;border-left:none;border-top:2px solid var(--border)}
+  .detalle-inner{width:100%;height:auto;position:static}
+  .grid4{grid-template-columns:1fr 1fr}
+}
+</style>
+</head>
+<body>
+<header>
+  <div><h1>🍄 Repositorio Fungiterra</h1><div class="header-sub">Cotizaciones · Estados · Pagos</div></div>
+  <a href="https://fungiterra-bot.github.io/fungiterra-sistema/fungiterra_cotizador_v14.html" class="header-link">← Cotizador</a>
+</header>
+
+<div class="layout">
+  <div class="lista-panel">
+    <div class="grid4">
+      <div class="tarjeta"><div class="tarjeta-icono">📋</div><div class="tarjeta-valor" style="color:#1a3a5c" id="r-total">—</div><div class="tarjeta-label">Total</div></div>
+      <div class="tarjeta"><div class="tarjeta-icono">⏳</div><div class="tarjeta-valor" style="color:#d97706" id="r-pend">—</div><div class="tarjeta-label">Pendientes</div></div>
+      <div class="tarjeta"><div class="tarjeta-icono">✅</div><div class="tarjeta-valor" style="color:#2d6a2d" id="r-pag">—</div><div class="tarjeta-label">Pagadas</div></div>
+      <div class="tarjeta"><div class="tarjeta-icono">💰</div><div class="tarjeta-valor" style="color:#1a3a5c" id="r-cobrado">—</div><div class="tarjeta-label">Cobrado</div></div>
+    </div>
+
+    <div class="card" style="padding:12px 16px">
+      <div class="filtros">
+        <input id="bus" placeholder="🔍 ID o cliente..." oninput="filtrar()" style="flex:1;min-width:130px">
+        <select id="f-e" onchange="filtrar()">
+          <option value="">Todos</option>
+          <option value="Generada">⏳ Generadas</option>
+          <option value="Pagada">✅ Pagadas</option>
+          <option value="Cancelada">✖ Canceladas</option>
+        </select>
+        <select id="f-s" onchange="filtrar()">
+          <option value="">Socios</option>
+          <option value="V">V</option>
+          <option value="M">M</option>
+          <option value="J">J</option>
+        </select>
+        <button class="btn-act" onclick="cargar()">↺</button>
+      </div>
+    </div>
+
+    <div class="card" style="padding:0;overflow:hidden">
+      <div style="overflow-x:auto">
+        <table>
+          <thead><tr>
+            <th>ID</th><th>Fecha</th><th>Cliente</th>
+            <th class="c">Socio</th><th class="r">Total</th><th class="c">Estado</th>
+          </tr></thead>
+          <tbody id="tb">
+            <tr><td colspan="6" class="empty"><span class="spinner"></span>Cargando...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+    <div style="font-size:11px;color:#9ca3af;text-align:center;margin-top:4px">Clic en una fila para ver el detalle</div>
+  </div>
+
+  <div class="detalle-panel" id="dp">
+    <div class="detalle-inner" id="di"></div>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<script>
+var SCRIPT_URL='https://script.google.com/macros/s/AKfycbxj-TStqGBIuY2jCiwhkH0-EWJl42oe80besajIK8VTb705oXKLAhVkgUJQvZxi_ucwOQ/exec';
+var _todos=[], _sel=null;
+
+function fmx(n){return '$'+Number(n||0).toLocaleString('es-MX',{minimumFractionDigits:2,maximumFractionDigits:2});}
+
+function formatFecha(f){
+  if(!f) return '—';
+  // Si ya tiene formato dd/mm/yyyy lo dejamos
+  if(/^\d{2}\/\d{2}\/\d{4}/.test(f)) return f;
+  // ISO string como 2026-05-03T06:00:00.000Z
+  try{
+    var d=new Date(f);
+    if(isNaN(d.getTime())) return f;
+    var dd=String(d.getDate()).padStart(2,'0');
+    var mm=String(d.getMonth()+1).padStart(2,'0');
+    var yyyy=d.getFullYear();
+    return dd+'/'+mm+'/'+yyyy;
+  }catch(e){return f;}
+}
+
+function toast(msg,ok){
+  var t=document.getElementById('toast');
+  t.textContent=msg; t.style.background=ok===false?'#b91c1c':'#2d6a2d';
+  t.style.opacity='1'; clearTimeout(t._t);
+  t._t=setTimeout(function(){t.style.opacity='0';},3000);
+}
+
+function cargar(){
+  document.getElementById('tb').innerHTML='<tr><td colspan="6" class="empty"><span class="spinner"></span>Cargando...</td></tr>';
+  fetch(SCRIPT_URL+'?accion=repositorio')
+  .then(function(r){return r.json();})
+  .then(function(data){
+    _todos=(data.cotizaciones||[]).reverse();
+    var pend=_todos.filter(function(c){return c.estado==='Generada';}).length;
+    var pag=_todos.filter(function(c){return c.estado==='Pagada';}).length;
+    var suma=_todos.filter(function(c){return c.estado==='Pagada';}).reduce(function(s,c){return s+Number(c.total||0);},0);
+    document.getElementById('r-total').textContent=_todos.length;
+    document.getElementById('r-pend').textContent=pend;
+    document.getElementById('r-pag').textContent=pag;
+    document.getElementById('r-cobrado').textContent=fmx(suma);
+    filtrar();
+    if(_sel){var c=_todos.find(function(x){return x.id===_sel;});if(c)mostrarDetalle(c);}
+  })
+  .catch(function(){document.getElementById('tb').innerHTML='<tr><td colspan="6" class="empty" style="color:#e53e3e">Error al conectar.</td></tr>';});
+}
+
+function filtrar(){
+  var q=(document.getElementById('bus').value||'').toLowerCase();
+  var fe=document.getElementById('f-e').value;
+  var fs=document.getElementById('f-s').value;
+  var lista=_todos.filter(function(c){
+    return (!q||(c.id||'').toLowerCase().includes(q)||(c.cliente||'').toLowerCase().includes(q))
+      &&(!fe||c.estado===fe)&&(!fs||c.socio===fs);
+  });
+  var tb=document.getElementById('tb');
+  if(!lista.length){tb.innerHTML='<tr><td colspan="6" class="empty">Sin resultados.</td></tr>';return;}
+  tb.innerHTML=lista.map(function(c){
+    var est=c.estado||'Generada';
+    var bc=est==='Pagada'?'badge-pag':est==='Cancelada'?'badge-can':'badge-gen';
+    var bl=est==='Pagada'?'✅ Pagada':est==='Cancelada'?'✖ Cancelada':'⏳ Generada';
+    return '<tr'+(c.id===_sel?' class="sel"':'')+' onclick="seleccionar(\''+c.id+'\')">'+
+      '<td class="mono">'+c.id+'</td>'+
+      '<td class="gris">'+formatFecha(c.fecha)+'</td>'+
+      '<td>'+(c.cliente||'—')+'</td>'+
+      '<td class="c" style="font-family:monospace;font-size:12px">'+c.socio+'</td>'+
+      '<td class="r">'+fmx(c.total)+'</td>'+
+      '<td class="c"><span class="badge '+bc+'">'+bl+'</span></td>'+
+    '</tr>';
+  }).join('');
+}
+
+function seleccionar(id){
+  var c=_todos.find(function(x){return x.id===id;});
+  if(!c)return;
+  _sel=id;
+  filtrar();
+  mostrarDetalle(c);
+}
+
+function mostrarDetalle(c){
+  document.getElementById('dp').classList.add('abierto');
+  var est=c.estado||'Generada';
+  var bc=est==='Pagada'?'badge-pag':est==='Cancelada'?'badge-can':'badge-gen';
+  var bl=est==='Pagada'?'✅ Pagada':est==='Cancelada'?'✖ Cancelada':'⏳ Generada';
+
+  var prodsHTML='<span style="color:#9ca3af">Sin detalle de productos</span>';
+  if(c.productos&&c.productos!=='—'&&c.productos.trim()!==''){
+    prodsHTML=c.productos.split('|').map(function(p){return '• '+p.trim();}).join('<br>');
+  }
+
+  var btns='';
+  if(est==='Generada'){
+    btns='<button class="btn btn-v btn-sm" onclick="cambiarEstado(\''+c.id+'\',\'Pagada\')">✅ Marcar pagada</button>'+
+         '<button class="btn btn-a btn-sm" onclick="editarCotizacion(\''+c.id+'\')">✏️ Editar</button>'+
+         '<button class="btn btn-sm btn-r" onclick="cambiarEstado(\''+c.id+'\',\'Cancelada\')">Cancelar</button>';
+  } else if(est==='Pagada'){
+    btns='<button class="btn btn-a btn-sm" onclick="facturar(\''+c.id+'\')">🧾 Facturar</button>';
+  } else if(est==='Cancelada'){
+    btns='<button class="btn btn-sm" onclick="cambiarEstado(\''+c.id+'\',\'Generada\')">↺ Reactivar</button>';
+  }
+
+  document.getElementById('di').innerHTML=
+    '<div class="d-header">'+
+      '<div class="d-id">'+c.id+'</div>'+
+      '<button class="btn-x" onclick="cerrar()">×</button>'+
+    '</div>'+
+    '<span class="badge '+bc+'">'+bl+'</span>'+
+    (c.fechaEstado?'<span style="font-size:11px;color:#9ca3af;margin-left:8px">'+c.fechaEstado+'</span>':'')+
+    '<hr class="sep">'+
+    '<div class="ct">Cliente</div>'+
+    '<div class="campo"><label>Nombre</label><div class="v">'+(c.cliente||'—')+'</div></div>'+
+    '<div class="campo"><label>Teléfono</label><div class="v">'+
+      (c.telefono&&c.telefono!=='—'?'<a href="tel:'+c.telefono+'" style="color:#2563a8">'+c.telefono+'</a>':'—')+
+    '</div></div>'+
+    '<div class="campo"><label>Correo</label><div class="v">'+
+      (c.correo&&c.correo!=='—'?'<a href="mailto:'+c.correo+'" style="color:#2563a8">'+c.correo+'</a>':'—')+
+    '</div></div>'+
+    '<div class="campo"><label>Socio</label><div class="v" style="font-family:monospace">'+c.socio+'</div></div>'+
+    '<div class="campo"><label>Fecha cotización</label><div class="v">'+formatFecha(c.fecha)+'</div></div>'+
+    '<hr class="sep">'+
+    '<div class="ct">Productos</div>'+
+    '<div class="prods">'+prodsHTML+'</div>'+
+    (Number(c.envio)>0?
+      '<div class="campo" style="margin-top:10px"><label>Envío'+(c.paqueteria&&c.paqueteria!=='—'?' — '+c.paqueteria:'')+'</label>'+
+      '<div class="v">'+fmx(c.envio)+'</div></div>':'')+
+    '<div class="total-big">'+fmx(c.total)+'</div>'+
+    (c.notas&&c.notas!==''?'<hr class="sep"><div class="ct">Notas</div><div style="font-size:12px;color:#374151">'+c.notas+'</div>':'')+
+    '<div class="acciones">'+btns+'</div>';
+}
+
+function cerrar(){
+  document.getElementById('dp').classList.remove('abierto');
+  _sel=null; filtrar();
+}
+
+function cambiarEstado(id,estado){
+  if(!confirm(estado==='Pagada'?'¿Marcar '+id+' como pagada?':estado==='Cancelada'?'¿Cancelar '+id+'?':'¿Reactivar '+id+'?'))return;
+  toast('Actualizando...');
+  fetch(SCRIPT_URL,{method:'POST',body:JSON.stringify({accion:'actualizar_estado',id:id,estado:estado})})
+  .then(function(r){return r.json();})
+  .then(function(data){
+    if(data.ok){toast(id+' → '+estado);cargar();}
+    else toast('⚠️ '+(data.error||'Error'),false);
+  }).catch(function(){toast('⚠️ Sin conexión',false);});
+}
+
+function facturar(id){
+  var c=_todos.find(function(x){return x.id===id;});
+  if(!c)return;
+  var params=new URLSearchParams();
+  params.set('id',c.id);
+  if(c.cliente&&c.cliente!=='—')   params.set('cliente',c.cliente);
+  if(c.telefono&&c.telefono!=='—') params.set('telefono',c.telefono);
+  if(c.correo&&c.correo!=='—')     params.set('correo',c.correo);
+  if(c.socio)                       params.set('socio',c.socio);
+  if(c.total)                       params.set('total',c.total);
+  if(c.productos&&c.productos!=='—') params.set('productos',c.productos);
+  if(c.envio&&Number(c.envio)>0)    params.set('envio',c.envio);
+  if(c.paqueteria&&c.paqueteria!=='—') params.set('paqueteria',c.paqueteria);
+  if(c.notas&&c.notas!=='')         params.set('notas',c.notas);
+  if(c.fecha)                       params.set('fecha',c.fecha);
+  window.open('https://fungiterra-bot.github.io/fungiterra-sistema/fungiterra_facturacion_v2.html?'+params.toString(),'_blank');
+}
+
+function editarCotizacion(id){
+  var c=_todos.find(function(x){return x.id===id;});
+  if(!c)return;
+  var params=new URLSearchParams();
+  params.set('editar','1');
+  params.set('id',c.id);
+  if(c.cliente&&c.cliente!=='—') params.set('cliente',c.cliente);
+  if(c.telefono&&c.telefono!=='—') params.set('telefono',c.telefono);
+  if(c.correo&&c.correo!=='—') params.set('correo',c.correo);
+  if(c.socio) params.set('socio',c.socio);
+  if(c.total) params.set('total',c.total);
+  if(c.productos&&c.productos!=='—') params.set('productos',c.productos);
+  window.open('https://fungiterra-bot.github.io/fungiterra-sistema/fungiterra_cotizador_v14.html?'+params.toString(),'_blank');
+}
+
+cargar();
+</script>
+</body>
+</html>
