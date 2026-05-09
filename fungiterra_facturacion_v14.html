@@ -649,8 +649,10 @@ function prepararFactura() {
       }
     });
 
-    // El monto con IVA + envío se distribuye en 50/30/20
-    var totalDist = montoConIva + envio;
+    // Si hay sin IVA → envío se absorbe en ellos, NO en la distribución
+    // Si solo hay con IVA → envío entra en la distribución
+    var envioParaDist = productosSinIva.length > 0 ? 0 : envio;
+    var totalDist = montoConIva + envioParaDist;
 
     var seta  = CATALOGO.find(function(p){return p.nombre==='Micelio de seta';});
     var champ = CATALOGO.find(function(p){return p.nombre==='Micelio de champiñon';});
@@ -678,13 +680,12 @@ function prepararFactura() {
       agregarFilaProducto(prod.nombre, prod.cant, prod.precio, false);
     });
 
-    // Absorber envío en primer producto sin IVA si existe, si no en seta
+    // Absorber envío en primer producto sin IVA
     if (envio > 0 && productosSinIva.length > 0) {
       var primeraFila = tbody.querySelector('tr');
       var c0 = parseFloat(primeraFila.querySelector('.inp-cant').value) || 1;
       var p0 = parseFloat(primeraFila.querySelector('.inp-precio').value) || 0;
       primeraFila.querySelector('.inp-precio').value = ((c0*p0 + envio)/c0).toFixed(2);
-      envio = 0; // ya absorbido
     }
 
     // Con IVA sustituidos
