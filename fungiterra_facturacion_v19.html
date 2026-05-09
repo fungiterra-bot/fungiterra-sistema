@@ -737,13 +737,21 @@ function prepararFactura() {
       return {nombre:prod.nombre, cant:cant, precio:prod.precio};
     });
 
-    // v19: Calcular cantidad exacta del último para cuadrar sin redondeo intermedio
+    // v19fix: Cantidad exacta del último — usar suficientes decimales para cuadrar
     var subtotalOtros = filasIva.slice(0,-1).reduce(function(s,f){return s+f.cant*f.precio;},0);
     var ul = filasIva[filasIva.length-1];
-    // Cantidad exacta = lo que falta / precio unitario, sin redondear
-    ul.cant = (totalDist - subtotalOtros) / ul.precio;
-    // Redondear a 6 decimales para que sea legible pero exacto
-    ul.cant = Math.round(ul.cant * 1000000) / 1000000;
+    var cantExacta = (totalDist - subtotalOtros) / ul.precio;
+    // Verificar cuántos decimales necesitamos para cuadrar
+    var cantRedondeada = cantExacta;
+    for (var dec = 2; dec <= 8; dec++) {
+      var factor = Math.pow(10, dec);
+      cantRedondeada = Math.round(cantExacta * factor) / factor;
+      var check = Math.round((cantRedondeada * ul.precio) * 100) / 100;
+      var target = Math.round(totalDist * 100) / 100;
+      var otrosCheck = Math.round(subtotalOtros * 100) / 100;
+      if (Math.abs(check + otrosCheck - target) < 0.005) break;
+    }
+    ul.cant = cantRedondeada;
 
     // Reconstruir tabla
     var tbody = document.getElementById('prods-body');
