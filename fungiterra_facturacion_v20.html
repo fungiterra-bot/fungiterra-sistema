@@ -575,7 +575,7 @@ function agregarFilaProducto(nombre, cant, precio, tieneIva) {
 
   tr.innerHTML =
     '<td><select onchange="cambiarProducto(this)" style="min-width:160px">'+optsProducto+'</select>'+unidadLabel+'</td>'+
-    '<td><input type="number" value="'+cantMostrar+'" min="0.01" step="0.01" oninput="recalcular()" style="width:70px" class="inp-cant" data-precio-base="'+precio+'"></td>'+
+    '<td><input type="number" value="'+cantMostrar+'" min="0.0001" step="any" oninput="recalcular()" style="width:70px" class="inp-cant" data-precio-base="'+precio+'"></td>'+
     '<td><input type="number" value="'+precioMostrar+'" min="0" step="0.01" oninput="recalcular()" style="width:80px" class="inp-precio"></td>'+
     '<td class="r" style="font-family:var(--mono);font-size:12px"><span class="lbl-sub">'+fmx(cant*precio)+'</span></td>'+
     '<td class="c"><span style="font-size:13px">'+(tieneIva?'⚠️':'✅')+'</span></td>'+
