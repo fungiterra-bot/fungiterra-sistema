@@ -1429,7 +1429,7 @@ function buscarDatosFiscales() {
     return;
   }
 
-  var url = FORMS_SCRIPT_URL + '?accion=buscar_fiscal' +
+  var url = APPS_SCRIPT_URL + '?accion=buscar_fiscal' +
     (correo ? '&correo=' + encodeURIComponent(correo) : '') +
     (nombre ? '&nombre=' + encodeURIComponent(nombre) : '');
 
