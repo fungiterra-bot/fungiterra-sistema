@@ -123,6 +123,14 @@ table.prods input:focus,table.prods select:focus{border-color:var(--verde)}
 .btn-enviar-correo{background:#1a3a5c;color:white}
 .btn-enviar-correo:disabled{background:#9ca3af;cursor:not-allowed}
 
+/* TABS */
+.tabs-nav{display:flex;gap:0;margin-bottom:0;border-bottom:2px solid var(--border)}
+.tab-btn{padding:10px 20px;border:none;background:none;cursor:pointer;font-family:var(--sans);font-size:13px;font-weight:600;color:#6b7280;border-bottom:2px solid transparent;margin-bottom:-2px;transition:all .15s}
+.tab-btn.activo{color:var(--azul);border-bottom-color:var(--azul)}
+.tab-btn:hover{color:var(--azul)}
+.tab-content{display:none}
+.tab-content.activo{display:block}
+
 /* REPOSITORIO DE FACTURAS */
 .repo-fact-panel{background:white;border-radius:10px;padding:18px 20px;margin-bottom:14px;box-shadow:0 1px 4px rgba(0,0,0,.07)}
 .repo-fact-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;padding-bottom:10px;border-bottom:1px solid #f0f4f8}
@@ -201,6 +209,15 @@ table.prods input:focus,table.prods select:focus{border-color:var(--verde)}
 </header>
 
 <div class="contenedor">
+
+  <!-- TABS -->
+  <div class="tabs-nav">
+    <button class="tab-btn activo" onclick="cambiarTab('facturar', this)">🧾 Facturar</button>
+    <button class="tab-btn" onclick="cambiarTab('historial', this)">📋 Historial de facturas</button>
+  </div>
+
+  <!-- TAB FACTURAR -->
+  <div class="tab-content activo" id="tab-facturar">
 
   <!-- ID BANNER -->
   <div class="id-banner">
@@ -429,40 +446,8 @@ table.prods input:focus,table.prods select:focus{border-color:var(--verde)}
     </div>
   </div>
 
-  <!-- REPOSITORIO DE FACTURAS -->
-  <div class="repo-fact-panel">
-    <div class="repo-fact-header">
-      <h2>🧾 Facturas registradas</h2>
-      <button onclick="cargarFacturas()" style="padding:5px 12px;border:1.5px solid var(--border);border-radius:6px;background:white;cursor:pointer;font-size:12px;font-family:var(--sans)">↺ Recargar</button>
-    </div>
-    <div class="repo-fact-filtros">
-      <input id="fact-buscar" placeholder="🔍 ID o cliente..." oninput="filtrarFacturas()" style="flex:1;min-width:120px">
-      <select id="fact-estado" onchange="filtrarFacturas()">
-        <option value="">Todos</option>
-        <option value="Pendiente">⏳ Pendientes</option>
-        <option value="Timbrada">✅ Timbradas</option>
-      </select>
-    </div>
-    <div class="repo-fact-table">
-      <table>
-        <thead>
-          <tr>
-            <th>ID</th>
-            <th>Fecha</th>
-            <th>Cliente</th>
-            <th>RFC</th>
-            <th>Total</th>
-            <th>Estado</th>
-          </tr>
-        </thead>
-        <tbody id="fact-tbody">
-          <tr><td colspan="6" class="repo-fact-empty">Da clic en ↺ para cargar facturas</td></tr>
-        </tbody>
-      </table>
-    </div>
-  </div>
-
   <!-- ACCIONES -->
+  <div class="acciones">
   <div class="acciones">
     <button class="btn btn-v" id="btn-confirmar" onclick="confirmar()" disabled>
       ✅ Confirmar y enviar a contadora
@@ -471,9 +456,44 @@ table.prods input:focus,table.prods select:focus{border-color:var(--verde)}
     <span id="msg-cuadre" style="font-size:12px;color:#e53e3e;margin-left:4px"></span>
   </div>
 
-</div>
+  </div><!-- fin tab-facturar -->
 
-<div id="toast"></div>
+  <!-- TAB HISTORIAL -->
+  <div class="tab-content" id="tab-historial">
+    <div class="repo-fact-panel" style="margin-top:16px">
+      <div class="repo-fact-header">
+        <h2>🧾 Facturas registradas</h2>
+        <button onclick="cargarFacturas()" style="padding:5px 12px;border:1.5px solid var(--border);border-radius:6px;background:white;cursor:pointer;font-size:12px;font-family:var(--sans)">↺ Recargar</button>
+      </div>
+      <div class="repo-fact-filtros">
+        <input id="fact-buscar" placeholder="🔍 ID o cliente..." oninput="filtrarFacturas()" style="flex:1;min-width:120px">
+        <select id="fact-estado" onchange="filtrarFacturas()">
+          <option value="">Todos</option>
+          <option value="Pendiente">⏳ Pendientes</option>
+          <option value="Timbrada">✅ Timbradas</option>
+        </select>
+      </div>
+      <div class="repo-fact-table">
+        <table>
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>Fecha</th>
+              <th>Cliente</th>
+              <th>RFC</th>
+              <th>Total</th>
+              <th>Estado</th>
+            </tr>
+          </thead>
+          <tbody id="fact-tbody">
+            <tr><td colspan="6" class="repo-fact-empty">Da clic en ↺ para cargar facturas</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div><!-- fin tab-historial -->
+
+</div><!-- fin contenedor -->
 
 <!-- ══ PANEL COLA INTERNA ══ -->
 <div class="cola-overlay" id="cola-overlay">
@@ -1062,7 +1082,7 @@ function redondearTotal() {
 // FIX v10: Conecta al Sheet 17U7t-NCyhhlj2Y_BA_2ZrdUXlAqgTMF7FknQOYh-1Ag
 // ─── URLS ─────────────────────────────────────────────────────
 var APPS_SCRIPT_URL  = 'https://script.google.com/macros/s/AKfycbyASfj9wfkb8zTFUNV-OUjco7FnKbZI0oz9Kw3DrkZJO9zLZOGKTiDPrzNxfbFCPlz8Eg/exec';
-var FORMS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyG5WHs2oznF5iq3F5eUiF5J0CWi_7trwFBgNW2XT-aSNC_bWd6wwDURCpjtyXDkdhELg/exec';
+var FORMS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbySHuaya076CGMHVaXufhyIz9-IxCO_upX43ClRA5rPwUYFEV7Xi-KaPiILEaGOgSUACQ/exec';
 var FORMS_LINK       = 'https://docs.google.com/forms/d/e/1FAIpQLSdw5uy6QcTXK8wnhTL4vuGbAQPsAxB-5GYMBMeBb5zEhYGdFg/viewform';
 
 function confirmar() {
@@ -1534,9 +1554,16 @@ setTipo = function(t) {
   }
 };
 
-// ══════════════════════════════════════════════════════════
-// REPOSITORIO DE FACTURAS
-// ══════════════════════════════════════════════════════════
+// ── TABS ──────────────────────────────────────────────────────
+function cambiarTab(tab, btn) {
+  document.querySelectorAll('.tab-content').forEach(function(t){ t.classList.remove('activo'); });
+  document.querySelectorAll('.tab-btn').forEach(function(b){ b.classList.remove('activo'); });
+  document.getElementById('tab-' + tab).classList.add('activo');
+  btn.classList.add('activo');
+  if (tab === 'historial') cargarFacturas();
+}
+
+// ── REPOSITORIO DE FACTURAS ───────────────────────────────────
 var _facturas = [];
 
 function cargarFacturas() {
@@ -1585,8 +1612,8 @@ function renderFacturas(lista) {
   }).join('');
 }
 
-// Cargar facturas al inicio
-cargarFacturas();
+// Badge se actualiza al cargar
+actualizarBadge();
 
 
 // Si viene desde el repositorio con partidas en cola, auto-abrir si está vacío el form
