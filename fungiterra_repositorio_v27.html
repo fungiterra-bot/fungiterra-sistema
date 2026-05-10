@@ -398,7 +398,7 @@ td.gris{color:#6b7280;font-size:12px}
 </div>
 
 <script>
-var SCRIPT_URL='https://script.google.com/macros/s/AKfycbxj-TStqGBIuY2jCiwhkH0-EWJl42oe80besajIK8VTb705oXKLAhVkgUJQvZxi_ucwOQ';
+var SCRIPT_URL='https://script.google.com/macros/s/AKfycbxj-TStqGBIuY2jCiwhkH0-EWJl42oe80besajIK8VTb705oXKLAhVkgUJQvZxi_ucwOQ/exec';
 var _todos=[], _sel=null;
 
 function fmx(n){return '$'+Number(n||0).toLocaleString('es-MX',{minimumFractionDigits:2,maximumFractionDigits:2});}
@@ -560,7 +560,7 @@ function facturar(id){
   if(c.paqueteria&&c.paqueteria!=='—') params.set('paqueteria',c.paqueteria);
   if(c.notas&&c.notas!=='')         params.set('notas',c.notas);
   if(c.fecha)                       params.set('fecha',c.fecha);
-  window.open('https://fungiterra-bot.github.io/fungiterra-sistema/fungiterra_facturacion_v21.html?'+params.toString());
+  window.open('https://fungiterra-bot.github.io/fungiterra-sistema/fungiterra_facturacion_v23.html?'+params.toString());
 }
 
 function editarCotizacion(id){
