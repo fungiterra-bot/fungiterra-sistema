@@ -1,0 +1,759 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Repositorio v27 — Fungiterra</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=DM+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{--azul:#1a3a5c;--verde:#2d6a2d;--gris:#f0f4f8;--border:#dde3e8;--text:#1a1a2e;--mono:'DM Mono',monospace;--sans:'DM Sans',sans-serif;}
+body{font-family:var(--sans);background:var(--gris);color:var(--text);font-size:14px}
+header{background:linear-gradient(135deg,#2d6a2d,#1a4a6b);color:white;padding:14px 24px;display:flex;align-items:center;justify-content:space-between}
+header h1{font-size:18px;font-weight:600}
+.header-sub{font-size:11px;opacity:.7;margin-top:2px}
+.header-link{color:rgba(255,255,255,.7);font-size:12px;text-decoration:none;border:1px solid rgba(255,255,255,.3);border-radius:6px;padding:5px 12px}
+.layout{display:flex;min-height:calc(100vh - 58px)}
+.lista-panel{flex:1;padding:20px 24px;min-width:0}
+.detalle-panel{width:0;overflow:hidden;background:white;border-left:2px solid var(--border);transition:width .25s ease;flex-shrink:0}
+.detalle-panel.abierto{width:400px}
+.detalle-inner{width:400px;padding:20px;overflow-y:auto;height:calc(100vh - 58px);position:sticky;top:0}
+.card{background:white;border-radius:10px;padding:16px;margin-bottom:14px;box-shadow:0 1px 4px rgba(0,0,0,.07)}
+.ct{font-size:10px;font-weight:700;color:#2d6a2d;text-transform:uppercase;letter-spacing:1px;margin-bottom:10px;padding-bottom:6px;border-bottom:1px solid #e8ecf0}
+.grid4{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:14px}
+.tarjeta{background:white;border-radius:10px;padding:14px;box-shadow:0 1px 4px rgba(0,0,0,.07)}
+.tarjeta-icono{font-size:16px;margin-bottom:4px}
+.tarjeta-valor{font-size:20px;font-weight:700;margin-bottom:2px}
+.tarjeta-label{font-size:11px;color:#6b7280}
+.filtros{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.filtros select,.filtros input{padding:7px 10px;font-size:12px;border:1.5px solid var(--border);border-radius:7px;font-family:var(--sans);background:white;outline:none}
+.filtros select:focus,.filtros input:focus{border-color:var(--verde)}
+.btn-act{padding:7px 12px;border-radius:7px;border:1.5px solid var(--border);background:white;cursor:pointer;font-family:var(--sans);font-size:12px}
+table{width:100%;border-collapse:collapse;font-size:13px}
+thead tr{background:#1a3a5c;color:white;font-size:11px;text-transform:uppercase;letter-spacing:.5px}
+th{padding:10px 12px;text-align:left;font-weight:600}
+th.r{text-align:right}th.c{text-align:center}
+tbody tr{border-bottom:1px solid #f0f4f8;cursor:pointer;transition:background .1s}
+tbody tr:hover{background:#f0f7ff}
+tbody tr.sel{background:#dbeafe;border-left:3px solid #2563a8}
+td{padding:9px 12px;vertical-align:middle}
+td.r{text-align:right;font-weight:600}td.c{text-align:center}
+td.mono{font-family:var(--mono);font-weight:700;color:#1a3a5c}
+td.gris{color:#6b7280;font-size:12px}
+.badge{border-radius:12px;padding:3px 10px;font-size:11px;font-weight:600;display:inline-block}
+.badge-gen{background:#fef3c7;color:#92400e}
+.badge-pag{background:#dcfce7;color:#166534}
+.badge-can{background:#f3f4f6;color:#6b7280}
+.btn{padding:7px 14px;border-radius:7px;border:1.5px solid var(--border);background:white;color:var(--text);cursor:pointer;font-family:var(--sans);font-size:12px;font-weight:500;transition:all .15s}
+.btn-v{background:#2d6a2d;color:white;border-color:#2d6a2d}.btn-v:hover{background:#245424}
+.btn-a{background:#1a3a5c;color:white;border-color:#1a3a5c}
+.btn-r{color:#e53e3e;border-color:#e53e3e}
+.btn-sm{padding:5px 10px;font-size:11px}
+.acciones{display:flex;gap:8px;flex-wrap:wrap;margin-top:14px;padding-top:14px;border-top:1px solid #f0f4f8}
+.d-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;padding-bottom:14px;border-bottom:2px solid #f0f4f8}
+.d-id{font-family:var(--mono);font-size:18px;font-weight:700;color:var(--azul)}
+.btn-x{background:none;border:none;font-size:22px;cursor:pointer;color:#9ca3af;line-height:1;padding:2px 6px;border-radius:4px}
+.btn-x:hover{background:#f0f4f8;color:#374151}
+.campo{margin-bottom:10px}
+.campo label{display:block;font-size:10px;color:#9ca3af;text-transform:uppercase;letter-spacing:.6px;margin-bottom:2px}
+.campo .v{font-size:13px;font-weight:500}
+.sep{border:none;border-top:1px solid #f0f4f8;margin:14px 0}
+.prods{font-size:12px;line-height:1.9;background:#f8fafc;border-radius:7px;padding:10px 12px;color:#374151}
+.total-big{font-size:24px;font-weight:700;color:#2d6a2d;margin-top:10px}
+.spinner{display:inline-block;width:14px;height:14px;border:2px solid #ccc;border-top-color:#2d6a2d;border-radius:50%;animation:spin .7s linear infinite;vertical-align:middle;margin-right:6px}
+@keyframes spin{to{transform:rotate(360deg)}}
+.empty{text-align:center;padding:36px;color:#9ca3af;font-size:13px}
+
+/* PANEL REGLAS */
+.reglas-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:1000;align-items:flex-start;justify-content:center;padding-top:36px}
+.reglas-overlay.activo{display:flex}
+.reglas-modal{background:white;border-radius:14px;width:700px;max-width:96vw;max-height:88vh;overflow-y:auto;box-shadow:0 8px 40px rgba(0,0,0,.22)}
+.reglas-header{display:flex;align-items:center;justify-content:space-between;padding:18px 22px 14px;border-bottom:2px solid #f0f4f8;position:sticky;top:0;background:white;z-index:2}
+.reglas-header h2{font-size:16px;font-weight:700;color:var(--azul)}
+.reglas-tabs{display:flex;gap:6px;padding:14px 22px 0;border-bottom:2px solid #f0f4f8}
+.rtab{padding:7px 16px;border-radius:8px 8px 0 0;border:1.5px solid var(--border);border-bottom:none;background:#f8fafc;cursor:pointer;font-size:12px;font-weight:600;color:#6b7280;margin-bottom:-2px}
+.rtab.activo{background:white;color:var(--azul);border-color:#1a3a5c;border-bottom-color:white}
+.reglas-body{padding:20px 22px}
+.reglas-section{display:none}
+.reglas-section.activo{display:block}
+.r-grupo{margin-bottom:16px}
+.r-grupo label{display:block;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:#6b7280;margin-bottom:5px}
+.r-grupo input,.r-grupo select,.r-grupo textarea{width:100%;padding:8px 10px;border:1.5px solid var(--border);border-radius:7px;font-family:var(--sans);font-size:13px;outline:none;transition:border-color .15s}
+.r-grupo input:focus,.r-grupo select:focus,.r-grupo textarea:focus{border-color:var(--azul)}
+.r-grupo textarea{resize:vertical;min-height:88px;font-size:12px;line-height:1.6}
+.r-row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.r-row3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px}
+.r-nota{font-size:11px;color:#9ca3af;margin-top:4px;line-height:1.5}
+.r-toggle{display:flex;align-items:center;gap:10px;padding:10px 12px;border:1.5px solid var(--border);border-radius:8px;cursor:pointer;margin-bottom:8px;transition:border-color .15s}
+.r-toggle:hover{border-color:var(--azul)}
+.r-toggle input[type=checkbox]{width:16px;height:16px;cursor:pointer;accent-color:var(--azul)}
+.r-toggle span{font-size:13px;font-weight:500}
+.r-toggle small{font-size:11px;color:#9ca3af;display:block}
+.r-sep{border:none;border-top:1px solid #f0f4f8;margin:18px 0}
+.reglas-footer{padding:14px 22px;border-top:1px solid #f0f4f8;display:flex;justify-content:space-between;align-items:center;position:sticky;bottom:0;background:white}
+.r-no-retroactivo{font-size:11px;color:#9ca3af;font-style:italic}
+.badge-nuevo{background:#dcfce7;color:#166534;border-radius:20px;padding:2px 8px;font-size:10px;font-weight:700;margin-left:6px;vertical-align:middle}
+
+/* MODAL CANCELAR PAGO */
+.cpago-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:1100;align-items:center;justify-content:center}
+.cpago-overlay.activo{display:flex}
+.cpago-modal{background:white;border-radius:12px;width:420px;max-width:92vw;padding:24px;box-shadow:0 8px 40px rgba(0,0,0,.22)}
+.cpago-modal h3{font-size:15px;font-weight:700;color:#b91c1c;margin-bottom:6px}
+.cpago-modal p{font-size:12px;color:#6b7280;margin-bottom:14px}
+.cpago-modal textarea{width:100%;padding:8px 10px;border:1.5px solid var(--border);border-radius:7px;font-size:13px;font-family:var(--sans);resize:vertical;min-height:72px;margin-bottom:14px;outline:none}
+.cpago-modal textarea:focus{border-color:#b91c1c}
+.cpago-footer{display:flex;justify-content:flex-end;gap:10px}
+.btn-danger{background:#b91c1c;color:white;border-color:#b91c1c}
+.btn-danger:hover{background:#991b1b}
+#toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);padding:10px 20px;border-radius:20px;font-size:13px;font-weight:600;box-shadow:0 4px 14px rgba(0,0,0,.2);z-index:9999;opacity:0;transition:opacity .3s;pointer-events:none;color:white}
+@media(max-width:720px){
+  .layout{flex-direction:column}
+  .detalle-panel.abierto{width:100%;border-left:none;border-top:2px solid var(--border)}
+  .detalle-inner{width:100%;height:auto;position:static}
+  .grid4{grid-template-columns:1fr 1fr}
+}
+</style>
+</head>
+<body>
+<header>
+  <div><h1>🍄 Repositorio Fungiterra</h1><div class="header-sub">Cotizaciones · Estados · Pagos · v27</div></div>
+  <div style="display:flex;gap:8px;align-items:center">
+    <button onclick="abrirReglas()" style="background:rgba(255,255,255,.15);border:1.5px solid rgba(255,255,255,.4);color:white;border-radius:7px;padding:6px 14px;cursor:pointer;font-size:12px;font-weight:600;font-family:var(--sans)">⚙️ Reglas</button>
+    <a href="https://fungiterra-bot.github.io/fungiterra-sistema/fungiterra_cotizador_v16b.html" class="header-link">← Cotizador</a>
+  </div>
+</header>
+
+<div class="layout">
+  <div class="lista-panel">
+    <div class="grid4">
+      <div class="tarjeta"><div class="tarjeta-icono">📋</div><div class="tarjeta-valor" style="color:#1a3a5c" id="r-total">—</div><div class="tarjeta-label">Total</div></div>
+      <div class="tarjeta"><div class="tarjeta-icono">⏳</div><div class="tarjeta-valor" style="color:#d97706" id="r-pend">—</div><div class="tarjeta-label">Pendientes</div></div>
+      <div class="tarjeta"><div class="tarjeta-icono">✅</div><div class="tarjeta-valor" style="color:#2d6a2d" id="r-pag">—</div><div class="tarjeta-label">Pagadas</div></div>
+      <div class="tarjeta"><div class="tarjeta-icono">💰</div><div class="tarjeta-valor" style="color:#1a3a5c" id="r-cobrado">—</div><div class="tarjeta-label">Cobrado</div></div>
+    </div>
+
+    <div class="card" style="padding:12px 16px">
+      <div class="filtros">
+        <input id="bus" placeholder="🔍 ID o cliente..." oninput="filtrar()" style="flex:1;min-width:130px">
+        <select id="f-e" onchange="filtrar()">
+          <option value="">Todos</option>
+          <option value="Generada">⏳ Generadas</option>
+          <option value="Pagada">✅ Pagadas</option>
+          <option value="Cancelada">✖ Canceladas</option>
+        </select>
+        <select id="f-s" onchange="filtrar()">
+          <option value="">Socios</option>
+          <option value="V">V</option>
+          <option value="M">M</option>
+          <option value="J">J</option>
+        </select>
+        <button class="btn-act" onclick="cargar()">↺</button>
+      </div>
+    </div>
+
+    <div class="card" style="padding:0;overflow:hidden">
+      <div style="overflow-x:auto">
+        <table>
+          <thead><tr>
+            <th>ID</th><th>Fecha</th><th>Cliente</th>
+            <th class="c">Socio</th><th class="r">Total</th><th class="c">Estado</th>
+          </tr></thead>
+          <tbody id="tb">
+            <tr><td colspan="6" class="empty"><span class="spinner"></span>Cargando...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+    <div style="font-size:11px;color:#9ca3af;text-align:center;margin-top:4px">Clic en una fila para ver el detalle</div>
+  </div>
+
+  <div class="detalle-panel" id="dp">
+    <div class="detalle-inner" id="di"></div>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<!-- ══ MODAL CANCELAR PAGO ══ -->
+<div class="cpago-overlay" id="cpago-overlay">
+  <div class="cpago-modal">
+    <h3>⚠️ Cancelar pago registrado</h3>
+    <p>El registro volverá a estado <strong>Generada</strong>. Indica el motivo (opcional).</p>
+    <textarea id="cpago-motivo" placeholder="Ej: Error en monto, pago rechazado, depósito equivocado..."></textarea>
+    <div class="cpago-footer">
+      <button class="btn btn-sm" onclick="cerrarCpago()">Cancelar</button>
+      <button class="btn btn-sm btn-danger" onclick="confirmarCancelaPago()">Revertir pago</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ MODAL REGLAS ══ -->
+<div class="reglas-overlay" id="reglas-overlay">
+  <div class="reglas-modal">
+    <div class="reglas-header">
+      <h2>⚙️ Reglas de facturación <span class="badge-nuevo">Solo tú</span></h2>
+      <button class="btn-x" onclick="cerrarReglas()">×</button>
+    </div>
+    <div class="reglas-tabs">
+      <button class="rtab activo" onclick="reglaTab('general',this)">General</button>
+      <button class="rtab" onclick="reglaTab('socioV',this)">Socio V</button>
+      <button class="rtab" onclick="reglaTab('socioM',this)">Socio M</button>
+      <button class="rtab" onclick="reglaTab('socioJ',this)">Socio J</button>
+      <button class="rtab" onclick="reglaTab('correo',this)">✉️ Correo</button>
+    </div>
+    <div class="reglas-body">
+
+      <!-- TAB GENERAL -->
+      <div class="reglas-section activo" id="rtab-general">
+        <div class="r-grupo">
+          <label>IVA aplicable (%)</label>
+          <div class="r-row">
+            <div>
+              <input type="number" id="r-iva-tasa" value="16" min="0" max="100" step="0.1">
+              <div class="r-nota">Tasa general de IVA (16% por defecto para México)</div>
+            </div>
+            <div>
+              <select id="r-iva-modo">
+                <option value="incluido">IVA incluido en precio</option>
+                <option value="adicional">IVA adicional al precio</option>
+              </select>
+              <div class="r-nota">¿Cómo viene el precio en la cotización?</div>
+            </div>
+          </div>
+        </div>
+        <hr class="r-sep">
+        <div class="r-grupo">
+          <label>Manejo de envío</label>
+          <label class="r-toggle">
+            <input type="checkbox" id="r-envio-absorber">
+            <div><span>Absorber envío en la factura</span><small>El envío se incluye en el monto del producto, no como concepto separado</small></div>
+          </label>
+          <label class="r-toggle">
+            <input type="checkbox" id="r-envio-separado">
+            <div><span>Envío como concepto separado</span><small>El envío aparece como una línea independiente en la factura</small></div>
+          </label>
+          <label class="r-toggle">
+            <input type="checkbox" id="r-envio-siniva">
+            <div><span>Envío sin IVA</span><small>Aplica tasa 0% de IVA al concepto de envío</small></div>
+          </label>
+        </div>
+        <hr class="r-sep">
+        <div class="r-grupo">
+          <label>Rotación de productos por dígito de ID</label>
+          <div class="r-nota" style="margin-bottom:8px">Define qué producto facturar según el último dígito del ID de cotización. Útil para distribuir conceptos.</div>
+          <div class="r-row3">
+            <div><input type="text" id="r-rot-0" placeholder="Dígitos 0,1,2 → producto"><div class="r-nota">Dígitos 0-2</div></div>
+            <div><input type="text" id="r-rot-3" placeholder="Dígitos 3,4,5 → producto"><div class="r-nota">Dígitos 3-5</div></div>
+            <div><input type="text" id="r-rot-6" placeholder="Dígitos 6-9 → producto"><div class="r-nota">Dígitos 6-9</div></div>
+          </div>
+        </div>
+        <hr class="r-sep">
+        <div class="r-grupo">
+          <label>Umbrales y excepciones</label>
+          <div class="r-row">
+            <div>
+              <input type="number" id="r-umbral-min" placeholder="Monto mínimo a facturar ($)" min="0">
+              <div class="r-nota">Cotizaciones menores a este monto se agrupan en global</div>
+            </div>
+            <div>
+              <input type="number" id="r-umbral-pg" placeholder="Límite para PG ($)" value="0">
+              <div class="r-nota">Montos ≤ a este valor se clasifican como Público General</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- TAB SOCIO V -->
+      <div class="reglas-section" id="rtab-socioV">
+        <div style="background:#f0f7ff;border-radius:8px;padding:10px 14px;margin-bottom:16px;font-size:12px;color:#1a3a5c">
+          📌 Las reglas del Socio V son la <strong>base predeterminada</strong>. Los demás socios heredan estas reglas y pueden sobreescribir individualmente.
+        </div>
+        <div class="r-grupo">
+          <label>RFC emisor (Socio V)</label>
+          <input type="text" id="rV-rfc" placeholder="Ej: MABJ910829L3A" style="text-transform:uppercase">
+        </div>
+        <div class="r-grupo">
+          <label>Régimen fiscal predeterminado</label>
+          <select id="rV-regimen">
+            <option value="612">612 - Personas Físicas con Actividades Empresariales</option>
+            <option value="626">626 - Régimen Simplificado de Confianza</option>
+            <option value="601">601 - General de Ley Personas Morales</option>
+          </select>
+        </div>
+        <hr class="r-sep">
+        <div class="r-grupo">
+          <label>Cuenta bancaria principal (para cotejador)</label>
+          <input type="text" id="rV-cuenta" placeholder="Últimos 4 dígitos de la cuenta BBVA">
+          <div class="r-nota">Se usará en el cotejador para identificar movimientos de este socio</div>
+        </div>
+        <div class="r-grupo">
+          <label>Productos habituales (separados por coma)</label>
+          <textarea id="rV-productos" placeholder="Ej: Micelio seta, Fungibolsa, Cepa, Kit cultivo"></textarea>
+        </div>
+        <div class="r-grupo">
+          <label>Reglas específicas Socio V</label>
+          <label class="r-toggle">
+            <input type="checkbox" id="rV-iva-diferente">
+            <div><span>Usar IVA diferente al general</span><small>Activa para definir una tasa especial para este socio</small></div>
+          </label>
+          <input type="number" id="rV-iva-tasa-custom" placeholder="Tasa IVA especial (%)" min="0" max="100" step="0.1" style="margin-top:6px;display:none">
+        </div>
+      </div>
+
+      <!-- TAB SOCIO M -->
+      <div class="reglas-section" id="rtab-socioM">
+        <div style="background:#fef9e7;border-radius:8px;padding:10px 14px;margin-bottom:16px;font-size:12px;color:#92400e">
+          ⚡ Hereda reglas de Socio V. Solo llena lo que sea diferente.
+        </div>
+        <div class="r-grupo">
+          <label>RFC emisor (Socio M)</label>
+          <input type="text" id="rM-rfc" placeholder="Deja vacío para usar el de Socio V" style="text-transform:uppercase">
+        </div>
+        <div class="r-grupo">
+          <label>Cuenta bancaria (para cotejador)</label>
+          <input type="text" id="rM-cuenta" placeholder="Últimos 4 dígitos de la cuenta BBVA">
+        </div>
+        <div class="r-grupo">
+          <label>Productos habituales (si difieren de V)</label>
+          <textarea id="rM-productos" placeholder="Deja vacío para heredar de Socio V"></textarea>
+        </div>
+        <div class="r-grupo">
+          <label>Régimen fiscal (si difiere de V)</label>
+          <select id="rM-regimen">
+            <option value="">Heredar de Socio V</option>
+            <option value="612">612 - Personas Físicas con Actividades Empresariales</option>
+            <option value="626">626 - Régimen Simplificado de Confianza</option>
+            <option value="601">601 - General de Ley Personas Morales</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- TAB SOCIO J -->
+      <div class="reglas-section" id="rtab-socioJ">
+        <div style="background:#fef9e7;border-radius:8px;padding:10px 14px;margin-bottom:16px;font-size:12px;color:#92400e">
+          ⚡ Hereda reglas de Socio V. Solo llena lo que sea diferente.
+        </div>
+        <div class="r-grupo">
+          <label>RFC emisor (Socio J)</label>
+          <input type="text" id="rJ-rfc" placeholder="Deja vacío para usar el de Socio V" style="text-transform:uppercase">
+        </div>
+        <div class="r-grupo">
+          <label>Cuenta bancaria (para cotejador)</label>
+          <input type="text" id="rJ-cuenta" placeholder="Últimos 4 dígitos de la cuenta BBVA">
+        </div>
+        <div class="r-grupo">
+          <label>Productos habituales (si difieren de V)</label>
+          <textarea id="rJ-productos" placeholder="Deja vacío para heredar de Socio V"></textarea>
+        </div>
+        <div class="r-grupo">
+          <label>Régimen fiscal (si difiere de V)</label>
+          <select id="rJ-regimen">
+            <option value="">Heredar de Socio V</option>
+            <option value="612">612 - Personas Físicas con Actividades Empresariales</option>
+            <option value="626">626 - Régimen Simplificado de Confianza</option>
+            <option value="601">601 - General de Ley Personas Morales</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- TAB CORREO -->
+      <div class="reglas-section" id="rtab-correo">
+        <div style="background:#f0f7ff;border-radius:8px;padding:10px 14px;margin-bottom:16px;font-size:12px;color:#1a3a5c">
+          ✉️ Esta plantilla se usa cuando la contadora sube el XML/PDF de una factura. Se envía automáticamente al correo del cliente vía Apps Script.
+        </div>
+        <div class="r-grupo">
+          <label>Asunto del correo</label>
+          <input type="text" id="r-correo-asunto" placeholder="Ej: Tu factura Fungiterra — {{id}}">
+          <div class="r-nota">Variables disponibles: <strong>{{id}}</strong> · <strong>{{cliente}}</strong> · <strong>{{monto}}</strong> · <strong>{{fecha}}</strong> · <strong>{{socio}}</strong></div>
+        </div>
+        <div class="r-grupo">
+          <label>Cuerpo del correo</label>
+          <textarea id="r-correo-cuerpo" style="min-height:160px" placeholder="Hola {{cliente}},&#10;&#10;Adjunto encontrarás tu factura {{id}} por un monto de {{monto}}.&#10;&#10;Quedamos a tus órdenes.&#10;&#10;Equipo Fungiterra"></textarea>
+          <div class="r-nota">Variables disponibles: <strong>{{id}}</strong> · <strong>{{cliente}}</strong> · <strong>{{monto}}</strong> · <strong>{{fecha}}</strong> · <strong>{{socio}}</strong> · <strong>{{productos}}</strong></div>
+        </div>
+        <div class="r-grupo">
+          <label>Correo de respuesta (reply-to)</label>
+          <input type="email" id="r-correo-replyto" placeholder="Ej: contacto@fungiterra.mx">
+          <div class="r-nota">El cliente puede responder a este correo. Si se deja vacío usa el de Apps Script.</div>
+        </div>
+        <hr class="r-sep">
+        <div class="r-grupo">
+          <label>Vista previa de la plantilla</label>
+          <div id="r-correo-preview" style="background:#f8fafc;border:1.5px solid var(--border);border-radius:8px;padding:12px;font-size:12px;line-height:1.7;color:#374151;min-height:80px;white-space:pre-wrap">
+            Llena los campos arriba para ver la vista previa...
+          </div>
+          <button class="btn btn-sm" style="margin-top:8px" onclick="previsualizarCorreo()">👁 Actualizar vista previa</button>
+        </div>
+      </div>
+
+    </div>
+    <div class="reglas-footer">
+      <span class="r-no-retroactivo">⚠️ Las reglas aplican solo a facturas futuras</span>
+      <div style="display:flex;gap:8px">
+        <button class="btn btn-sm" onclick="cerrarReglas()">Cancelar</button>
+        <button class="btn btn-sm btn-v" onclick="guardarReglas()">💾 Guardar reglas</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+var SCRIPT_URL='https://script.google.com/macros/s/AKfycbxj-TStqGBIuY2jCiwhkH0-EWJl42oe80besajIK8VTb705oXKLAhVkgUJQvZxi_ucwOQ/exec';
+var _todos=[], _sel=null;
+
+function fmx(n){return '$'+Number(n||0).toLocaleString('es-MX',{minimumFractionDigits:2,maximumFractionDigits:2});}
+
+function formatFecha(f){
+  if(!f) return '—';
+  // Si ya tiene formato dd/mm/yyyy lo dejamos
+  if(/^\d{2}\/\d{2}\/\d{4}/.test(f)) return f;
+  // ISO string como 2026-05-03T06:00:00.000Z
+  try{
+    var d=new Date(f);
+    if(isNaN(d.getTime())) return f;
+    var dd=String(d.getDate()).padStart(2,'0');
+    var mm=String(d.getMonth()+1).padStart(2,'0');
+    var yyyy=d.getFullYear();
+    return dd+'/'+mm+'/'+yyyy;
+  }catch(e){return f;}
+}
+
+function toast(msg,ok){
+  var t=document.getElementById('toast');
+  t.textContent=msg; t.style.background=ok===false?'#b91c1c':'#2d6a2d';
+  t.style.opacity='1'; clearTimeout(t._t);
+  t._t=setTimeout(function(){t.style.opacity='0';},3000);
+}
+
+function cargar(){
+  document.getElementById('tb').innerHTML='<tr><td colspan="6" class="empty"><span class="spinner"></span>Cargando...</td></tr>';
+  fetch(SCRIPT_URL+'?accion=repositorio')
+  .then(function(r){return r.json();})
+  .then(function(data){
+    _todos=(data.cotizaciones||[]).reverse();
+    var pend=_todos.filter(function(c){return c.estado==='Generada';}).length;
+    var pag=_todos.filter(function(c){return c.estado==='Pagada';}).length;
+    var suma=_todos.filter(function(c){return c.estado==='Pagada';}).reduce(function(s,c){return s+Number(c.total||0);},0);
+    document.getElementById('r-total').textContent=_todos.length;
+    document.getElementById('r-pend').textContent=pend;
+    document.getElementById('r-pag').textContent=pag;
+    document.getElementById('r-cobrado').textContent=fmx(suma);
+    filtrar();
+    if(_sel){var c=_todos.find(function(x){return x.id===_sel;});if(c)mostrarDetalle(c);}
+  })
+  .catch(function(){document.getElementById('tb').innerHTML='<tr><td colspan="6" class="empty" style="color:#e53e3e">Error al conectar.</td></tr>';});
+}
+
+function filtrar(){
+  var q=(document.getElementById('bus').value||'').toLowerCase();
+  var fe=document.getElementById('f-e').value;
+  var fs=document.getElementById('f-s').value;
+  var lista=_todos.filter(function(c){
+    return (!q||(c.id||'').toLowerCase().includes(q)||(c.cliente||'').toLowerCase().includes(q))
+      &&(!fe||c.estado===fe)&&(!fs||c.socio===fs);
+  });
+  var tb=document.getElementById('tb');
+  if(!lista.length){tb.innerHTML='<tr><td colspan="6" class="empty">Sin resultados.</td></tr>';return;}
+  tb.innerHTML=lista.map(function(c){
+    var est=c.estado||'Generada';
+    var bc=est==='Pagada'?'badge-pag':est==='Cancelada'?'badge-can':'badge-gen';
+    var bl=est==='Pagada'?'✅ Pagada':est==='Cancelada'?'✖ Cancelada':'⏳ Generada';
+    return '<tr'+(c.id===_sel?' class="sel"':'')+' onclick="seleccionar(\''+c.id+'\')">'+
+      '<td class="mono">'+c.id+'</td>'+
+      '<td class="gris">'+formatFecha(c.fecha)+'</td>'+
+      '<td>'+(c.cliente||'—')+'</td>'+
+      '<td class="c" style="font-family:monospace;font-size:12px">'+c.socio+'</td>'+
+      '<td class="r">'+fmx(c.total)+'</td>'+
+      '<td class="c"><span class="badge '+bc+'">'+bl+'</span></td>'+
+    '</tr>';
+  }).join('');
+}
+
+function seleccionar(id){
+  var c=_todos.find(function(x){return x.id===id;});
+  if(!c)return;
+  _sel=id;
+  filtrar();
+  mostrarDetalle(c);
+}
+
+function mostrarDetalle(c){
+  document.getElementById('dp').classList.add('abierto');
+  var est=c.estado||'Generada';
+  var bc=est==='Pagada'?'badge-pag':est==='Cancelada'?'badge-can':'badge-gen';
+  var bl=est==='Pagada'?'✅ Pagada':est==='Cancelada'?'✖ Cancelada':'⏳ Generada';
+
+  var prodsHTML='<span style="color:#9ca3af">Sin detalle de productos</span>';
+  if(c.productos&&c.productos!=='—'&&c.productos.trim()!==''){
+    prodsHTML=c.productos.split('|').map(function(p){return '• '+p.trim();}).join('<br>');
+  }
+
+  var btns='';
+  if(est==='Generada'){
+    btns='<button class="btn btn-v btn-sm" onclick="cambiarEstado(\''+c.id+'\',\'Pagada\')">✅ Marcar pagada</button>'+
+         '<button class="btn btn-a btn-sm" onclick="editarCotizacion(\''+c.id+'\')">✏️ Editar</button>'+
+         '<button class="btn btn-sm btn-r" onclick="cambiarEstado(\''+c.id+'\',\'Cancelada\')">Cancelar</button>';
+  } else if(est==='Pagada'){
+    btns='<button class="btn btn-a btn-sm" onclick="facturar(\''+c.id+'\')">🧾 Facturar</button>'+
+         '<button class="btn btn-sm btn-r" onclick="abrirCpago(\''+c.id+'\')">↩️ Cancelar pago</button>';
+  } else if(est==='Cancelada'){
+    btns='<button class="btn btn-sm" onclick="cambiarEstado(\''+c.id+'\',\'Generada\')">↺ Reactivar</button>';
+  }
+
+  document.getElementById('di').innerHTML=
+    '<div class="d-header">'+
+      '<div class="d-id">'+c.id+'</div>'+
+      '<button class="btn-x" onclick="cerrar()">×</button>'+
+    '</div>'+
+    '<span class="badge '+bc+'">'+bl+'</span>'+
+    (c.fechaEstado?'<span style="font-size:11px;color:#9ca3af;margin-left:8px">'+c.fechaEstado+'</span>':'')+
+    '<hr class="sep">'+
+    '<div class="ct">Cliente</div>'+
+    '<div class="campo"><label>Nombre</label><div class="v">'+(c.cliente||'—')+'</div></div>'+
+    '<div class="campo"><label>Teléfono</label><div class="v">'+
+      (c.telefono&&c.telefono!=='—'?'<a href="tel:'+c.telefono+'" style="color:#2563a8">'+c.telefono+'</a>':'—')+
+    '</div></div>'+
+    '<div class="campo"><label>Correo</label><div class="v">'+
+      (c.correo&&c.correo!=='—'?'<a href="mailto:'+c.correo+'" style="color:#2563a8">'+c.correo+'</a>':'—')+
+    '</div></div>'+
+    '<div class="campo"><label>Socio</label><div class="v" style="font-family:monospace">'+c.socio+'</div></div>'+
+    '<div class="campo"><label>Fecha cotización</label><div class="v">'+formatFecha(c.fecha)+'</div></div>'+
+    '<hr class="sep">'+
+    '<div class="ct">Productos</div>'+
+    '<div class="prods">'+prodsHTML+'</div>'+
+    (Number(c.envio)>0?
+      '<div class="campo" style="margin-top:10px"><label>Envío'+(c.paqueteria&&c.paqueteria!=='—'?' — '+c.paqueteria:'')+'</label>'+
+      '<div class="v">'+fmx(c.envio)+'</div></div>':'')+
+    '<div class="total-big">'+fmx(c.total)+'</div>'+
+    (c.notas&&c.notas!==''?'<hr class="sep"><div class="ct">Notas</div><div style="font-size:12px;color:#374151">'+c.notas+'</div>':'')+
+    '<div class="acciones">'+btns+'</div>';
+}
+
+function cerrar(){
+  document.getElementById('dp').classList.remove('abierto');
+  _sel=null; filtrar();
+}
+
+function cambiarEstado(id,estado){
+  if(!confirm(estado==='Pagada'?'¿Marcar '+id+' como pagada?':estado==='Cancelada'?'¿Cancelar '+id+'?':'¿Reactivar '+id+'?'))return;
+  toast('Actualizando...');
+  fetch(SCRIPT_URL,{method:'POST',body:JSON.stringify({accion:'actualizar_estado',id:id,estado:estado})})
+  .then(function(r){return r.json();})
+  .then(function(data){
+    if(data.ok){toast(id+' → '+estado);cargar();}
+    else toast('⚠️ '+(data.error||'Error'),false);
+  }).catch(function(){toast('⚠️ Sin conexión',false);});
+}
+
+function facturar(id){
+  var c=_todos.find(function(x){return x.id===id;});
+  if(!c)return;
+  var params=new URLSearchParams();
+  params.set('id',c.id);
+  if(c.cliente&&c.cliente!=='—')   params.set('cliente',c.cliente);
+  if(c.telefono&&c.telefono!=='—') params.set('telefono',c.telefono);
+  if(c.correo&&c.correo!=='—')     params.set('correo',c.correo);
+  if(c.socio)                       params.set('socio',c.socio);
+  if(c.total)                       params.set('total',c.total);
+  if(c.productos&&c.productos!=='—') params.set('productos',c.productos);
+  if(c.envio&&Number(c.envio)>0)    params.set('envio',c.envio);
+  if(c.paqueteria&&c.paqueteria!=='—') params.set('paqueteria',c.paqueteria);
+  if(c.notas&&c.notas!=='')         params.set('notas',c.notas);
+  if(c.fecha)                       params.set('fecha',c.fecha);
+  window.open('https://fungiterra-bot.github.io/fungiterra-sistema/fungiterra_facturacion_v25b.html?'+params.toString());
+}
+
+function editarCotizacion(id){
+  var c=_todos.find(function(x){return x.id===id;});
+  if(!c)return;
+  var params=new URLSearchParams();
+  params.set('editar','1');
+  params.set('id',c.id);
+  if(c.cliente&&c.cliente!=='—') params.set('cliente',c.cliente);
+  if(c.telefono&&c.telefono!=='—') params.set('telefono',c.telefono);
+  if(c.correo&&c.correo!=='—') params.set('correo',c.correo);
+  if(c.socio) params.set('socio',c.socio);
+  if(c.total) params.set('total',c.total);
+  if(c.productos&&c.productos!=='—') params.set('productos',c.productos);
+  window.open('https://fungiterra-bot.github.io/fungiterra-sistema/fungiterra_cotizador_v16b.html?'+params.toString(),'_blank');
+}
+
+cargar();
+
+// ══════════════════════════════════════════
+// CANCELAR PAGO
+// ══════════════════════════════════════════
+var _cpago_id = null;
+
+function abrirCpago(id) {
+  _cpago_id = id;
+  document.getElementById('cpago-motivo').value = '';
+  document.getElementById('cpago-overlay').classList.add('activo');
+}
+
+function cerrarCpago() {
+  _cpago_id = null;
+  document.getElementById('cpago-overlay').classList.remove('activo');
+}
+
+function confirmarCancelaPago() {
+  if (!_cpago_id) return;
+  var motivo = document.getElementById('cpago-motivo').value.trim();
+  var id = _cpago_id;
+  cerrarCpago();
+  toast('Revirtiendo pago...');
+  var ahora = new Date();
+  var fechaCancelacion = [
+    String(ahora.getDate()).padStart(2,'0'),
+    String(ahora.getMonth()+1).padStart(2,'0'),
+    ahora.getFullYear()
+  ].join('/') + ' ' + String(ahora.getHours()).padStart(2,'0') + ':' + String(ahora.getMinutes()).padStart(2,'0');
+  fetch(SCRIPT_URL, {
+    method: 'POST',
+    body: JSON.stringify({
+      accion: 'cancelar_pago',
+      id: id,
+      motivo: motivo || '(sin motivo)',
+      fechaCancelacion: fechaCancelacion
+    })
+  })
+  .then(function(r){ return r.json(); })
+  .then(function(data) {
+    if (data.ok) {
+      toast('↩️ ' + id + ' volvió a Generada');
+      cargar();
+    } else {
+      toast('⚠️ ' + (data.error || 'Error al revertir'), false);
+    }
+  })
+  .catch(function() { toast('⚠️ Sin conexión', false); });
+}
+document.getElementById('cpago-overlay').addEventListener('click', function(e) {
+  if (e.target === this) cerrarCpago();
+});
+
+// ══════════════════════════════════════════
+// MÓDULO DE REGLAS
+// ══════════════════════════════════════════
+var REGLAS_KEY = 'fungiterra_reglas_v1';
+var REGLAS_DEFAULT = {
+  iva_tasa: 16, iva_modo: 'incluido',
+  envio_absorber: false, envio_separado: true, envio_siniva: false,
+  rot_0: '', rot_3: '', rot_6: '',
+  umbral_min: '', umbral_pg: 0,
+  socios: {
+    V: { rfc: 'MABJ910829L3A', regimen: '626', cuenta: '', productos: 'Micelio seta, Fungibolsa, Cepa, Kit cultivo', iva_diferente: false, iva_tasa_custom: '' },
+    M: { rfc: '', regimen: '', cuenta: '', productos: '' },
+    J: { rfc: '', regimen: '', cuenta: '', productos: '' }
+  },
+  correo: {
+    asunto: 'Tu factura Fungiterra — {{id}}',
+    cuerpo: 'Hola {{cliente}},\n\nAdjunto encontrarás tu factura {{id}} por un total de {{monto}}.\n\nFecha: {{fecha}}\n\nQuedamos a tus órdenes para cualquier duda.\n\nEquipo Fungiterra',
+    replyto: ''
+  }
+};
+
+function cargarReglas() {
+  try {
+    var stored = localStorage.getItem(REGLAS_KEY);
+    return stored ? JSON.parse(stored) : JSON.parse(JSON.stringify(REGLAS_DEFAULT));
+  } catch(e) { return JSON.parse(JSON.stringify(REGLAS_DEFAULT)); }
+}
+
+function abrirReglas() {
+  var r = cargarReglas();
+  document.getElementById('r-iva-tasa').value = r.iva_tasa;
+  document.getElementById('r-iva-modo').value = r.iva_modo;
+  document.getElementById('r-envio-absorber').checked = r.envio_absorber;
+  document.getElementById('r-envio-separado').checked = r.envio_separado;
+  document.getElementById('r-envio-siniva').checked = r.envio_siniva;
+  document.getElementById('r-rot-0').value = r.rot_0 || '';
+  document.getElementById('r-rot-3').value = r.rot_3 || '';
+  document.getElementById('r-rot-6').value = r.rot_6 || '';
+  document.getElementById('r-umbral-min').value = r.umbral_min || '';
+  document.getElementById('r-umbral-pg').value = r.umbral_pg || 0;
+  ['V','M','J'].forEach(function(s) {
+    var d = r.socios[s] || {};
+    var pre = 'r' + s;
+    document.getElementById(pre+'-rfc').value = d.rfc || '';
+    document.getElementById(pre+'-cuenta').value = d.cuenta || '';
+    document.getElementById(pre+'-productos').value = d.productos || '';
+    var reg = document.getElementById(pre+'-regimen');
+    if (reg) reg.value = d.regimen || (s==='V'?'626':'');
+    if (s==='V') {
+      document.getElementById('rV-iva-diferente').checked = d.iva_diferente || false;
+      var ivaCust = document.getElementById('rV-iva-tasa-custom');
+      ivaCust.value = d.iva_tasa_custom || '';
+      ivaCust.style.display = d.iva_diferente ? 'block' : 'none';
+    }
+  });
+  document.getElementById('r-correo-asunto').value = r.correo.asunto || '';
+  document.getElementById('r-correo-cuerpo').value = r.correo.cuerpo || '';
+  document.getElementById('r-correo-replyto').value = r.correo.replyto || '';
+  document.getElementById('r-correo-preview').textContent = 'Llena los campos arriba para ver la vista previa...';
+  reglaTab('general', document.querySelector('.rtab'));
+  document.getElementById('reglas-overlay').classList.add('activo');
+}
+
+function cerrarReglas() {
+  document.getElementById('reglas-overlay').classList.remove('activo');
+}
+
+function reglaTab(nombre, btn) {
+  document.querySelectorAll('.reglas-section').forEach(function(s){ s.classList.remove('activo'); });
+  document.querySelectorAll('.rtab').forEach(function(t){ t.classList.remove('activo'); });
+  document.getElementById('rtab-'+nombre).classList.add('activo');
+  btn.classList.add('activo');
+}
+
+document.getElementById('rV-iva-diferente').addEventListener('change', function() {
+  document.getElementById('rV-iva-tasa-custom').style.display = this.checked ? 'block' : 'none';
+});
+
+function previsualizarCorreo() {
+  var asunto = document.getElementById('r-correo-asunto').value;
+  var cuerpo = document.getElementById('r-correo-cuerpo').value;
+  var ej = {'{{id}}':'V-042','{{cliente}}':'Juan García','{{monto}}':'$2,500.00','{{fecha}}':'09/05/2026','{{socio}}':'V','{{productos}}':'Micelio seta, Fungibolsa'};
+  var preview = 'ASUNTO: '+asunto+'\n\n'+cuerpo;
+  Object.keys(ej).forEach(function(k){ preview = preview.split(k).join(ej[k]); });
+  document.getElementById('r-correo-preview').textContent = preview;
+}
+
+function guardarReglas() {
+  var r = {
+    iva_tasa: parseFloat(document.getElementById('r-iva-tasa').value)||16,
+    iva_modo: document.getElementById('r-iva-modo').value,
+    envio_absorber: document.getElementById('r-envio-absorber').checked,
+    envio_separado: document.getElementById('r-envio-separado').checked,
+    envio_siniva: document.getElementById('r-envio-siniva').checked,
+    rot_0: document.getElementById('r-rot-0').value.trim(),
+    rot_3: document.getElementById('r-rot-3').value.trim(),
+    rot_6: document.getElementById('r-rot-6').value.trim(),
+    umbral_min: document.getElementById('r-umbral-min').value,
+    umbral_pg: parseFloat(document.getElementById('r-umbral-pg').value)||0,
+    socios: {
+      V: { rfc: document.getElementById('rV-rfc').value.trim().toUpperCase(), regimen: document.getElementById('rV-regimen').value, cuenta: document.getElementById('rV-cuenta').value.trim(), productos: document.getElementById('rV-productos').value.trim(), iva_diferente: document.getElementById('rV-iva-diferente').checked, iva_tasa_custom: document.getElementById('rV-iva-tasa-custom').value },
+      M: { rfc: document.getElementById('rM-rfc').value.trim().toUpperCase(), regimen: document.getElementById('rM-regimen').value, cuenta: document.getElementById('rM-cuenta').value.trim(), productos: document.getElementById('rM-productos').value.trim() },
+      J: { rfc: document.getElementById('rJ-rfc').value.trim().toUpperCase(), regimen: document.getElementById('rJ-regimen').value, cuenta: document.getElementById('rJ-cuenta').value.trim(), productos: document.getElementById('rJ-productos').value.trim() }
+    },
+    correo: {
+      asunto: document.getElementById('r-correo-asunto').value.trim(),
+      cuerpo: document.getElementById('r-correo-cuerpo').value,
+      replyto: document.getElementById('r-correo-replyto').value.trim()
+    },
+    _guardado: new Date().toISOString()
+  };
+  localStorage.setItem(REGLAS_KEY, JSON.stringify(r));
+  toast('✅ Reglas guardadas — aplican a facturas futuras');
+  cerrarReglas();
+}
+
+document.getElementById('reglas-overlay').addEventListener('click', function(e) {
+  if (e.target === this) cerrarReglas();
+});
+
+// exponer reglas para que otros módulos las lean
+window.getFungiterraReglas = cargarReglas;
+</script>
+</body>
+</html>
