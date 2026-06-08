@@ -180,6 +180,13 @@ td.gris{color:#6b7280;font-size:12px}
           <option value="M">M</option>
           <option value="J">J</option>
         </select>
+        <select id="f-p" onchange="filtrar()">
+          <option value="">📅 Todos</option>
+          <option value="hoy">Hoy</option>
+          <option value="semana">Esta semana</option>
+          <option value="mes">Este mes</option>
+          <option value="mesant">Mes anterior</option>
+        </select>
         <button class="btn-act" onclick="cargar()">↺</button>
       </div>
     </div>
@@ -498,12 +505,49 @@ function parsearAbonos(notas) {
   return result;
 }
 
+
+// ── Convierte fecha dd/mm/yyyy o yyyy-mm-dd a Date para ordenamiento ──
+function _parseFechaSort(f) {
+  if (!f) return new Date(0);
+  if (/^\d{2}\/\d{2}\/\d{4}/.test(f)) {
+    var p = f.split('/'); return new Date(p[2], p[1]-1, p[0]);
+  }
+  var d = new Date(f); return isNaN(d) ? new Date(0) : d;
+}
+
+// ── Verifica si una fecha cae dentro del período seleccionado ──
+function _enPeriodo(f, periodo) {
+  if (!periodo) return true;
+  var fecha = _parseFechaSort(f);
+  var hoy = new Date(); hoy.setHours(0,0,0,0);
+  if (periodo === 'hoy') {
+    var fin = new Date(hoy); fin.setHours(23,59,59,999);
+    return fecha >= hoy && fecha <= fin;
+  }
+  if (periodo === 'semana') {
+    var lunes = new Date(hoy); lunes.setDate(hoy.getDate() - hoy.getDay() + (hoy.getDay()===0?-6:1));
+    return fecha >= lunes;
+  }
+  if (periodo === 'mes') {
+    return fecha.getMonth() === hoy.getMonth() && fecha.getFullYear() === hoy.getFullYear();
+  }
+  if (periodo === 'mesant') {
+    var mesAnt = new Date(hoy.getFullYear(), hoy.getMonth()-1, 1);
+    return fecha.getMonth() === mesAnt.getMonth() && fecha.getFullYear() === mesAnt.getFullYear();
+  }
+  return true;
+}
+
 function cargar(){
   document.getElementById('tb').innerHTML='<tr><td colspan="6" class="empty"><span class="spinner"></span>Cargando...</td></tr>';
   fetch(SCRIPT_URL+'?accion=repositorio')
   .then(function(r){return r.json();})
   .then(function(data){
-    _todos=(data.cotizaciones||[]).reverse();
+    _todos=(data.cotizaciones||[]).sort(function(a,b){
+      var fa=_parseFechaSort(a.fechaEstado||a.fecha);
+      var fb=_parseFechaSort(b.fechaEstado||b.fecha);
+      return fb-fa;
+    });
     var pend=_todos.filter(function(c){return c.estado==='Generada'||c.estado==='Pago parcial';}).length;
     var pag=_todos.filter(function(c){return c.estado==='Pagada';}).length;
     var suma=_todos.filter(function(c){return c.estado==='Pagada';}).reduce(function(s,c){return s+Number(c.total||0);},0);
@@ -521,9 +565,11 @@ function filtrar(){
   var q=(document.getElementById('bus').value||'').toLowerCase();
   var fe=document.getElementById('f-e').value;
   var fs=document.getElementById('f-s').value;
+  var fp=document.getElementById('f-p').value;
   var lista=_todos.filter(function(c){
     return (!q||(c.id||'').toLowerCase().includes(q)||(c.cliente||'').toLowerCase().includes(q))
-      &&(!fe||c.estado===fe)&&(!fs||c.socio===fs);
+      &&(!fe||c.estado===fe)&&(!fs||c.socio===fs)
+      &&_enPeriodo(c.fechaEstado||c.fecha, fp);
   });
   var tb=document.getElementById('tb');
   if(!lista.length){tb.innerHTML='<tr><td colspan="6" class="empty">Sin resultados.</td></tr>';return;}
