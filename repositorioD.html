@@ -690,20 +690,27 @@ function enviarAFungiterra(id){
   toast('Enviando a Fungiterra...');
   
   // Parsear productos del texto
-  var items = [];
+  var productos = [];
   var prodTexto = c.productos || '';
   var partes = prodTexto.split('|').map(function(p){return p.trim();});
   for(var i=0;i<partes.length;i++){
     var p = partes[i];
     if(!p || p.indexOf('Total') === 0 || p.indexOf('Envío') === 0) continue;
-    var cantMatch = p.match(/^(\d+(?:\.\d+)?)x\s*/);
     var cantidad = 1;
     var desc = p;
     var subtotal = 0;
+    var precioUnit = 0;
     var montoMatch = p.match(/\$([0-9,.]+)$/);
-    if(montoMatch) { subtotal = parseFloat(montoMatch[1].replace(',','')); desc = p.replace(/\$[0-9,.]+$/,'').trim(); }
-    if(cantMatch) { cantidad = parseFloat(cantMatch[1]); desc = desc.replace(/^\d+(?:\.\d+)?x\s*/,'').trim(); }
-    items.push({desc:desc, cant:cantidad, subtotal:subtotal});
+    if(montoMatch){ subtotal = parseFloat(montoMatch[1].replace(',','')); desc = p.replace(/\$[0-9,.]+$/,'').trim(); }
+    var cantMatch = desc.match(/^(\d+(?:\.\d+)?)x\s*/);
+    if(cantMatch){ cantidad = parseFloat(cantMatch[1]); desc = desc.replace(/^\d+(?:\.\d+)?x\s*/,'').trim(); precioUnit = cantidad>0 ? subtotal/cantidad : subtotal; }
+    // Detectar área por nombre del producto
+    var area = 'sin_area';
+    var nd = desc.toLowerCase();
+    if(nd.indexOf('fb ')===0 || nd.indexOf('fungibol')>=0 || nd.indexOf('fb mod')>=0) area='fungibolsa';
+    else if(nd.indexOf('micelio')>=0 || nd.indexOf('mushbag')>=0 || nd.indexOf('cepa')>=0) area='laboratorio';
+    else if(nd.indexOf('deshidrat')>=0 || nd.indexOf('fresco')>=0 || nd.indexOf('fungisopa')>=0 || nd.indexOf('seta ')>=0) area='transformacion';
+    productos.push({nombre:desc, area:area, cantidad:cantidad, precio_unit:precioUnit, subtotal:subtotal});
   }
 
   var payload = {
@@ -715,7 +722,8 @@ function enviarAFungiterra(id){
     total: Number(c.total) || 0,
     tipo:  c.tipo  || 'Mixto',
     estado_actual: c.estado === 'Pagada' ? 'listo' : 'recibido',
-    notas_admin: c.notas || ''
+    notas_admin: c.notas || '',
+    productos: productos
   };
 
   fetch('https://fungiterra-api-production.up.railway.app/pedidos', {
