@@ -255,13 +255,13 @@ async function cargarPedidos(){
     const data = await res.json();
     if(data.error) throw new Error(data.error);
     _todos = data.pedidos.map(p => ({
-      id: p.token.substring(0,8).toUpperCase(),
+      id: p.id_repositorio || p.token.substring(0,8).toUpperCase(),
       token: p.token,
-      socio: '—',
+      socio: p.socio || '—',
       cliente: p.cliente_nombre || '—',
       fecha: p.creado_en ? new Date(p.creado_en).toLocaleDateString('es-MX') : '—',
-      tipo: '—',
-      total: 0,
+      tipo: p.tipo || '—',
+      total: p.total || 0,
       estado: mapEstado(p.estado_actual),
       areas: [],
       productos: []
