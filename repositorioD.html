@@ -152,6 +152,7 @@ td.gris{color:#6b7280;font-size:12px}
   <div style="display:flex;gap:8px;align-items:center">
     <button onclick="abrirReglas()" style="background:rgba(255,255,255,.15);border:1.5px solid rgba(255,255,255,.4);color:white;border-radius:7px;padding:6px 14px;cursor:pointer;font-size:12px;font-weight:600;font-family:var(--sans)">⚙️ Reglas</button>
     <a href="https://fungiterra-bot.github.io/fungiterra-sistema/cotizadorD.html" class="header-link">← Cotizador</a>
+    <a href="https://fungiterra-bot.github.io/fungiterra-sistema/Panel/admin_index.html" target="_blank" class="header-link" style="background:rgba(255,255,255,.2);font-weight:600">🍄 Panel Admin</a>
   </div>
 </header>
 
@@ -633,16 +634,19 @@ function mostrarDetalle(c){
 
   var btns='';
   if(est==='Generada'){
-    btns='<button class="btn btn-amarillo btn-sm" onclick="abrirAbono(\''+c.id+'\')">💵 Registrar abono</button>'+
+    btns='<button class="btn btn-fungiterra btn-sm" onclick="enviarAFungiterra(\''+c.id+'\')" style="background:#834b3e;color:white;border-color:#834b3e">🍄 Enviar a Fungiterra</button>'+
+         '<button class="btn btn-amarillo btn-sm" onclick="abrirAbono(\''+c.id+'\')">💵 Registrar abono</button>'+
          '<button class="btn btn-v btn-sm" onclick="cambiarEstado(\''+c.id+'\',\'Pagada\')">✅ Pagada completa</button>'+
          '<button class="btn btn-a btn-sm" onclick="editarCotizacion(\''+c.id+'\')">✏️ Editar</button>'+
          '<button class="btn btn-sm btn-r" onclick="cambiarEstado(\''+c.id+'\',\'Cancelada\')">Cancelar</button>';
   } else if(est==='Pago parcial'){
-    btns='<button class="btn btn-amarillo btn-sm" onclick="abrirAbono(\''+c.id+'\')">💵 Agregar abono</button>'+
+    btns='<button class="btn btn-fungiterra btn-sm" onclick="enviarAFungiterra(\''+c.id+'\')" style="background:#834b3e;color:white;border-color:#834b3e">🍄 Enviar a Fungiterra</button>'+
+         '<button class="btn btn-amarillo btn-sm" onclick="abrirAbono(\''+c.id+'\')">💵 Agregar abono</button>'+
          '<button class="btn btn-v btn-sm" onclick="cambiarEstado(\''+c.id+'\',\'Pagada\')">✅ Marcar pagada completa</button>'+
          '<button class="btn btn-sm btn-r" onclick="abrirCpago(\''+c.id+'\')">↩️ Cancelar pagos</button>';
   } else if(est==='Pagada'){
-    btns='<button class="btn btn-a btn-sm" onclick="facturar(\''+c.id+'\')">🧾 Facturar</button>'+
+    btns='<button class="btn btn-fungiterra btn-sm" onclick="enviarAFungiterra(\''+c.id+'\')" style="background:#834b3e;color:white;border-color:#834b3e">🍄 Enviar a Fungiterra</button>'+
+         '<button class="btn btn-a btn-sm" onclick="facturar(\''+c.id+'\')">🧾 Facturar</button>'+
          '<button class="btn btn-sm btn-r" onclick="abrirCpago(\''+c.id+'\')">↩️ Cancelar pago</button>';
   } else if(est==='Cancelada'){
     btns='<button class="btn btn-sm" onclick="cambiarEstado(\''+c.id+'\',\'Generada\')">↺ Reactivar</button>';
@@ -676,6 +680,59 @@ function mostrarDetalle(c){
     abonosHTML+
     (notasTexto?'<hr class="sep"><div class="ct">Notas</div><div style="font-size:12px;color:#374151">'+notasTexto+'</div>':'')+
     '<div class="acciones">'+btns+'</div>';
+}
+
+
+function enviarAFungiterra(id){
+  var c=_todos.find(function(x){return x.id===id;});
+  if(!c)return;
+  if(!confirm('¿Enviar '+id+' a Fungiterra?'))return;
+  toast('Enviando a Fungiterra...');
+  
+  // Parsear productos del texto
+  var items = [];
+  var prodTexto = c.productos || '';
+  var partes = prodTexto.split('|').map(function(p){return p.trim();});
+  for(var i=0;i<partes.length;i++){
+    var p = partes[i];
+    if(!p || p.indexOf('Total') === 0 || p.indexOf('Envío') === 0) continue;
+    var cantMatch = p.match(/^(\d+(?:\.\d+)?)x\s*/);
+    var cantidad = 1;
+    var desc = p;
+    var subtotal = 0;
+    var montoMatch = p.match(/\$([0-9,.]+)$/);
+    if(montoMatch) { subtotal = parseFloat(montoMatch[1].replace(',','')); desc = p.replace(/\$[0-9,.]+$/,'').trim(); }
+    if(cantMatch) { cantidad = parseFloat(cantMatch[1]); desc = desc.replace(/^\d+(?:\.\d+)?x\s*/,'').trim(); }
+    items.push({desc:desc, cant:cantidad, subtotal:subtotal});
+  }
+
+  var payload = {
+    cliente_nombre: c.cliente || '—',
+    cliente_email:  c.correo  || (c.id+'@fungiterra.mx'),
+    cliente_telefono: c.telefono || '',
+    id_repositorio: c.id,
+    socio: c.socio || '',
+    total: Number(c.total) || 0,
+    tipo:  c.tipo  || 'Mixto',
+    estado_actual: c.estado === 'Pagada' ? 'listo' : 'recibido',
+    notas_admin: c.notas || ''
+  };
+
+  fetch('https://fungiterra-api-production.up.railway.app/pedidos', {
+    method:'POST',
+    headers:{'Content-Type':'application/json'},
+    body: JSON.stringify(payload)
+  })
+  .then(function(r){return r.json();})
+  .then(function(data){
+    if(data.token){
+      toast('✅ '+id+' enviado a Fungiterra');
+    } else {
+      toast('⚠️ '+(data.error||'Error al enviar'),false);
+    }
+  }).catch(function(e){
+    toast('⚠️ Sin conexión con Fungiterra',false);
+  });
 }
 
 function cerrar(){
