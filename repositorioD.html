@@ -686,7 +686,7 @@ function mostrarDetalle(c){
 function enviarAFungiterra(id){
   var c=_todos.find(function(x){return x.id===id;});
   if(!c)return;
-  if(!confirm('¿Enviar '+id+' a Fungiterra?'))return;
+  if(!confirm('¿Enviar '+id+' a Fungiterra?\n\nNota: si ya fue enviado antes se creará un duplicado.'))return;
   toast('Enviando a Fungiterra...');
   
   // Parsear productos del texto
@@ -721,7 +721,7 @@ function enviarAFungiterra(id){
     socio: c.socio || '',
     total: Number(c.total) || 0,
     tipo:  c.tipo  || 'Mixto',
-    estado_actual: c.estado === 'Pagada' ? 'listo' : 'recibido',
+    estado_actual: 'recibido',
     notas_admin: c.notas || '',
     productos: productos
   };
