@@ -296,9 +296,20 @@ function filtrar(){
   if(!f.length){tbody.innerHTML=`<tr><td colspan="7"><div class="empty-state"><div class="empty-icon">📭</div><div class="empty-text">Sin pedidos</div></div></td></tr>`;return}
   tbody.innerHTML=f.map(p=>`<tr onclick="abrirDetalle('${p.id}')"><td><span class="td-id">${p.id}</span></td><td><span class="td-socio">${p.socio||'—'}</span></td><td><span class="td-cliente">${p.cliente||'—'}</span></td><td><span class="td-fecha">${p.fecha||'—'}</span></td><td><div class="areas-pills">${(p.areas||[]).map(a=>`<span class="area-pill ${AREA_MAP[a]?.cls}">${AREA_MAP[a]?.label}</span>`).join('')}</div></td><td><span class="td-monto">${fmx(p.total)}</span></td><td>${badge(p.estado)}</td></tr>`).join('');
 }
-function abrirDetalle(id){
+async function abrirDetalle(id){
   const p=_todos.find(x=>x.id===id);if(!p)return;
   document.getElementById('d-id').textContent=p.id;
+  document.getElementById('detail-overlay').classList.add('open');
+  document.getElementById('detail-body').innerHTML='<div class="spinner"></div>';
+
+  // Jalar productos del API
+  let productos = [];
+  try {
+    const r = await fetch(`${API}/pedidos/${p.token}/productos`);
+    const data = await r.json();
+    productos = data.productos || [];
+  } catch(e) { console.error(e); }
+
   document.getElementById('detail-body').innerHTML=`
     <div class="d-section"><div class="d-section-title">Resumen</div>
       <div class="d-row"><span class="d-label">Cliente</span><span class="d-val">${p.cliente||'—'}</span></div>
@@ -310,7 +321,7 @@ function abrirDetalle(id){
       <div style="margin-bottom:10px">${badge(p.estado)}</div>
       <div class="status-btns">${ESTADOS.map(e=>`<button class="status-btn${p.estado===e?' active':''}" onclick="cambiarEstado('${p.id}','${e}')">${e}</button>`).join('')}</div></div>
     <div class="d-section"><div class="d-section-title">Áreas de producción</div>
-      ${(p.areas||[]).map(a=>`<div class="area-block ${AREA_MAP[a]?.blk}"><div class="area-block-top"><span class="area-block-name">${AREA_MAP[a]?.label}</span><span class="badge b-produccion" style="font-size:10px">En proceso</span></div><div class="area-block-items">${(p.productos||[]).filter(pr=>coincideArea(pr,a)).join('<br>')||'Sin productos asignados'}</div></div>`).join('')}</div>
+      ${renderAreas(productos)}</div>
     <div class="d-section"><div class="d-section-title">Empaquetado</div>
       <div class="pack-btns">
         <button class="pack-btn" onclick="toast('🔧 Próximamente')">📦 Asignar a área</button>
