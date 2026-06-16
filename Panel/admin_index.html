@@ -178,6 +178,29 @@ tbody tr:hover{background:#f5f9f6}
 
 .toast{position:fixed;bottom:24px;right:24px;background:var(--text);color:#fff;border-radius:8px;padding:10px 16px;font-size:13px;font-weight:500;z-index:200;opacity:0;transform:translateY(6px);transition:all .2s;pointer-events:none;box-shadow:0 4px 16px rgba(0,0,0,.2)}
 .toast.show{opacity:1;transform:translateY(0)}
+
+/* PRIORIDAD */
+.prioridad-btn{display:inline-flex;align-items:center;gap:4px;padding:3px 8px;border-radius:12px;font-size:11px;font-weight:700;border:1.5px solid;cursor:pointer;background:white;font-family:var(--sans);transition:all .15s;white-space:nowrap}
+.prioridad-btn:hover{opacity:.8}
+.p-urgente{color:#c0392b;border-color:#e74c3c;background:#fff0ee}
+.p-normal{color:#7a96ad;border-color:#c0cdd6;background:var(--surface2)}
+.p-sinprisa{color:#1f7a3b;border-color:#a8d8b8;background:#f0fbf4}
+
+/* SEMÁFORO DE FILAS */
+tbody tr.row-urgente td{background:rgba(231,76,60,.05)}
+tbody tr.row-urgente:hover td{background:rgba(231,76,60,.1)}
+tbody tr.row-produccion td{background:rgba(1,119,191,.04)}
+tbody tr.row-produccion:hover td{background:rgba(1,119,191,.09)}
+tbody tr.row-listo td{background:rgba(40,151,75,.05)}
+tbody tr.row-listo:hover td{background:rgba(40,151,75,.1)}
+tbody tr.row-entregado td{background:rgba(40,151,75,.03)}
+tbody tr.row-sinprisa td{background:rgba(40,151,75,.03)}
+
+/* ORDENAMIENTO */
+th.sortable{cursor:pointer;user-select:none;white-space:nowrap}
+th.sortable:hover{color:var(--azul)}
+th.sort-asc::after{content:" ▲";font-size:9px;opacity:.7}
+th.sort-desc::after{content:" ▼";font-size:9px;opacity:.7}
 </style>
 </head>
 <body>
@@ -243,6 +266,12 @@ tbody tr:hover{background:#f5f9f6}
           <option value="laboratorio">Laboratorio</option>
           <option value="transformacion">Transformación</option>
         </select>
+        <select class="filter-select" id="f-prioridad" onchange="filtrar()">
+          <option value="">Todas las prioridades</option>
+          <option value="urgente">🔴 Urgente</option>
+          <option value="normal">⚪ Normal</option>
+          <option value="sinprisa">🟢 Sin prisa</option>
+        </select>
       </div>
       <div class="table-wrap">
         <div class="table-header">
@@ -250,7 +279,7 @@ tbody tr:hover{background:#f5f9f6}
           <span class="table-count" id="table-count"></span>
         </div>
         <table>
-          <thead><tr><th>ID</th><th>Socio</th><th>Cliente</th><th>Fecha</th><th>Áreas</th><th>Total</th><th>Estado</th></tr></thead>
+          <thead><tr><th class="sortable" onclick="sortBy('id')">ID</th><th>Socio</th><th class="sortable" onclick="sortBy('cliente')">Cliente</th><th class="sortable" onclick="sortBy('fecha')">Fecha</th><th>Áreas</th><th class="sortable" onclick="sortBy('total')">Total</th><th class="sortable" onclick="sortBy('estado')">Estado</th><th class="sortable" onclick="sortBy('prioridad')">Prioridad</th></tr></thead>
           <tbody id="tabla-body"><tr><td colspan="7"><div class="spinner"></div></td></tr></tbody>
         </table>
       </div>
@@ -288,6 +317,36 @@ const AREA_MAP={fungibolsa:{label:"FungiBolsa",cls:"area-fb",blk:""},laboratorio
 const ESTADOS=["Recibido","En producción","Listo","Empaquetado","Enviado","Entregado"];
 const SEM_CLS={"Recibido":"s-recibido","En producción":"s-produccion","Listo":"s-listo","Empaquetado":"s-empaquetado","Enviado":"s-enviado","Entregado":"s-entregado"};
 const SEM_ICON={"Recibido":"🟡","En producción":"🔵","Listo":"🟢","Empaquetado":"📦","Enviado":"🚚","Entregado":"✅"};
+
+// PRIORIDAD
+const PRIORIDAD_KEY="ft_prioridad_v1";
+const PRIORIDAD_OPTS=[
+  {val:"urgente",label:"🔴 Urgente",cls:"p-urgente"},
+  {val:"normal",label:"⚪ Normal",cls:"p-normal"},
+  {val:"sinprisa",label:"🟢 Sin prisa",cls:"p-sinprisa"}
+];
+function getPrioridades(){try{return JSON.parse(localStorage.getItem(PRIORIDAD_KEY)||"{}");}catch(e){return {};}}
+function setPrioridad(id,val){const p=getPrioridades();p[id]=val;localStorage.setItem(PRIORIDAD_KEY,JSON.stringify(p));}
+function getPrioridadVal(id){return getPrioridades()[id]||"normal";}
+function cicloPrioridad(id,e){e.stopPropagation();const vals=["urgente","normal","sinprisa"];const cur=getPrioridadVal(id);const next=vals[(vals.indexOf(cur)+1)%vals.length];setPrioridad(id,next);filtrar();}
+function prioridadBadge(id){const val=getPrioridadVal(id);const o=PRIORIDAD_OPTS.find(x=>x.val===val)||PRIORIDAD_OPTS[1];return "<button class=\"prioridad-btn "+o.cls+"\" onclick=\"cicloPrioridad('"+id+"',event)\">"+o.label+"</button>";}
+function prioridadOrder(val){return val==="urgente"?0:val==="normal"?1:2;}
+
+// ORDENAMIENTO
+let _sortCol="";
+let _sortDir=1;
+function sortBy(col){if(_sortCol===col){_sortDir*=-1;}else{_sortCol=col;_sortDir=1;}document.querySelectorAll("th.sortable").forEach(th=>{th.classList.remove("sort-asc","sort-desc");});const th=document.querySelector("th.sortable[onclick=\"sortBy('"+col+"')\"]");if(th)th.classList.add(_sortDir===1?"sort-asc":"sort-desc");filtrar();}
+
+// CLASE DE FILA SEMÁFORO
+function rowClass(p){
+  const prio=getPrioridadVal(p.id);
+  if(prio==="urgente")return "row-urgente";
+  if(prio==="sinprisa")return "row-sinprisa";
+  if(p.estado==="En producción")return "row-produccion";
+  if(p.estado==="Listo"||p.estado==="Empaquetado")return "row-listo";
+  if(p.estado==="Entregado")return "row-entregado";
+  return "";
+}
 
 function badge(e){
   const m={"Recibido":"b-recibido","En producción":"b-produccion","Listo":"b-listo","Empaquetado":"b-empaquetado","Enviado":"b-enviado","Entregado":"b-entregado","Cancelado":"b-cancelado"};
@@ -363,17 +422,37 @@ function filtrar(){
   const est=document.getElementById("f-estado").value;
   const soc=document.getElementById("f-socio").value;
   const area=document.getElementById("f-area").value;
-  const f=_todos.filter(p=>{
+  const prio=document.getElementById("f-prioridad").value;
+  let f=_todos.filter(p=>{
     const mb=!bus||p.id.toLowerCase().includes(bus)||(p.cliente||"").toLowerCase().includes(bus)||(p.tipo||"").toLowerCase().includes(bus);
     const me=!est||p.estado===est;
     const ms=!soc||p.socio===soc;
     const ma=!area||(p.areas||[]).includes(area);
-    return mb&&me&&ms&&ma;
+    const mp=!prio||getPrioridadVal(p.id)===prio;
+    return mb&&me&&ms&&ma&&mp;
   });
+
+  // Ordenamiento
+  if(_sortCol){
+    f.sort((a,b)=>{
+      let va,vb;
+      if(_sortCol==="prioridad"){va=prioridadOrder(getPrioridadVal(a.id));vb=prioridadOrder(getPrioridadVal(b.id));}
+      else if(_sortCol==="total"){va=Number(a.total||0);vb=Number(b.total||0);}
+      else if(_sortCol==="estado"){const ord={"Recibido":0,"En producción":1,"Listo":2,"Empaquetado":3,"Enviado":4,"Entregado":5};va=ord[a.estado]||0;vb=ord[b.estado]||0;}
+      else{va=(a[_sortCol]||"").toString().toLowerCase();vb=(b[_sortCol]||"").toString().toLowerCase();}
+      if(va<vb)return -1*_sortDir;
+      if(va>vb)return 1*_sortDir;
+      return 0;
+    });
+  } else {
+    // Default: urgentes primero
+    f.sort((a,b)=>prioridadOrder(getPrioridadVal(a.id))-prioridadOrder(getPrioridadVal(b.id)));
+  }
+
   document.getElementById("table-count").textContent=f.length+" de "+_todos.length;
   const tbody=document.getElementById("tabla-body");
-  if(!f.length){tbody.innerHTML="<tr><td colspan=\"7\"><div class=\"empty-state\"><div class=\"empty-icon\">📭</div><div class=\"empty-text\">Sin pedidos</div></div></td></tr>";return;}
-  tbody.innerHTML=f.map(p=>"<tr onclick=\"abrirDetalle('"+p.id+"')\"><td><span class=\"td-id\">"+p.id+"</span></td><td><span class=\"td-socio\">"+p.socio+"</span></td><td><span class=\"td-cliente\">"+p.cliente+"</span></td><td><span class=\"td-fecha\">"+p.fecha+"</span></td><td><div class=\"areas-pills\">"+(p.areas||[]).map(a=>"<span class=\"area-pill "+(AREA_MAP[a]?.cls||"")+"\">"+( AREA_MAP[a]?.label||a)+"</span>").join("")+"</div></td><td><span class=\"td-monto\">"+fmx(p.total)+"</span></td><td>"+badge(p.estado)+"</td></tr>").join("");
+  if(!f.length){tbody.innerHTML="<tr><td colspan=\"8\"><div class=\"empty-state\"><div class=\"empty-icon\">📭</div><div class=\"empty-text\">Sin pedidos</div></div></td></tr>";return;}
+  tbody.innerHTML=f.map(p=>"<tr class=\""+rowClass(p)+"\" onclick=\"abrirDetalle('"+p.id+"')\"><td><span class=\"td-id\">"+p.id+"</span></td><td><span class=\"td-socio\">"+p.socio+"</span></td><td><span class=\"td-cliente\">"+p.cliente+"</span></td><td><span class=\"td-fecha\">"+p.fecha+"</span></td><td><div class=\"areas-pills\">"+(p.areas||[]).map(a=>"<span class=\"area-pill "+(AREA_MAP[a]?.cls||"")+"\">"+( AREA_MAP[a]?.label||a)+"</span>").join("")+"</div></td><td><span class=\"td-monto\">"+fmx(p.total)+"</span></td><td>"+badge(p.estado)+"</td><td>"+prioridadBadge(p.id)+"</td></tr>").join("");
 }
 
 // ── DETALLE ───────────────────────────────
