@@ -186,15 +186,33 @@ tbody tr:hover{background:#f5f9f6}
 .p-normal{color:#7a96ad;border-color:#c0cdd6;background:var(--surface2)}
 .p-sinprisa{color:#1f7a3b;border-color:#a8d8b8;background:#f0fbf4}
 
-/* SEMÁFORO DE FILAS */
-tbody tr.row-urgente td{background:rgba(231,76,60,.05)}
-tbody tr.row-urgente:hover td{background:rgba(231,76,60,.1)}
-tbody tr.row-produccion td{background:rgba(1,119,191,.04)}
-tbody tr.row-produccion:hover td{background:rgba(1,119,191,.09)}
-tbody tr.row-listo td{background:rgba(40,151,75,.05)}
-tbody tr.row-listo:hover td{background:rgba(40,151,75,.1)}
-tbody tr.row-entregado td{background:rgba(40,151,75,.03)}
-tbody tr.row-sinprisa td{background:rgba(40,151,75,.03)}
+/* SEMÁFORO DE FILAS — un color por estado */
+tbody tr.row-urgente    td{background:rgba(192,57,43,.08);border-bottom-color:rgba(192,57,43,.15)}
+tbody tr.row-urgente:hover td{background:rgba(192,57,43,.14)}
+
+tbody tr.row-recibido   td{background:rgba(130,160,180,.07)}
+tbody tr.row-recibido:hover td{background:rgba(130,160,180,.13)}
+
+tbody tr.row-produccion td{background:rgba(1,119,191,.07)}
+tbody tr.row-produccion:hover td{background:rgba(1,119,191,.13)}
+
+tbody tr.row-listo      td{background:rgba(39,174,96,.08)}
+tbody tr.row-listo:hover td{background:rgba(39,174,96,.14)}
+
+tbody tr.row-empaquetado td{background:rgba(131,75,62,.07)}
+tbody tr.row-empaquetado:hover td{background:rgba(131,75,62,.13)}
+
+tbody tr.row-enviado    td{background:rgba(41,128,185,.06)}
+tbody tr.row-enviado:hover td{background:rgba(41,128,185,.12)}
+
+tbody tr.row-entregado  td{background:rgba(39,174,96,.05)}
+tbody tr.row-entregado:hover td{background:rgba(39,174,96,.09)}
+
+tbody tr.row-cancelado  td{background:rgba(100,100,100,.06)}
+tbody tr.row-cancelado:hover td{background:rgba(100,100,100,.11)}
+
+tbody tr.row-sinprisa   td{background:transparent}
+tbody tr.row-sinprisa:hover td{background:#f5f9f6}
 
 /* ORDENAMIENTO */
 th.sortable{cursor:pointer;user-select:none;white-space:nowrap}
@@ -276,7 +294,15 @@ th.sort-desc::after{content:" ▼";font-size:9px;opacity:.7}
       <div class="table-wrap">
         <div class="table-header">
           <span class="table-header-title">Lista de pedidos</span>
-          <span class="table-count" id="table-count"></span>
+          <span style="display:flex;align-items:center;gap:12px">
+            <span style="display:flex;gap:6px;align-items:center;font-size:10px;color:rgba(255,255,255,.7)">
+              <span style="display:inline-block;width:10px;height:10px;border-radius:2px;background:rgba(1,119,191,.35)"></span>Producción
+              <span style="display:inline-block;width:10px;height:10px;border-radius:2px;background:rgba(39,174,96,.35)"></span>Listo
+              <span style="display:inline-block;width:10px;height:10px;border-radius:2px;background:rgba(131,75,62,.35)"></span>Empaquetado
+              <span style="display:inline-block;width:10px;height:10px;border-radius:2px;background:rgba(192,57,43,.35)"></span>Urgente
+            </span>
+            <span class="table-count" id="table-count"></span>
+          </span>
         </div>
         <table>
           <thead><tr><th class="sortable" onclick="sortBy('id')">ID</th><th>Socio</th><th class="sortable" onclick="sortBy('cliente')">Cliente</th><th class="sortable" onclick="sortBy('fecha')">Fecha</th><th>Áreas</th><th class="sortable" onclick="sortBy('total')">Total</th><th class="sortable" onclick="sortBy('estado')">Estado</th><th class="sortable" onclick="sortBy('prioridad')">Prioridad</th></tr></thead>
@@ -340,12 +366,19 @@ function sortBy(col){if(_sortCol===col){_sortDir*=-1;}else{_sortCol=col;_sortDir
 // CLASE DE FILA SEMÁFORO
 function rowClass(p){
   const prio=getPrioridadVal(p.id);
-  if(prio==="urgente")return "row-urgente";
-  if(prio==="sinprisa")return "row-sinprisa";
-  if(p.estado==="En producción")return "row-produccion";
-  if(p.estado==="Listo"||p.estado==="Empaquetado")return "row-listo";
-  if(p.estado==="Entregado")return "row-entregado";
-  return "";
+  if(prio==="urgente") return "row-urgente";
+  if(prio==="sinprisa") return "row-sinprisa";
+  // Semáforo por estado
+  switch(p.estado){
+    case "Recibido":      return "row-recibido";
+    case "En producción": return "row-produccion";
+    case "Listo":         return "row-listo";
+    case "Empaquetado":   return "row-empaquetado";
+    case "Enviado":       return "row-enviado";
+    case "Entregado":     return "row-entregado";
+    case "Cancelado":     return "row-cancelado";
+    default:              return "";
+  }
 }
 
 function badge(e){
@@ -365,7 +398,7 @@ function estadoApi(e){
 
 // ── CARGAR ────────────────────────────────
 async function cargarPedidos(){
-  document.getElementById("tabla-body").innerHTML="<tr><td colspan=\"7\"><div class=\"spinner\"></div></td></tr>";
+  document.getElementById("tabla-body").innerHTML="<tr><td colspan=\"8\"><div class=\"spinner\"></div></td></tr>";
   try{
     const r=await fetch(API+"/pedidos");
     const data=await r.json();
@@ -381,14 +414,40 @@ async function cargarPedidos(){
       areas:[],
       productos:[]
     }));
-    document.getElementById("s-total").textContent=_todos.length;
-    document.getElementById("s-prod").textContent=_todos.filter(p=>["Recibido","En producción","Listo","Empaquetado"].includes(p.estado)).length;
-    document.getElementById("s-ent").textContent=_todos.filter(p=>p.estado==="Entregado").length;
-    document.getElementById("s-cobrado").textContent=fmx(_todos.reduce((s,p)=>s+Number(p.total||0),0));
+    actualizarStats();
     filtrar();
     document.getElementById("topbar-sub").textContent=_todos.length+" pedidos — actualizado ahora";
+    // Precargar áreas en paralelo (sin bloquear la tabla)
+    precargarAreas();
   }catch(e){
-    document.getElementById("tabla-body").innerHTML="<tr><td colspan=\"7\"><div class=\"empty-state\"><div class=\"empty-icon\">⚠️</div><div class=\"empty-text\">Error conectando con la API</div></div></td></tr>";
+    document.getElementById("tabla-body").innerHTML="<tr><td colspan=\"8\"><div class=\"empty-state\"><div class=\"empty-icon\">⚠️</div><div class=\"empty-text\">Error conectando con la API</div></div></td></tr>";
+  }
+}
+
+function actualizarStats(){
+  document.getElementById("s-total").textContent=_todos.length;
+  document.getElementById("s-prod").textContent=_todos.filter(p=>["Recibido","En producción","Listo","Empaquetado"].includes(p.estado)).length;
+  document.getElementById("s-ent").textContent=_todos.filter(p=>p.estado==="Entregado").length;
+  document.getElementById("s-cobrado").textContent=fmx(_todos.reduce((s,p)=>s+Number(p.total||0),0));
+}
+
+async function precargarAreas(){
+  // Cargar en lotes de 5 para no saturar la API
+  const LOTE=5;
+  for(let i=0;i<_todos.length;i+=LOTE){
+    const lote=_todos.slice(i,i+LOTE);
+    await Promise.all(lote.map(async p=>{
+      if(p.areas.length>0)return; // ya tiene áreas
+      try{
+        const rp=await fetch(API+"/pedidos/"+p.token+"/productos");
+        const dp=await rp.json();
+        const prods=dp.productos||[];
+        const areas=[...new Set(prods.map(pr=>pr.area).filter(a=>a&&a!=="sin_area"))];
+        p.areas=areas;
+        p.productos=prods;
+      }catch(e){}
+    }));
+    filtrar(); // re-renderizar la tabla con áreas ya cargadas
   }
 }
 
