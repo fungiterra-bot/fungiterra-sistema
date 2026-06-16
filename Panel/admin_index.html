@@ -322,8 +322,37 @@ function abrirDetalle(id){
         <button class="btn btn-primary btn-sm" onclick="toast('🔗 Generando link...')">🔗 Link para cliente</button>
         <button class="btn btn-cafe btn-sm" onclick="toast('🔧 Próximamente')">📄 Factura</button>
       </div></div>`;
-  document.getElementById('detail-overlay').classList.add('open');
 }
+
+function renderAreas(productos) {
+  if(!productos || !productos.length) return '<span style="color:var(--text3);font-size:12px">Sin productos registrados</span>';
+  
+  const areas = {};
+  productos.forEach(p => {
+    if(p.nombre_producto && p.nombre_producto.match(/\d{4}-\d{2}-\d{2}/)) return; // filtrar fechas
+    const a = p.area || 'sin_area';
+    if(!areas[a]) areas[a] = [];
+    areas[a].push(p);
+  });
+
+  return Object.entries(areas).map(([area, prods]) => {
+    const info = AREA_MAP[area] || {label: area, cls:'', blk:''};
+    const items = prods.map(p => 
+      `<div style="display:flex;justify-content:space-between;padding:3px 0;border-bottom:1px solid var(--surface2)">
+        <span>${p.cantidad}x ${p.nombre_producto}</span>
+        <span style="color:var(--text3)">$${Number(p.subtotal||0).toLocaleString('es-MX',{minimumFractionDigits:2})}</span>
+      </div>`
+    ).join('');
+    return `<div class="area-block ${info.blk}">
+      <div class="area-block-top">
+        <span class="area-block-name">${info.label||area}</span>
+        <span class="badge b-produccion" style="font-size:10px">pendiente</span>
+      </div>
+      <div class="area-block-items">${items}</div>
+    </div>`;
+  }).join('');
+}
+
 function coincideArea(p,a){const n=p.toLowerCase();if(a==='fungibolsa')return n.includes('fb ')||n.includes('fungibol');if(a==='laboratorio')return n.includes('micelio')||n.includes('mushbag')||n.includes('cepa');if(a==='transformacion')return n.includes('deshidrat')||n.includes('fresco')||n.includes('seta ');return false}
 function cerrarDetalle(e){if(e&&e.target!==document.getElementById('detail-overlay'))return;document.getElementById('detail-overlay').classList.remove('open')}
 function cambiarEstado(id,estado){const p=_todos.find(x=>x.id===id);if(!p)return;p.estado=estado;filtrar();abrirDetalle(id);toast(`✓ ${id} → ${estado}`)}
