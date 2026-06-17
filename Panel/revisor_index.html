@@ -36,7 +36,7 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);min-height:1
 
 /* MAIN */
 .main{flex:1;display:flex;flex-direction:column;min-width:0;overflow:hidden}
-.topbar{padding:15px 28px;background:var(--azul);display:flex;align-items:center;justify-content:space-between;box-shadow:0 2px 8px rgba(40,151,75,.2)}
+.topbar{padding:15px 28px;background:var(--verde);display:flex;align-items:center;justify-content:space-between;box-shadow:0 2px 8px rgba(40,151,75,.2)}
 .topbar-left h1{font-size:17px;font-weight:700;color:#fff}
 .topbar-left p{font-size:12px;color:rgba(255,255,255,.7);margin-top:1px}
 .btn{padding:7px 14px;border-radius:7px;font-size:12px;font-weight:600;font-family:var(--sans);cursor:pointer;border:none;transition:all .15s}
@@ -372,6 +372,7 @@ tbody tr.row-visto-recibido:hover td{animation:none;background:rgba(1,119,191,.0
   <div class="nav">
     <div class="nav-section">Gestión</div>
     <div class="nav-item active" id="nav-pedidos" onclick="setVista('pedidos')"><span class="nav-icon">📋</span> Pedidos</div>
+    <div class="nav-item" id="nav-productos" onclick="setVista('productos')"><span class="nav-icon">🧺</span> A preparar</div>
 
     <div class="nav-section" style="margin-top:6px">Producción</div>
     <div class="nav-item" onclick="window.open('../Panel/fungibolsa.html')"><span class="nav-icon">📦</span> FungiBolsa</div>
@@ -473,6 +474,11 @@ tbody tr.row-visto-recibido:hover td{animation:none;background:rgba(1,119,191,.0
     </div>
 
     <!-- VISTA PRODUCTOS A PREPARAR -->
+    <div class="vista" id="vista-productos">
+      <div id="productos-content"><div class="spinner"></div></div>
+    </div>
+
+    <!-- VISTA PRODUCTOS (solo lectura) -->
     <div class="vista" id="vista-productos">
       <div id="productos-content"><div class="spinner"></div></div>
     </div>
@@ -833,10 +839,8 @@ function renderProductos(todos){
         "<div><div class=\"prod-nombre\">"+p.nombre+"</div><div class=\"prod-pedido\">"+p.pedido_id+" · "+p.cliente+"</div></div>"+
         "<span class=\"prod-cant\">×"+p.cantidad+"</span>"+
         badge(mapEstado(p.pedido_estado))+
-        (esSinArea
-          ?"<button class=\"btn-asignar\" data-nombre=\""+p.nombre.replace(/"/g,'&quot;')+"\" data-id=\""+p.id+"\" onclick=\"abrirModalAreaBtn(this)\" style=\"color:#f59e0b;border-color:#f59e0b\">⚡ Asignar</button>"
-          :"<button class=\"btn-asignar\" data-nombre=\""+p.nombre.replace(/"/g,'&quot;')+"\" data-id=\""+p.id+"\" onclick=\"abrirModalAreaBtn(this)\">✏️</button>"
-        )+
+        +(esSinArea?"<span style=\"font-size:11px;color:#f59e0b;font-weight:600\">⚠️ Sin área</span>":"")+
+        
         "</div>";
     });
     html+="</div></div>";
@@ -1181,7 +1185,9 @@ function setVista(v){
   document.querySelectorAll(".nav-item").forEach(el=>el.classList.remove("active"));
   document.getElementById("vista-"+v).classList.add("active");
   document.getElementById("nav-"+v).classList.add("active");
-  document.getElementById("topbar-titulo").textContent="Pedidos";
+  const titulos={pedidos:"Pedidos",productos:"A preparar"};
+  document.getElementById("topbar-titulo").textContent=titulos[v]||v;
+  if(v==="productos") cargarProductos();
 }
 
 function recargar(){
