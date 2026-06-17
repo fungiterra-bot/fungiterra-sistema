@@ -1079,21 +1079,7 @@ function setVista(v){
 }
 
 function recargar(){
-  if(_vistaActual==="pedidos") // ── MENÚ MÓVIL ────────────────────────────────────────────────
-function toggleMenu(){
-  document.getElementById("sidebar").classList.toggle("abierto");
-  document.getElementById("sidebar-overlay").classList.toggle("activo");
-}
-function cerrarMenu(){
-  document.getElementById("sidebar").classList.remove("abierto");
-  document.getElementById("sidebar-overlay").classList.remove("activo");
-}
-// Cerrar menú al navegar en móvil
-document.querySelectorAll(".nav-item").forEach(el=>{
-  el.addEventListener("click",()=>{ if(window.innerWidth<=768) cerrarMenu(); });
-});
-
-cargarPedidos();
+  if(_vistaActual==="pedidos") cargarPedidos();
   else if(_vistaActual==="clientes") cargarClientes();
   else if(_vistaActual==="productos") cargarProductos();
 }
