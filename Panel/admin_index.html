@@ -792,31 +792,37 @@ function selArea(area, btn){
 async function confirmarArea(){
   if(!_modalProd||!_modalAreaSel) return;
   const aprender=document.getElementById("modal-aprender").checked;
+  const btn=document.getElementById("modal-confirmar");
+  btn.disabled=true;
+  btn.textContent="Guardando...";
   try{
-    // Actualizar área del producto en la DB
-    await fetch(API+"/productos/"+_modalProd.prodId+"/estado",{
+    // 1. Actualizar área del producto en la DB
+    const r=await fetch(API+"/productos/"+_modalProd.prodId+"/area",{
       method:"PATCH",
       headers:{"Content-Type":"application/json"},
-      body:JSON.stringify({estado:"pendiente"})
+      body:JSON.stringify({area:_modalAreaSel})
     });
-    // Actualizar área via endpoint directo en pedido_productos
-    // (usamos el endpoint de estado pero también necesitamos uno de área — lo manejamos via reglas)
+    if(!r.ok) throw new Error("Error al actualizar área");
+
+    // 2. Guardar regla de aprendizaje si está marcado
     if(aprender){
-      // Guardar regla permanente
       await fetch(API+"/producto-areas",{
         method:"POST",
         headers:{"Content-Type":"application/json"},
         body:JSON.stringify({producto:_modalProd.nombre,area:_modalAreaSel})
       });
       _reglas[_modalProd.nombre.toLowerCase()]=_modalAreaSel;
-      toast("✅ Guardado: "+_modalProd.nombre+" → "+AREAS_CONFIG[_modalAreaSel]?.label);
+      toast("✅ "+_modalProd.nombre+" → "+( AREAS_CONFIG[_modalAreaSel]?.label||_modalAreaSel)+" (aprendido)");
     } else {
-      toast("✅ Asignado temporalmente");
+      toast("✅ Área asignada: "+_modalProd.nombre);
     }
     cerrarModalArea();
-    cargarProductos(); // recargar
+    cargarProductos();
   }catch(e){
-    toast("❌ Error al guardar");
+    toast("❌ Error: "+e.message);
+  } finally {
+    btn.disabled=false;
+    btn.textContent="Confirmar";
   }
 }
 
