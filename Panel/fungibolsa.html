@@ -201,7 +201,7 @@ function renderGrid(){
   }).join("");
 }
 
-function tog(i){const p=_pedidos[i];if(p)marcarVisto(p.token);document.getElementById("b"+i).classList.toggle("open");renderGrid();}
+function tog(i){const p=_pedidos[i];if(p)marcarVisto(p.token);document.getElementById("b"+i).classList.toggle("open");}
 
 async function est(i,estado){
   const p=_pedidos[i];if(!p)return;
