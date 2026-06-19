@@ -156,6 +156,24 @@ function descartarNotif(){
   renderGrid();
 }
 
+// POLLING — verificar nuevos pedidos cada 30 seg
+let _pollingTimer=null;
+function iniciarPolling(){
+  if(_pollingTimer) clearInterval(_pollingTimer);
+  _pollingTimer=setInterval(async()=>{
+    try{
+      const r=await fetch(API+"/area/"+AREA);
+      const data=await r.json();
+      const pedidos=data.pedidos||[];
+      const nuevosCount=pedidos.filter(p=>esNuevo(p)).length;
+      if(nuevosCount>0){
+        document.title="("+nuevosCount+") FungiBolsa — Fungiterra";
+        document.getElementById("topbar-sub").textContent="🔔 "+nuevosCount+" pedido"+(nuevosCount>1?"s nuevos":" nuevo")+" — clic en Actualizar";
+      }
+    }catch(e){}
+  },30000);
+}
+
 async function cargar(){
   document.getElementById("grid").innerHTML="<div class=\"spinner\"></div>";
   try{
@@ -169,6 +187,7 @@ async function cargar(){
     document.getElementById("topbar-sub").textContent=_pedidos.length+" pedidos activos";
     verificarNuevos();
     registrarVisita();
+    iniciarPolling();
   }catch(e){
     document.getElementById("grid").innerHTML="<div class=\"empty-state\"><div class=\"empty-icon\">⚠️</div><div>Error conectando</div></div>";
   }

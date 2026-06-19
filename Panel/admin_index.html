@@ -354,9 +354,11 @@ th.sort-desc::after{content:" ▼";font-size:9px;opacity:.7}
     <div class="nav-item" id="nav-clientes" onclick="setVista('clientes')"><span class="nav-icon">👤</span> Clientes</div>
     <div class="nav-item" id="nav-productos" onclick="setVista('productos')"><span class="nav-icon">🧺</span> A preparar</div>
     <div class="nav-section" style="margin-top:6px">Producción</div>
-    <div class="nav-item" onclick="window.open('../Panel/fungibolsa.html')"><span class="nav-icon">📦</span> FungiBolsa</div>
-    <div class="nav-item" onclick="toast('🔧 Próximamente')"><span class="nav-icon">🔬</span> Laboratorio</div>
-    <div class="nav-item" onclick="toast('🔧 Próximamente')"><span class="nav-icon">⚙️</span> Transformación</div>
+    <div class="nav-item" onclick="window.open('fungibolsa.html')"><span class="nav-icon">📦</span> FungiBolsa</div>
+    <div class="nav-item" onclick="window.open('laboratorio.html')"><span class="nav-icon">🔬</span> Laboratorio</div>
+    <div class="nav-item" onclick="window.open('transformacion.html')"><span class="nav-icon">⚙️</span> Transformación</div>
+    <div class="nav-item" onclick="window.open('insumos.html')"><span class="nav-icon">🧰</span> Insumos</div>
+    <div class="nav-item" onclick="window.open('piopis.html')"><span class="nav-icon">🍄</span> Piopis</div>
     <div class="nav-section" style="margin-top:6px">Sistema</div>
     <div class="nav-item" onclick="window.open('../repositorioD.html')"><span class="nav-icon">📊</span> Repositorio</div>
     <div class="nav-item" onclick="window.open('../cotizadorD.html')"><span class="nav-icon">💰</span> Cotizador</div>
@@ -544,6 +546,8 @@ function rowClass(p){
   const prio=getPrioridadVal(p.id);
   if(prio==="urgente") return "row-urgente";
   if(prio==="sinprisa") return "row-sinprisa";
+  // Listo para empacar — prioridad sobre estado
+  if(esListoEmpacar(p)) return "row-listo-empacar";
   // Semáforo por estado
   switch(p.estado){
     case "Recibido":      return "row-recibido";
@@ -573,6 +577,44 @@ function estadoApi(e){
 }
 
 // ── CARGAR ────────────────────────────────
+// ── SISTEMA ALERTAS ADMIN ────────────────────────────────────
+const ADMIN_VISTOS_KEY="ft_admin_vistos_v1";
+const ADMIN_ULTIMA_KEY="ft_admin_ultima";
+function getAdminVistos(){try{return JSON.parse(localStorage.getItem(ADMIN_VISTOS_KEY)||"[]")}catch(e){return[]}}
+function marcarAdminVisto(id){const v=getAdminVistos();if(!v.includes(id)){v.push(id);localStorage.setItem(ADMIN_VISTOS_KEY,JSON.stringify(v));}}
+function esAdminVisto(id){return getAdminVistos().includes(id);}
+function getAdminUltima(){const s=localStorage.getItem(ADMIN_ULTIMA_KEY);return s?new Date(s):new Date(0);}
+function registrarAdminVisita(){localStorage.setItem(ADMIN_ULTIMA_KEY,new Date().toISOString());}
+function esNuevoAdmin(p){
+  if(esAdminVisto(p.id)) return false;
+  return new Date(p.fechaRaw||0)>getAdminUltima();
+}
+function esListoEmpacar(p){
+  // Todos los productos están en listo
+  return p.productos&&p.productos.length>0&&p.productos.every(pr=>pr.estado==="listo");
+}
+
+// POLLING — verificar nuevos pedidos cada 30 seg
+let _pollingTimer=null;
+function iniciarPolling(){
+  if(_pollingTimer) clearInterval(_pollingTimer);
+  _pollingTimer=setInterval(async()=>{
+    try{
+      const r=await fetch(API+"/pedidos?limite=200");
+      const data=await r.json();
+      const nuevosCount=data.pedidos.filter(p=>{
+        const id=p.id_repositorio||p.token.substring(0,8).toUpperCase();
+        const fechaRaw=p.creado_en?new Date(p.creado_en).toISOString().slice(0,10):"";
+        return !esAdminVisto(id)&&new Date(fechaRaw||0)>getAdminUltima();
+      }).length;
+      if(nuevosCount>0){
+        document.title="("+nuevosCount+") Fungiterra — Panel Admin";
+        document.getElementById("topbar-sub").textContent="🔔 "+nuevosCount+" pedido"+(nuevosCount>1?"s nuevos":"  nuevo")+" — clic en Actualizar";
+      }
+    }catch(e){}
+  },30000);
+}
+
 async function cargarPedidos(){
   document.getElementById("tabla-body").innerHTML="<tr><td colspan=\"8\"><div class=\"spinner\"></div></td></tr>";
   try{
