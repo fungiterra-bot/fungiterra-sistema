@@ -338,6 +338,14 @@ th.sort-desc::after{content:" ▼";font-size:9px;opacity:.7}
   .stats-grid{grid-template-columns:repeat(2,1fr)}
   .stat-card{padding:12px}
 }
+
+/* ── PARPADEO LISTO PARA EMPACAR ─────────────────────────── */
+@keyframes pulso-listo{
+  0%,100%{background:rgba(39,174,96,.15);box-shadow:inset 0 0 0 3px rgba(39,174,96,.3)}
+  50%{background:rgba(39,174,96,.5);box-shadow:inset 0 0 0 3px rgba(39,174,96,.9)}
+}
+tbody tr.row-listo-empacar td{animation:pulso-listo 1.2s ease-in-out infinite !important}
+tbody tr.row-listo-empacar:hover td{animation:none !important;background:rgba(39,174,96,.4) !important}
 </style>
 </head>
 <body>
