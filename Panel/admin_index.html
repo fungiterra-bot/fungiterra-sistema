@@ -479,6 +479,10 @@ th.sort-desc::after{content:" ▼";font-size:9px;opacity:.7}
           <input type="date" class="filter-select" id="f-fecha-hasta" onchange="filtrar()" style="padding:7px 8px;font-size:12px">
         </div>
       </div>
+      <div class="prod-subtabs">
+        <div class="prod-subtab active" id="pst-activos" onclick="setSubTabPedidos('activos')">📋 Activos</div>
+        <div class="prod-subtab" id="pst-finalizados-ped" onclick="setSubTabPedidos('finalizados')">✅ Finalizados</div>
+      </div>
       <div class="table-wrap">
         <div class="table-header">
           <span class="table-header-title">Lista de pedidos</span>
@@ -629,6 +633,13 @@ function prioridadOrder(val){return val==="urgente"?0:val==="normal"?1:2;}
 let _sortCol="";
 let _sortDir=1;
 let _pagina=1;
+let _subTabPedidos="activos";
+function setSubTabPedidos(tab){
+  _subTabPedidos=tab;
+  document.getElementById("pst-activos").classList.toggle("active",tab==="activos");
+  document.getElementById("pst-finalizados-ped").classList.toggle("active",tab==="finalizados");
+  filtrar();
+}
 const POR_PAGINA=10;
 let _filtrados=[];
 function sortBy(col){if(_sortCol===col){_sortDir*=-1;}else{_sortCol=col;_sortDir=1;}document.querySelectorAll("th.sortable").forEach(th=>{th.classList.remove("sort-asc","sort-desc");});const th=document.querySelector("th.sortable[onclick=\"sortBy('"+col+"')\"]");if(th)th.classList.add(_sortDir===1?"sort-asc":"sort-desc");filtrar();}
@@ -725,6 +736,8 @@ function productoCompletado(pr){
   return pr.estado==="listo"||pr.estado==="en_stock";
 }
 function esListoEmpacar(p){
+  // Solo aplica si el PEDIDO sigue esperando empacarse (no si ya se empacó/envió/entregó)
+  if(!["Recibido","En producción"].includes(p.estado)) return false;
   return p.productos&&p.productos.length>0&&p.productos.every(productoCompletado);
 }
 
@@ -924,12 +937,13 @@ function renderProductosVista(){
   let lista=_todosLosProductos;
 
   if(_subTabProductos==="pendientes"){
-    // Productos cuyo pedido NO está entregado/cancelado, Y el producto mismo no está completado
+    // Productos cuyo pedido sigue activo (no entregado/cancelado) Y el producto mismo no está completado
     lista=lista.filter(p=>!["entregado","cancelado"].includes(p.pedido_estado) && !productoCompletado(p));
   }
   else if(_subTabProductos==="listos"){
-    // Producto completado (listo/en_stock), pero el pedido aún no se entregó
-    lista=lista.filter(p=>!["entregado","cancelado"].includes(p.pedido_estado) && productoCompletado(p));
+    // Producto completado, pero el PEDIDO sigue esperando ser empacado/enviado
+    // (recibido o en_produccion = aún no se ha movido a empaquetado/enviado/entregado)
+    lista=lista.filter(p=>["recibido","en_produccion"].includes(p.pedido_estado) && productoCompletado(p));
   }
   else if(_subTabProductos==="finalizado"){
     // Pedido ya entregado — aplica filtro de tiempo
@@ -1172,7 +1186,10 @@ function filtrar(){
       if(desde&&fd<desde)mf=false;
       if(hasta&&fd>hasta)mf=false;
     }
-    return mb&&me&&ms&&ma&&mp&&mf;
+    // Filtro Activos/Finalizados
+    const esFinalizado=["Entregado","Cancelado"].includes(p.estado);
+    const mt=_subTabPedidos==="finalizados"?esFinalizado:!esFinalizado;
+    return mb&&me&&ms&&ma&&mp&&mf&&mt;
   });
 
   // Ordenamiento
