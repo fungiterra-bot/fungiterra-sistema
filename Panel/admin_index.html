@@ -269,6 +269,13 @@ tbody tr.row-sinprisa:hover td{background:#f5f9f6}
 .area-progreso-count{font-weight:700;color:var(--text3);font-size:11px}
 .area-progreso.completo .area-progreso-count{color:#1f7a3b}
 
+/* DELEGACIÓN A REVISOR */
+.delegar-check{display:flex;align-items:center;gap:8px;font-size:12px;color:var(--text2);
+  margin-top:10px;padding:8px 10px;background:var(--surface2);border-radius:8px;cursor:pointer}
+.delegar-check input{cursor:pointer}
+.badge-delegado{display:inline-block;background:#8b5cf6;color:#fff;font-size:9px;font-weight:700;
+  padding:2px 6px;border-radius:10px;margin-left:4px;vertical-align:middle}
+
 /* SELECTOR DE ESTADO EN TABLA */
 .estado-sel-wrap{position:relative;display:inline-block}
 .estado-sel-trigger{cursor:pointer;user-select:none}
@@ -560,6 +567,19 @@ const PRIORIDAD_OPTS=[
 function getPrioridades(){try{return JSON.parse(localStorage.getItem(PRIORIDAD_KEY)||"{}");}catch(e){return {};}}
 function setPrioridad(id,val){const p=getPrioridades();p[id]=val;localStorage.setItem(PRIORIDAD_KEY,JSON.stringify(p));}
 function getPrioridadVal(id){return getPrioridades()[id]||"normal";}
+// DELEGACIÓN A REVISOR
+const DELEGADOS_KEY="ft_delegados_v1";
+function getDelegados(){try{return JSON.parse(localStorage.getItem(DELEGADOS_KEY)||"[]")}catch(e){return[]}}
+function esDelegado(id){return getDelegados().includes(id);}
+function toggleDelegado(id){
+  const d=getDelegados();
+  const idx=d.indexOf(id);
+  if(idx>=0) d.splice(idx,1); else d.push(id);
+  localStorage.setItem(DELEGADOS_KEY,JSON.stringify(d));
+  abrirDetalle(id); // re-render del detalle
+  toast(idx>=0?"🔒 Delegación quitada":"🔓 Delegado al Revisor");
+}
+
 function cicloPrioridad(id,e){e.stopPropagation();const vals=["urgente","normal","sinprisa"];const cur=getPrioridadVal(id);const next=vals[(vals.indexOf(cur)+1)%vals.length];setPrioridad(id,next);filtrar();}
 function prioridadBadge(id){const val=getPrioridadVal(id);const o=PRIORIDAD_OPTS.find(x=>x.val===val)||PRIORIDAD_OPTS[1];return "<button class=\"prioridad-btn "+o.cls+"\" onclick=\"cicloPrioridad('"+id+"',event)\">"+o.label+"</button>";}
 function prioridadOrder(val){return val==="urgente"?0:val==="normal"?1:2;}
@@ -1076,7 +1096,7 @@ function filtrar(){
 }
 
 function renderFila(p){
-  return "<tr class=\""+rowClass(p)+"\" onclick=\"abrirDetalle('"+p.id+"')\"><td><span class=\"td-id\">"+p.id+"</span></td><td><span class=\"td-socio\">"+p.socio+"</span></td><td><span class=\"td-cliente\">"+p.cliente+"</span></td><td><span class=\"td-fecha\">"+p.fecha+"</span></td><td><div class=\"areas-pills\">"+(p.areas||[]).map(a=>"<span class=\"area-pill \"+(AREA_MAP[a]?.cls||\"\")+\"\">"+( AREA_MAP[a]?.label||a)+"</span>").join("")+"</div></td><td><span class=\"td-monto\">"+fmx(p.total)+"</span></td><td>"+badge(p.estado)+"</td><td>"+prioridadBadge(p.id)+"</td></tr>";
+  return "<tr class=\""+rowClass(p)+"\" onclick=\"abrirDetalle('"+p.id+"')\"><td><span class=\"td-id\">"+p.id+"</span></td><td><span class=\"td-socio\">"+p.socio+"</span></td><td><span class=\"td-cliente\">"+p.cliente+"</span></td><td><span class=\"td-fecha\">"+p.fecha+"</span></td><td><div class=\"areas-pills\">"+(p.areas||[]).map(a=>"<span class=\"area-pill "+(AREA_MAP[a]?.cls||"")+"\">"+( AREA_MAP[a]?.label||a)+"</span>").join("")+"</div></td><td><span class=\"td-monto\">"+fmx(p.total)+"</span></td><td>"+estadoSelector(p)+badgeListoEmpacar(p)+(esDelegado(p.id)?"<span class=\"badge-delegado\" title=\"Delegado al Revisor\">🔓</span>":"")+"</td><td>"+prioridadBadge(p.id)+"</td></tr>";
 }
 
 function renderTabla(){
@@ -1146,7 +1166,9 @@ async function abrirDetalle(id){
     "<div style=\"margin-bottom:10px\">"+badge(p.estado)+"</div>"+
     "<div class=\"semaforo\">"+
     ESTADOS.map(e=>"<button class=\"sem-btn"+(p.estado===e?" "+(SEM_CLS[e]||""):"")+"\" onclick=\"cambiarEstado('"+p.id+"','"+e+"')\">"+(SEM_ICON[e]||"")+" "+e+"</button>").join("")+
-    "</div></div>"+
+    "</div>"+
+    "<label class=\"delegar-check\"><input type=\"checkbox\" "+(esDelegado(p.id)?"checked":"")+" onchange=\"toggleDelegado('"+p.id+"')\"> 🔓 Delegar cambios de estado al Revisor</label>"+
+    "</div>"+
 
     "<div class=\"d-section\"><div class=\"d-section-title\">Áreas de producción</div>"+
     renderAreas(productos)+"</div>"+

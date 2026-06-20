@@ -307,6 +307,18 @@ tbody tr.row-visto-recibido:hover td{animation:none;background:rgba(1,119,191,.0
 .area-progreso-count{font-weight:700;color:var(--text3);font-size:11px}
 .area-progreso.completo .area-progreso-count{color:#1f7a3b}
 
+/* SELECTOR DE ESTADO EN TABLA (solo activo si delegado) */
+.estado-sel-wrap{position:relative;display:inline-block}
+.estado-sel-trigger{cursor:pointer;user-select:none}
+.estado-sel-trigger:hover{opacity:.8}
+.estado-sel-menu{display:none;position:absolute;top:100%;left:0;margin-top:4px;
+  background:white;border:1px solid var(--border);border-radius:8px;
+  box-shadow:0 6px 20px rgba(0,0,0,.15);z-index:50;min-width:160px;overflow:hidden}
+.estado-sel-menu.open{display:block}
+.estado-sel-opt{padding:8px 12px;font-size:12px;cursor:pointer;white-space:nowrap;color:var(--text2)}
+.estado-sel-opt:hover{background:var(--surface2)}
+.estado-sel-opt.activo{background:var(--azul-soft);color:var(--azul);font-weight:600}
+
 /* ── RESPONSIVE MÓVIL ─────────────────────────────────────── */
 @media (max-width: 768px){
 
@@ -614,6 +626,46 @@ function rowClass(p){
     default:              return "";
   }
 }
+
+// DELEGACIÓN (leído desde lo que marca el Admin)
+const DELEGADOS_KEY="ft_delegados_v1";
+function getDelegados(){try{return JSON.parse(localStorage.getItem(DELEGADOS_KEY)||"[]")}catch(e){return[]}}
+function esDelegado(id){return getDelegados().includes(id);}
+
+// Selector de estado — solo activo si el pedido está delegado
+function estadoSelectorRevisor(p){
+  const m={"Recibido":"b-recibido","En producción":"b-produccion","Empaquetado":"b-empaquetado","Enviado":"b-enviado","Entregado":"b-entregado","Cancelado":"b-cancelado"};
+  const cls=m[p.estado]||"b-recibido";
+  if(!esDelegado(p.id)){
+    return "<span class=\"badge "+cls+"\">"+(p.estado||"—")+"</span>";
+  }
+  return "<div class=\"estado-sel-wrap\" onclick=\"event.stopPropagation();toggleEstadoMenuRev('"+p.id+"')\">"+
+    "<span class=\"badge "+cls+" estado-sel-trigger\">"+(p.estado||"—")+" 🔓▾</span>"+
+    "<div class=\"estado-sel-menu\" id=\"eselr-"+p.id+"\">"+
+    ESTADOS.map(e=>"<div class=\"estado-sel-opt"+(p.estado===e?" activo":"")+"\" onclick=\"event.stopPropagation();cambiarEstadoRapidoRev('"+p.id+"','"+e+"')\">"+(SEM_ICON[e]||"")+" "+e+"</div>").join("")+
+    "</div></div>";
+}
+function toggleEstadoMenuRev(id){
+  document.querySelectorAll(".estado-sel-menu.open").forEach(m=>{ if(m.id!=="eselr-"+id) m.classList.remove("open"); });
+  document.getElementById("eselr-"+id)?.classList.toggle("open");
+}
+async function cambiarEstadoRapidoRev(id,estado){
+  const p=_todos.find(x=>x.id===id);if(!p)return;
+  document.getElementById("eselr-"+id)?.classList.remove("open");
+  try{
+    await fetch(API+"/pedidos/"+p.token+"/estado",{
+      method:"PATCH",
+      headers:{"Content-Type":"application/json"},
+      body:JSON.stringify({estado_nuevo:estadoApi(estado),motivo:"Cambio por Revisor (delegado)"})
+    });
+    p.estado=estado;
+    filtrar();
+    toast("✓ "+id+" → "+estado);
+  }catch(e){toast("⚠️ Error al cambiar estado")}
+}
+document.addEventListener("click",()=>{
+  document.querySelectorAll(".estado-sel-menu.open").forEach(m=>m.classList.remove("open"));
+});
 
 function badge(e){
   const m={"Recibido":"b-recibido","En producción":"b-produccion","Listo":"b-listo","Empaquetado":"b-empaquetado","Enviado":"b-enviado","Entregado":"b-entregado","Cancelado":"b-cancelado"};
@@ -1093,7 +1145,7 @@ function filtrar(){
 }
 
 function renderFila(p){
-  return "<tr class=\""+rowClass(p)+" "+claseNuevo(p.id)+"\" onclick=\"marcarVisto('"+p.id+"');abrirDetalle('"+p.id+"')\"><td><span class=\"td-id\">"+p.id+"</span>"+badgeNuevo(p.id)+"</td><td><span class=\"td-socio\">"+p.socio+"</span></td><td><span class=\"td-cliente\">"+p.cliente+"</span></td><td><span class=\"td-fecha\">"+p.fecha+"</span></td><td><div class=\"areas-pills\">"+(p.areas||[]).map(a=>"<span class=\"area-pill \"+(AREA_MAP[a]?.cls||\"\")+\"\">"+(AREA_MAP[a]?.label||a)+"</span>").join("")+"</div></td><td>"+badge(p.estado)+"</td></tr>";
+  return "<tr class=\""+rowClass(p)+" "+claseNuevo(p.id)+"\" onclick=\"marcarVisto('"+p.id+"');abrirDetalle('"+p.id+"')\"><td><span class=\"td-id\">"+p.id+"</span>"+badgeNuevo(p.id)+"</td><td><span class=\"td-socio\">"+p.socio+"</span></td><td><span class=\"td-cliente\">"+p.cliente+"</span></td><td><span class=\"td-fecha\">"+p.fecha+"</span></td><td><div class=\"areas-pills\">"+(p.areas||[]).map(a=>"<span class=\"area-pill "+(AREA_MAP[a]?.cls||"")+"\">"+(AREA_MAP[a]?.label||a)+"</span>").join("")+"</div></td><td>"+estadoSelectorRevisor(p)+"</td></tr>";
 }
 
 function renderTabla(){
