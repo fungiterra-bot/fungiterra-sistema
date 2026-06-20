@@ -236,17 +236,17 @@ tbody tr:hover{background:#f5f9f6}
 tbody tr.row-urgente    td{background:rgba(192,57,43,.08);border-bottom-color:rgba(192,57,43,.15)}
 tbody tr.row-urgente:hover td{background:rgba(192,57,43,.14)}
 
-tbody tr.row-recibido   td{background:rgba(130,160,180,.07)}
-tbody tr.row-recibido:hover td{background:rgba(130,160,180,.13)}
+tbody tr.row-recibido   td{background:rgba(130,160,180,.12)}
+tbody tr.row-recibido:hover td{background:rgba(130,160,180,.2)}
 
-tbody tr.row-produccion td{background:rgba(1,119,191,.07)}
-tbody tr.row-produccion:hover td{background:rgba(1,119,191,.13)}
+tbody tr.row-produccion td{background:rgba(1,119,191,.13)}
+tbody tr.row-produccion:hover td{background:rgba(1,119,191,.2)}
 
-tbody tr.row-listo      td{background:rgba(39,174,96,.08)}
+tbody tr.row-listo      td{background:rgba(39,174,96,.15)}
 tbody tr.row-listo:hover td{background:rgba(39,174,96,.14)}
 
-tbody tr.row-empaquetado td{background:rgba(131,75,62,.07)}
-tbody tr.row-empaquetado:hover td{background:rgba(131,75,62,.13)}
+tbody tr.row-empaquetado td{background:rgba(131,75,62,.13)}
+tbody tr.row-empaquetado:hover td{background:rgba(131,75,62,.2)}
 
 tbody tr.row-enviado    td{background:rgba(41,128,185,.06)}
 tbody tr.row-enviado:hover td{background:rgba(41,128,185,.12)}
@@ -344,8 +344,10 @@ th.sort-desc::after{content:" ▼";font-size:9px;opacity:.7}
   0%,100%{background:rgba(39,174,96,.15);box-shadow:inset 0 0 0 3px rgba(39,174,96,.3)}
   50%{background:rgba(39,174,96,.5);box-shadow:inset 0 0 0 3px rgba(39,174,96,.9)}
 }
-tbody tr.row-listo-empacar td{animation:pulso-listo 1.2s ease-in-out infinite !important}
-tbody tr.row-listo-empacar:hover td{animation:none !important;background:rgba(39,174,96,.4) !important}
+.badge-listo-empacar{display:inline-block;background:#27ae60;color:#fff;font-size:10px;font-weight:700;
+  padding:3px 8px;border-radius:10px;margin-left:6px;vertical-align:middle;
+  animation:pulso-badge 1.2s ease-in-out infinite}
+@keyframes pulso-badge{0%,100%{opacity:1}50%{opacity:.6}}
 </style>
 </head>
 <body>
@@ -551,12 +553,8 @@ function sortBy(col){if(_sortCol===col){_sortDir*=-1;}else{_sortCol=col;_sortDir
 
 // CLASE DE FILA SEMÁFORO
 function rowClass(p){
-  const prio=getPrioridadVal(p.id);
-  if(prio==="urgente") return "row-urgente";
-  if(prio==="sinprisa") return "row-sinprisa";
-  // Listo para empacar — prioridad sobre estado
-  if(esListoEmpacar(p)) return "row-listo-empacar";
-  // Semáforo por estado
+  // Único sistema de color: el estado del pedido. Prioridad y "listo para empacar"
+  // se muestran como badges, no como fondo de fila.
   switch(p.estado){
     case "Recibido":      return "row-recibido";
     case "En producción": return "row-produccion";
@@ -597,6 +595,11 @@ function esNuevoAdmin(p){
   if(esAdminVisto(p.id)) return false;
   return new Date(p.fechaRaw||0)>getAdminUltima();
 }
+function badgeListoEmpacar(p){
+  if(esListoEmpacar(p)) return " <span class=\"badge-listo-empacar\" title=\"Todos los productos están listos\">✨ Listo p/empacar</span>";
+  return "";
+}
+
 function esListoEmpacar(p){
   // Todos los productos están en listo
   return p.productos&&p.productos.length>0&&p.productos.every(pr=>pr.estado==="listo");

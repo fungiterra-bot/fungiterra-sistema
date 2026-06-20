@@ -88,6 +88,10 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);min-height:1
   .content{padding:14px 12px}
 }
 
+.prioridad-tag{display:inline-flex;align-items:center;padding:2px 8px;border-radius:10px;font-size:10px;font-weight:700;border:1.5px solid}
+.prioridad-tag.p-urgente{color:#c0392b;border-color:#e74c3c;background:#fff0ee}
+.prioridad-tag.p-sinprisa{color:#1f7a3b;border-color:#a8d8b8;background:#f0fbf4}
+
 .toast{position:fixed;bottom:24px;right:24px;background:var(--text);color:#fff;border-radius:8px;padding:10px 16px;font-size:13px;font-weight:500;z-index:200;opacity:0;transform:translateY(6px);transition:all .2s;pointer-events:none}
 .toast.show{opacity:1;transform:translateY(0)}
 </style>
@@ -214,10 +218,31 @@ function renderGrid(){
   grid.innerHTML=_pedidos.map((p,i)=>{
     const e=estArea(p);
     const otras=(p.otras_areas||[]).map(a=>"<span class=\"area-pill "+AC[a]+"\">"+AL[a]+"</span>").join("");
+    const prioTag=prioridadBadgeRO(p.id_repositorio||p.token.substring(0,8));
     const prods=(p.productos||[]).map(pr=>"<div class=\"producto-row\"><div><div class=\"producto-nombre\">"+pr.nombre_producto+"</div><div class=\"producto-cant\">"+pr.cantidad+" unidades</div></div></div>").join("");
     const cls=esNuevo(p)?"nuevo":(esVisto(p.token)?"":"visto-recibido");
     return "<div class=\"pedido-card "+cls+"\"><div class=\"pedido-header\" onclick=\"tog("+i+")\"><div><div class=\"pedido-id\">"+(p.id_repositorio||p.token.substring(0,8))+"</div><div class=\"pedido-cliente\">"+(p.cliente_nombre||"—")+"</div><div class=\"pedido-meta\"><span class=\"meta-tag\">Socio "+(p.socio||"—")+"</span>"+otras+"</div></div>"+badge(e)+"</div><div class=\"pedido-body\" id=\"b"+i+"\"><div>"+prods+"</div><div class=\"estado-btns\"><button class=\"estado-btn"+(e==="en_stock"?" s-stock":"")+"\" onclick=\"est("+i+",'en_stock')\">📦 En stock</button><button class=\"estado-btn"+(e==="en_produccion"?" s-prod":"")+"\" onclick=\"est("+i+",'en_produccion')\">🔨 En producción</button><button class=\"estado-btn"+(e==="listo"?" s-listo":"")+"\" onclick=\"est("+i+",'listo')\">✅ Listo</button></div></div></div>";
   }).join("");
+}
+
+// PRIORIDAD (solo lectura — la fija el Admin)
+const PRIORIDAD_KEY="ft_prioridad_v1";
+const PRIORIDAD_OPTS={
+  urgente:{label:"🔴 Urgente",cls:"p-urgente"},
+  normal:{label:"⚪ Normal",cls:"p-normal"},
+  sinprisa:{label:"🟢 Sin prisa",cls:"p-sinprisa"}
+};
+function getPrioridadVal(id){
+  try{
+    const p=JSON.parse(localStorage.getItem(PRIORIDAD_KEY)||"{}");
+    return p[id]||"normal";
+  }catch(e){return "normal";}
+}
+function prioridadBadgeRO(id){
+  const val=getPrioridadVal(id);
+  if(val==="normal") return ""; // no mostrar badge si es normal, solo si es relevante
+  const o=PRIORIDAD_OPTS[val];
+  return "<span class=\"prioridad-tag "+o.cls+"\">"+o.label+"</span>";
 }
 
 function tog(i){const p=_pedidos[i];if(p)marcarVisto(p.token);document.getElementById("b"+i).classList.toggle("open");}

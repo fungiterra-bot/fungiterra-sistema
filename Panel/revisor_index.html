@@ -236,13 +236,13 @@ tbody tr:hover{background:#f5f9f6}
 tbody tr.row-urgente    td{background:rgba(192,57,43,.08);border-bottom-color:rgba(192,57,43,.15)}
 tbody tr.row-urgente:hover td{background:rgba(192,57,43,.14)}
 
-tbody tr.row-recibido   td{background:rgba(130,160,180,.07)}
-tbody tr.row-recibido:hover td{background:rgba(130,160,180,.13)}
+tbody tr.row-recibido   td{background:rgba(130,160,180,.12)}
+tbody tr.row-recibido:hover td{background:rgba(130,160,180,.2)}
 
-tbody tr.row-produccion td{background:rgba(1,119,191,.07)}
-tbody tr.row-produccion:hover td{background:rgba(1,119,191,.13)}
+tbody tr.row-produccion td{background:rgba(1,119,191,.13)}
+tbody tr.row-produccion:hover td{background:rgba(1,119,191,.2)}
 
-tbody tr.row-listo      td{background:rgba(39,174,96,.08)}
+tbody tr.row-listo      td{background:rgba(39,174,96,.15)}
 tbody tr.row-listo:hover td{background:rgba(39,174,96,.14)}
 
 tbody tr.row-empaquetado td{background:rgba(131,75,62,.07)}
@@ -272,8 +272,10 @@ th.sort-desc::after{content:" ▼";font-size:9px;opacity:.7}
   0%,100%{background:rgba(39,174,96,.08);box-shadow:inset 0 0 0 2px rgba(39,174,96,.15)}
   50%{background:rgba(39,174,96,.35);box-shadow:inset 0 0 0 2px rgba(39,174,96,.6)}
 }
-tbody tr.row-listo-empacar td{animation:pulso-listo 1.2s ease-in-out infinite}
-tbody tr.row-listo-empacar:hover td{animation:none;background:rgba(39,174,96,.3)}
+.badge-listo-empacar{display:inline-block;background:#27ae60;color:#fff;font-size:10px;font-weight:700;
+  padding:3px 8px;border-radius:10px;margin-left:6px;vertical-align:middle;
+  animation:pulso-badge 1.2s ease-in-out infinite}
+@keyframes pulso-badge{0%,100%{opacity:1}50%{opacity:.6}}
 
 /* ── ALERTAS NUEVO PEDIDO ────────────────────────────────── */
 @keyframes pulso-nuevo{
@@ -577,17 +579,18 @@ const POR_PAGINA=10;
 let _filtrados=[];
 function sortBy(col){if(_sortCol===col){_sortDir*=-1;}else{_sortCol=col;_sortDir=1;}document.querySelectorAll("th.sortable").forEach(th=>{th.classList.remove("sort-asc","sort-desc");});const th=document.querySelector("th.sortable[onclick=\"sortBy('"+col+"')\"]");if(th)th.classList.add(_sortDir===1?"sort-asc":"sort-desc");filtrar();}
 
+function badgeListoEmpacar(p){
+  if(esListoEmpacar(p)) return " <span class=\"badge-listo-empacar\" title=\"Todos los productos están listos\">✨ Listo p/empacar</span>";
+  return "";
+}
+
 function esListoEmpacar(p){
   return p.productos&&p.productos.length>0&&p.productos.every(pr=>pr.estado==="listo");
 }
 
 // CLASE DE FILA SEMÁFORO
 function rowClass(p){
-  const prio=getPrioridadVal(p.id);
-  if(prio==="urgente") return "row-urgente";
-  if(prio==="sinprisa") return "row-sinprisa";
-  if(esListoEmpacar(p)) return "row-listo-empacar";
-  // Semáforo por estado
+  // Único sistema de color: el estado del pedido.
   switch(p.estado){
     case "Recibido":      return "row-recibido";
     case "En producción": return "row-produccion";
