@@ -274,7 +274,11 @@ tbody tr.row-sinprisa:hover td{background:#f5f9f6}
   margin-top:10px;padding:8px 10px;background:var(--surface2);border-radius:8px;cursor:pointer}
 .delegar-check input{cursor:pointer}
 .badge-delegado{display:inline-block;background:#8b5cf6;color:#fff;font-size:9px;font-weight:700;
-  padding:2px 6px;border-radius:10px;margin-left:4px;vertical-align:middle}
+  padding:2px 6px;border-radius:10px;margin-left:4px;vertical-align:middle;cursor:pointer}
+.badge-delegado:hover{opacity:.8}
+.badge-no-delegado{display:inline-block;font-size:11px;margin-left:4px;vertical-align:middle;
+  cursor:pointer;opacity:.35;transition:opacity .15s}
+.badge-no-delegado:hover{opacity:.8}
 
 /* SELECTOR DE ESTADO EN TABLA */
 .estado-sel-wrap{position:relative;display:inline-block}
@@ -578,6 +582,15 @@ function toggleDelegado(id){
   localStorage.setItem(DELEGADOS_KEY,JSON.stringify(d));
   abrirDetalle(id); // re-render del detalle
   toast(idx>=0?"🔒 Delegación quitada":"🔓 Delegado al Revisor");
+}
+
+function toggleDelegadoRapido(id){
+  const d=getDelegados();
+  const idx=d.indexOf(id);
+  if(idx>=0) d.splice(idx,1); else d.push(id);
+  localStorage.setItem(DELEGADOS_KEY,JSON.stringify(d));
+  filtrar(); // re-render solo la tabla, sin abrir detalle
+  toast(idx>=0?"🔒 "+id+" — delegación quitada":"🔓 "+id+" — delegado al Revisor");
 }
 
 function cicloPrioridad(id,e){e.stopPropagation();const vals=["urgente","normal","sinprisa"];const cur=getPrioridadVal(id);const next=vals[(vals.indexOf(cur)+1)%vals.length];setPrioridad(id,next);filtrar();}
@@ -1096,7 +1109,7 @@ function filtrar(){
 }
 
 function renderFila(p){
-  return "<tr class=\""+rowClass(p)+"\" onclick=\"abrirDetalle('"+p.id+"')\"><td><span class=\"td-id\">"+p.id+"</span></td><td><span class=\"td-socio\">"+p.socio+"</span></td><td><span class=\"td-cliente\">"+p.cliente+"</span></td><td><span class=\"td-fecha\">"+p.fecha+"</span></td><td><div class=\"areas-pills\">"+(p.areas||[]).map(a=>"<span class=\"area-pill "+(AREA_MAP[a]?.cls||"")+"\">"+( AREA_MAP[a]?.label||a)+"</span>").join("")+"</div></td><td><span class=\"td-monto\">"+fmx(p.total)+"</span></td><td>"+estadoSelector(p)+badgeListoEmpacar(p)+(esDelegado(p.id)?"<span class=\"badge-delegado\" title=\"Delegado al Revisor\">🔓</span>":"")+"</td><td>"+prioridadBadge(p.id)+"</td></tr>";
+  return "<tr class=\""+rowClass(p)+"\" onclick=\"abrirDetalle('"+p.id+"')\"><td><span class=\"td-id\">"+p.id+"</span></td><td><span class=\"td-socio\">"+p.socio+"</span></td><td><span class=\"td-cliente\">"+p.cliente+"</span></td><td><span class=\"td-fecha\">"+p.fecha+"</span></td><td><div class=\"areas-pills\">"+(p.areas||[]).map(a=>"<span class=\"area-pill "+(AREA_MAP[a]?.cls||"")+"\">"+( AREA_MAP[a]?.label||a)+"</span>").join("")+"</div></td><td><span class=\"td-monto\">"+fmx(p.total)+"</span></td><td>"+estadoSelector(p)+badgeListoEmpacar(p)+"<span class=\""+(esDelegado(p.id)?"badge-delegado":"badge-no-delegado")+"\" title=\"Clic para "+(esDelegado(p.id)?"quitar":"dar")+" delegación al Revisor\" onclick=\"event.stopPropagation();toggleDelegadoRapido('"+p.id+"')\">"+(esDelegado(p.id)?"🔓":"🔒")+"</span></td><td>"+prioridadBadge(p.id)+"</td></tr>";
 }
 
 function renderTabla(){

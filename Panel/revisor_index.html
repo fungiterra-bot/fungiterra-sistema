@@ -1212,8 +1212,8 @@ async function abrirDetalle(id){
     "<div class=\"d-monto\">"+fmx(p.total)+"</div></div>"+
 
     "<div class=\"d-section\"><div class=\"d-section-title\">Estado del pedido</div>"+
-    "<div style=\"margin-bottom:10px\">"+badge(p.estado)+"</div>"+
-    "<div class=\"semaforo\">"+
+    "<div style=\"margin-bottom:10px\">"+badge(p.estado)+(esDelegado(p.id)?" <span class=\"badge-delegado\" style=\"display:inline-block;background:#8b5cf6;color:#fff;font-size:9px;font-weight:700;padding:2px 6px;border-radius:10px;vertical-align:middle\">🔓 Delegado</span>":" <span style=\"font-size:11px;color:var(--text3)\">🔒 Solo lectura — no delegado</span>")+"</div>"+
+    "<div class=\"semaforo\" style=\""+(esDelegado(p.id)?"":"opacity:.45;pointer-events:none")+"\">"+
     ESTADOS.map(e=>"<button class=\"sem-btn"+(p.estado===e?" "+(SEM_CLS[e]||""):"")+"\" onclick=\"cambiarEstado('"+p.id+"','"+e+"')\">"+(SEM_ICON[e]||"")+" "+e+"</button>").join("")+
     "</div></div>"+
 
@@ -1270,12 +1270,16 @@ function renderHistorial(historial){
 }
 
 async function cambiarEstado(id,estado){
+  if(!esDelegado(id)){
+    toast("🔒 Este pedido no está delegado — no puedes cambiar su estado");
+    return;
+  }
   const p=_todos.find(x=>x.id===id);if(!p)return;
   try{
     await fetch(API+"/pedidos/"+p.token+"/estado",{
       method:"PATCH",
       headers:{"Content-Type":"application/json"},
-      body:JSON.stringify({estado_nuevo:estadoApi(estado),motivo:"Cambio desde Panel Admin"})
+      body:JSON.stringify({estado_nuevo:estadoApi(estado),motivo:"Cambio por Revisor (delegado)"})
     });
     p.estado=estado;
     filtrar();
