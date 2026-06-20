@@ -298,6 +298,15 @@ tbody tr.row-visto-recibido:hover td{animation:none;background:rgba(1,119,191,.0
 .notif-banner button{background:rgba(255,255,255,.2);border:1px solid rgba(255,255,255,.4);
   color:#fff;border-radius:6px;padding:4px 12px;cursor:pointer;font-size:12px;font-family:var(--sans)}
 
+/* PROGRESO POR ÁREA EN DETALLE */
+.area-progreso-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:8px;margin-bottom:14px}
+.area-progreso{display:flex;align-items:center;gap:6px;padding:8px 10px;border-radius:8px;background:var(--surface2);border:1.5px solid var(--border);font-size:12px}
+.area-progreso.completo{background:#f0fbf4;border-color:#a8d8b8}
+.area-progreso-icon{font-size:13px}
+.area-progreso-label{font-weight:600;color:var(--text2);flex:1}
+.area-progreso-count{font-weight:700;color:var(--text3);font-size:11px}
+.area-progreso.completo .area-progreso-count{color:#1f7a3b}
+
 /* ── RESPONSIVE MÓVIL ─────────────────────────────────────── */
 @media (max-width: 768px){
 
@@ -553,9 +562,9 @@ let _clientes=[];
 let _vistaActual="pedidos";
 
 const AREA_MAP={fungibolsa:{label:"FungiBolsa",cls:"area-fb",blk:""},laboratorio:{label:"Laboratorio",cls:"area-lab",blk:"lab"},transformacion:{label:"Transformación",cls:"area-tf",blk:"tf"},insumos:{label:"Insumos",cls:"area-ins",blk:"ins"},piopis:{label:"Piopis",cls:"area-pip",blk:"pip"}};
-const ESTADOS=["Recibido","En producción","Listo","Empaquetado","Enviado","Entregado"];
-const SEM_CLS={"Recibido":"s-recibido","En producción":"s-produccion","Listo":"s-listo","Empaquetado":"s-empaquetado","Enviado":"s-enviado","Entregado":"s-entregado"};
-const SEM_ICON={"Recibido":"🟡","En producción":"🔵","Listo":"🟢","Empaquetado":"📦","Enviado":"🚚","Entregado":"✅"};
+const ESTADOS=["Recibido","En producción","Empaquetado","Enviado","Entregado"];
+const SEM_CLS={"Recibido":"s-recibido","En producción":"s-produccion","Empaquetado":"s-empaquetado","Enviado":"s-enviado","Entregado":"s-entregado"};
+const SEM_ICON={"Recibido":"🟡","En producción":"🔵","Empaquetado":"📦","Enviado":"🚚","Entregado":"✅"};
 
 // PRIORIDAD
 const PRIORIDAD_KEY="ft_prioridad_v1";
@@ -584,8 +593,11 @@ function badgeListoEmpacar(p){
   return "";
 }
 
+function productoCompletado(pr){
+  return pr.estado==="listo"||pr.estado==="en_stock";
+}
 function esListoEmpacar(p){
-  return p.productos&&p.productos.length>0&&p.productos.every(pr=>pr.estado==="listo");
+  return p.productos&&p.productos.length>0&&p.productos.every(productoCompletado);
 }
 
 // CLASE DE FILA SEMÁFORO
@@ -1178,11 +1190,26 @@ function renderAreas(productos){
   if(!filtrados.length) return "<span style=\"color:var(--text3);font-size:12px\">Sin productos registrados</span>";
   const areas={};
   filtrados.forEach(p=>{const a=p.area||"sin_area";if(!areas[a])areas[a]=[];areas[a].push(p);});
-  return Object.entries(areas).map(([area,prods])=>{
+
+  const resumen=Object.entries(areas).map(([area,prods])=>{
     const info=AREA_MAP[area]||{label:area,blk:""};
-    const items=prods.map(p=>"<div class=\"prod-row\"><span>"+p.cantidad+"x "+p.nombre_producto+"</span><span style=\"color:var(--text3)\">"+fmx(p.subtotal)+"</span></div>").join("");
+    const completados=prods.filter(productoCompletado).length;
+    const total=prods.length;
+    const listo=completados===total;
+    return "<div class=\"area-progreso "+(listo?"completo":"")+"\">"+
+      "<span class=\"area-progreso-icon\">"+(listo?"✅":"⏳")+"</span>"+
+      "<span class=\"area-progreso-label\">"+(info.label||area)+"</span>"+
+      "<span class=\"area-progreso-count\">"+completados+"/"+total+"</span>"+
+      "</div>";
+  }).join("");
+
+  const detalle=Object.entries(areas).map(([area,prods])=>{
+    const info=AREA_MAP[area]||{label:area,blk:""};
+    const items=prods.map(p=>"<div class=\"prod-row\"><span>"+p.cantidad+"x "+p.nombre_producto+" <em style=\"color:var(--text3);font-style:normal;font-size:10px\">("+(p.estado||"pendiente")+")</em></span><span style=\"color:var(--text3)\">"+fmx(p.subtotal)+"</span></div>").join("");
     return "<div class=\"area-block "+(info.blk||"")+"\"><div class=\"area-block-top\"><span class=\"area-block-name\">"+(info.label||area)+"</span></div>"+items+"</div>";
   }).join("");
+
+  return "<div class=\"area-progreso-grid\">"+resumen+"</div>"+detalle;
 }
 
 function renderHistorial(historial){
