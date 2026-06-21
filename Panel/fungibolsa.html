@@ -224,6 +224,7 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);min-height:1
 .fab-body{padding:20px}
 .fab-filtros{display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap}
 .fab-filtros select{flex:1;min-width:140px;padding:8px 10px;border:1.5px solid var(--border);border-radius:7px;font-size:12px;font-family:var(--sans);background:var(--surface2);color:var(--text)}
+.fab-filtros input[type=date]{flex:1;min-width:140px;padding:7px 10px;border:1.5px solid var(--border);border-radius:7px;font-size:12px;font-family:var(--sans);background:var(--surface2);color:var(--text)}
 .fab-row{display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid var(--surface2);font-size:12px}
 .fab-row:last-child{border-bottom:none}
 .fab-row-left{display:flex;flex-direction:column;gap:2px}
@@ -411,6 +412,13 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);min-height:1
         <select id="fab-producto-filtro" onchange="renderFabricacion()">
           <option value="">Todos los productos</option>
         </select>
+        <select id="fab-pedido-filtro" onchange="renderFabricacion()">
+          <option value="">Todos los pedidos</option>
+        </select>
+      </div>
+      <div class="fab-filtros">
+        <input type="date" id="fab-desde" onchange="cargarFabricacion()">
+        <input type="date" id="fab-hasta" onchange="cargarFabricacion()">
       </div>
       <div id="fab-lista"><div class="spinner"></div></div>
     </div>
@@ -743,12 +751,26 @@ async function cargarFabricacion(){
   const box=document.getElementById("fab-lista");
   box.innerHTML="<div class=\"spinner\"></div>";
   try{
-    const r=await fetch(API+"/fabricacion/"+AREA);
+    const desde=document.getElementById("fab-desde").value;
+    const hasta=document.getElementById("fab-hasta").value;
+    let url=API+"/fabricacion/"+AREA;
+    const qs=[];
+    if(desde) qs.push("desde="+desde);
+    if(hasta) qs.push("hasta="+hasta);
+    if(qs.length) url+="?"+qs.join("&");
+    const r=await fetch(url);
     const data=await r.json();
-    _fabricacionCache=data.fabricacion||data.registros||[];
-    const sel=document.getElementById("fab-producto-filtro");
+    _fabricacionCache=data.fabricacion||[];
+    const selProd=document.getElementById("fab-producto-filtro");
+    const valProd=selProd.value;
     const productos=[...new Set(_fabricacionCache.map(f=>f.producto))].sort();
-    sel.innerHTML="<option value=\"\">Todos los productos</option>"+productos.map(p=>"<option value=\""+p+"\">"+p+"</option>").join("");
+    selProd.innerHTML="<option value=\"\">Todos los productos</option>"+productos.map(p=>"<option value=\""+p+"\">"+p+"</option>").join("");
+    selProd.value=productos.includes(valProd)?valProd:"";
+    const selPed=document.getElementById("fab-pedido-filtro");
+    const valPed=selPed.value;
+    const pedidos=[...new Set(_fabricacionCache.map(f=>f.pedido_referencia).filter(Boolean))].sort();
+    selPed.innerHTML="<option value=\"\">Todos los pedidos</option>"+pedidos.map(p=>"<option value=\""+p+"\">"+p+"</option>").join("");
+    selPed.value=pedidos.includes(valPed)?valPed:"";
     renderFabricacion();
   }catch(e){
     box.innerHTML="<div class=\"fab-empty\">⚠️ Error cargando fabricación</div>";
@@ -757,19 +779,21 @@ async function cargarFabricacion(){
 
 function renderFabricacion(){
   const box=document.getElementById("fab-lista");
-  const filtro=document.getElementById("fab-producto-filtro").value;
+  const prodFiltro=document.getElementById("fab-producto-filtro").value;
+  const pedFiltro=document.getElementById("fab-pedido-filtro").value;
   let regs=_fabricacionCache;
-  if(filtro) regs=regs.filter(f=>f.producto===filtro);
+  if(prodFiltro) regs=regs.filter(f=>f.producto===prodFiltro);
+  if(pedFiltro) regs=regs.filter(f=>f.pedido_referencia===pedFiltro);
   if(!regs.length){
-    box.innerHTML="<div class=\"fab-empty\">Sin registros de fabricación</div>";
+    box.innerHTML="<div class=\"fab-empty\">Sin registros de fabricación para este filtro</div>";
     return;
   }
   box.innerHTML=regs.map(f=>{
     const fecha=f.creado_en?new Date(f.creado_en).toLocaleDateString("es-MX",{day:"2-digit",month:"short",year:"2-digit",hour:"2-digit",minute:"2-digit"}):"—";
-    return "<div class=\"fab-row\">"
-      +"<div class=\"fab-row-left\"><span class=\"fab-row-prod\">"+f.producto+"</span>"
-      +"<span class=\"fab-row-meta\">"+(f.pedido_referencia?"Pedido "+f.pedido_referencia+" · ":"")+fecha+"</span></div>"
-      +"<span class=\"fab-row-cant\">×"+f.cantidad+"</span>"
+    return "<div class=\"inv-hist-row\">"
+      +"<div class=\"inv-hist-row-left\"><span class=\"inv-hist-row-prod\">"+f.producto+"</span>"
+      +"<span class=\"inv-hist-row-meta\">"+(f.pedido_referencia?"Pedido "+f.pedido_referencia+" · ":"")+fecha+"</span></div>"
+      +"<span class=\"inv-hist-row-cant pos\">+"+f.cantidad+"</span>"
       +"</div>";
   }).join("");
 }
