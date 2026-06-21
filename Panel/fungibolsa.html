@@ -110,6 +110,12 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);min-height:1
 .inv-head h2{font-size:16px;font-weight:700;color:var(--cafe)}
 .inv-close{background:none;border:none;font-size:20px;color:var(--text3);cursor:pointer;line-height:1;padding:4px}
 .inv-close:hover{color:var(--text)}
+.inv-tabs{display:flex;gap:4px;padding:0 20px;border-bottom:1px solid var(--border);background:var(--surface);position:sticky;top:53px;z-index:1}
+.inv-tab{padding:10px 14px;font-size:12px;font-weight:700;color:var(--text3);cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-1px;transition:all .15s;white-space:nowrap}
+.inv-tab:hover{color:var(--text2)}
+.inv-tab.active{color:var(--cafe);border-bottom-color:var(--cafe)}
+.inv-pane{display:none}
+.inv-pane.active{display:block}
 .inv-body{padding:20px}
 .inv-section-label{font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.6px;margin-bottom:10px}
 .inv-form{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:8px}
@@ -134,6 +140,42 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);min-height:1
 .inv-hist-item:last-child{border-bottom:none}
 .inv-hist-tipo{font-weight:600}
 .inv-empty{text-align:center;padding:30px 10px;color:var(--text3);font-size:13px}
+
+/* MODO PRODUCTO: estructurado vs libre */
+.inv-modo-toggle{display:flex;gap:6px;margin-bottom:12px}
+.inv-modo-btn{flex:1;padding:7px;border-radius:7px;border:1.5px solid var(--border);background:var(--surface2);color:var(--text2);font-size:11px;font-weight:700;cursor:pointer;font-family:var(--sans);transition:all .15s}
+.inv-modo-btn.active{background:var(--cafe-soft);border-color:var(--cafe);color:var(--cafe)}
+.inv-quick-row{display:flex;gap:8px;align-items:center;margin-bottom:12px}
+.inv-quick-row select{flex:1}
+.inv-estructurado{display:none}
+.inv-estructurado.active{display:grid}
+.inv-libre{display:none}
+.inv-libre.active{display:block}
+.inv-preview-nombre{background:var(--surface2);border:1.5px dashed var(--border);border-radius:7px;padding:8px 10px;font-size:12px;color:var(--text2);margin-top:2px;margin-bottom:10px}
+.inv-preview-nombre b{color:var(--text)}
+.inv-check-row{display:flex;align-items:center;gap:7px;font-size:12px;color:var(--text2);margin-bottom:10px;cursor:pointer}
+.inv-check-row input{width:auto;cursor:pointer}
+
+/* TABLA STOCK COMPLETO */
+.inv-stock-table{width:100%;border-collapse:collapse;font-size:13px}
+.inv-stock-table th{text-align:left;font-size:10px;text-transform:uppercase;letter-spacing:.5px;color:var(--text3);font-weight:700;padding:6px 8px;border-bottom:2px solid var(--border)}
+.inv-stock-table td{padding:9px 8px;border-bottom:1px solid var(--surface2)}
+.inv-stock-table tr:hover td{background:var(--surface2)}
+.inv-search{width:100%;padding:9px 12px;border:1.5px solid var(--border);border-radius:8px;font-size:13px;font-family:var(--sans);background:var(--surface2);margin-bottom:14px}
+.inv-search:focus{outline:none;border-color:var(--cafe);background:var(--surface)}
+
+/* HISTORIAL ROTACION */
+.inv-hist-filtros{display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap}
+.inv-hist-filtros select{flex:1;min-width:140px}
+.inv-hist-row{display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid var(--surface2);font-size:12px}
+.inv-hist-row:last-child{border-bottom:none}
+.inv-hist-row-left{display:flex;flex-direction:column;gap:2px}
+.inv-hist-row-prod{font-weight:600;color:var(--text);font-size:13px}
+.inv-hist-row-meta{color:var(--text3);font-size:11px}
+.inv-hist-row-cant{font-weight:700;font-size:13px;white-space:nowrap}
+.inv-hist-row-cant.pos{color:#1f7a3b}
+.inv-hist-row-cant.neg{color:#c0392b}
+
 
 </style>
 </head>
@@ -172,38 +214,120 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);min-height:1
       <h2>📋 Inventario — FungiBolsa</h2>
       <button class="inv-close" onclick="cerrarInventario()">✕</button>
     </div>
+    <div class="inv-tabs">
+      <div class="inv-tab active" id="invtab-registrar" onclick="setInvTab('registrar')">✏️ Registrar</div>
+      <div class="inv-tab" id="invtab-stock" onclick="setInvTab('stock')">📦 Stock completo</div>
+      <div class="inv-tab" id="invtab-historial" onclick="setInvTab('historial')">🔄 Historial</div>
+    </div>
     <div class="inv-body">
-      <div class="inv-section-label">Registrar movimiento</div>
-      <div class="inv-form">
-        <div class="inv-field full">
-          <label>Producto</label>
-          <input type="text" id="inv-producto" placeholder="ej. Fungibolsa Mod.G" list="inv-productos-list">
-          <datalist id="inv-productos-list"></datalist>
-        </div>
-        <div class="inv-field">
-          <label>Cantidad nueva (total)</label>
-          <input type="number" id="inv-cantidad" placeholder="0" min="0">
-        </div>
-        <div class="inv-field">
-          <label>Motivo</label>
-          <select id="inv-tipo">
-            <option value="produccion">🏭 Producción (entra)</option>
-            <option value="venta">💰 Venta (sale)</option>
-            <option value="consumo_interno">🔧 Consumo interno (sale)</option>
-            <option value="ajuste">⚖️ Ajuste / corrección</option>
+
+      <!-- ── PESTAÑA: REGISTRAR ── -->
+      <div class="inv-pane active" id="invpane-registrar">
+        <div class="inv-section-label">Producto ya guardado (opcional)</div>
+        <div class="inv-quick-row">
+          <select id="inv-quick-select" onchange="seleccionarProductoRapido()">
+            <option value="">— Elegir de la lista —</option>
           </select>
         </div>
-        <div class="inv-field full">
-          <label>Nota (opcional)</label>
-          <input type="text" id="inv-motivo" placeholder="ej. Pruebas de laboratorio">
+
+        <div class="inv-section-label">O capturar nuevo</div>
+        <div class="inv-modo-toggle">
+          <button class="inv-modo-btn active" id="inv-modo-btn-estructurado" onclick="setModoProducto('estructurado')">🧩 Por características</button>
+          <button class="inv-modo-btn" id="inv-modo-btn-libre" onclick="setModoProducto('libre')">✍️ Texto libre</button>
         </div>
+
+        <div class="inv-estructurado active" id="inv-estructurado" style="grid-template-columns:1fr 1fr;gap:10px">
+          <div class="inv-field full">
+            <label>Modelo</label>
+            <input type="text" id="inv-modelo" placeholder="ej. G, M, C, EC, Piopis..." oninput="actualizarPreviewNombre()">
+          </div>
+          <div class="inv-field">
+            <label>Plástico</label>
+            <select id="inv-plastico" onchange="actualizarPreviewNombre()">
+              <option value="Opaco">Opaco</option>
+              <option value="Transparente">Transparente</option>
+            </select>
+          </div>
+          <div class="inv-field">
+            <label>Configuración</label>
+            <select id="inv-config" onchange="actualizarPreviewNombre()">
+              <option value="1 Filtro">1 Filtro</option>
+              <option value="2 Filtros">2 Filtros</option>
+              <option value="Filtro + Puerto">Filtro + Puerto</option>
+              <option value="2 Filtros + Puerto">2 Filtros + Puerto</option>
+            </select>
+          </div>
+          <div class="inv-field full">
+            <label>Filtro</label>
+            <select id="inv-filtro-tipo" onchange="actualizarPreviewNombre()">
+              <option value="0.2µm blanco">0.2µm — Blanco</option>
+              <option value="2µm azul">2µm — Azul</option>
+              <option value="5µm naranja">5µm — Naranja</option>
+            </select>
+          </div>
+          <div class="inv-form full" style="margin:0">
+            <div class="inv-preview-nombre full">Se guardará como: <b id="inv-preview-texto">—</b></div>
+          </div>
+          <label class="inv-check-row full">
+            <input type="checkbox" id="inv-guardar-config">
+            Guardar esta combinación como producto reutilizable
+          </label>
+        </div>
+
+        <div class="inv-libre" id="inv-libre">
+          <div class="inv-field full">
+            <label>Producto</label>
+            <input type="text" id="inv-producto-libre" placeholder="ej. Fungisopa, Sustrato pasteurizado...">
+          </div>
+        </div>
+
+        <div class="inv-divider"></div>
+
+        <div class="inv-form">
+          <div class="inv-field">
+            <label>Cantidad nueva (total)</label>
+            <input type="number" id="inv-cantidad" placeholder="0" min="0">
+          </div>
+          <div class="inv-field">
+            <label>Motivo</label>
+            <select id="inv-tipo">
+              <option value="produccion">🏭 Producción (entra)</option>
+              <option value="venta">💰 Venta (sale)</option>
+              <option value="consumo_interno">🔧 Consumo interno (sale)</option>
+              <option value="ajuste">⚖️ Ajuste / corrección</option>
+            </select>
+          </div>
+          <div class="inv-field full">
+            <label>Nota (opcional)</label>
+            <input type="text" id="inv-motivo" placeholder="ej. Pruebas de laboratorio">
+          </div>
+        </div>
+        <button class="inv-submit" id="inv-submit-btn" onclick="registrarMovimiento()">Registrar movimiento</button>
       </div>
-      <button class="inv-submit" id="inv-submit-btn" onclick="registrarMovimiento()">Registrar movimiento</button>
 
-      <div class="inv-divider"></div>
+      <!-- ── PESTAÑA: STOCK COMPLETO ── -->
+      <div class="inv-pane" id="invpane-stock">
+        <input type="text" class="inv-search" id="inv-stock-search" placeholder="🔍 Buscar producto..." oninput="filtrarStockCompleto()">
+        <div id="inv-stock-completo-list"><div class="spinner"></div></div>
+      </div>
 
-      <div class="inv-section-label">Stock actual</div>
-      <div id="inv-stock-list"><div class="spinner"></div></div>
+      <!-- ── PESTAÑA: HISTORIAL ── -->
+      <div class="inv-pane" id="invpane-historial">
+        <div class="inv-hist-filtros">
+          <select id="inv-hist-producto-filtro" onchange="cargarHistorialGeneral()">
+            <option value="">Todos los productos</option>
+          </select>
+          <select id="inv-hist-tipo-filtro" onchange="cargarHistorialGeneral()">
+            <option value="">Todos los motivos</option>
+            <option value="produccion">🏭 Producción</option>
+            <option value="venta">💰 Venta</option>
+            <option value="consumo_interno">🔧 Consumo interno</option>
+            <option value="ajuste">⚖️ Ajuste</option>
+          </select>
+        </div>
+        <div id="inv-historial-general-list"><div class="spinner"></div></div>
+      </div>
+
     </div>
   </div>
 </div>
@@ -366,14 +490,26 @@ setInterval(cargar,60000);
 
 // ── INVENTARIO ───────────────────────────────────────────────
 const TIPO_LABEL={produccion:"🏭 Producción",venta:"💰 Venta",consumo_interno:"🔧 Consumo interno",ajuste:"⚖️ Ajuste"};
-let _inventario=[];
+const CONFIGS_KEY="ft_fb_configs_v1";
+let _inventario=[];       // stock real desde la API: [{producto, cantidad_actual}]
+let _movimientosCache=[]; // historial completo cacheado
+let _modoProducto="estructurado";
+
+function getConfigsGuardadas(){
+  try{return JSON.parse(localStorage.getItem(CONFIGS_KEY)||"[]");}catch(e){return[];}
+}
+function guardarConfig(nombre){
+  const cfgs=getConfigsGuardadas();
+  if(!cfgs.includes(nombre)){
+    cfgs.push(nombre);
+    localStorage.setItem(CONFIGS_KEY,JSON.stringify(cfgs));
+  }
+}
 
 function abrirInventario(){
   document.getElementById("inv-overlay").classList.add("open");
-  document.getElementById("inv-producto").value="";
-  document.getElementById("inv-cantidad").value="";
-  document.getElementById("inv-motivo").value="";
-  document.getElementById("inv-tipo").value="produccion";
+  resetFormularioInventario();
+  setInvTab("registrar");
   cargarInventario();
 }
 
@@ -381,71 +517,167 @@ function cerrarInventario(){
   document.getElementById("inv-overlay").classList.remove("open");
 }
 
+function resetFormularioInventario(){
+  document.getElementById("inv-quick-select").value="";
+  document.getElementById("inv-modelo").value="";
+  document.getElementById("inv-plastico").value="Opaco";
+  document.getElementById("inv-config").value="1 Filtro";
+  document.getElementById("inv-filtro-tipo").value="0.2µm blanco";
+  document.getElementById("inv-guardar-config").checked=false;
+  document.getElementById("inv-producto-libre").value="";
+  document.getElementById("inv-cantidad").value="";
+  document.getElementById("inv-motivo").value="";
+  document.getElementById("inv-tipo").value="produccion";
+  setModoProducto("estructurado");
+  actualizarPreviewNombre();
+}
+
+function setInvTab(tab){
+  ["registrar","stock","historial"].forEach(t=>{
+    document.getElementById("invtab-"+t).classList.toggle("active",t===tab);
+    document.getElementById("invpane-"+t).classList.toggle("active",t===tab);
+  });
+  if(tab==="stock") renderStockCompleto();
+  if(tab==="historial") cargarHistorialGeneral();
+}
+
+function setModoProducto(modo){
+  _modoProducto=modo;
+  document.getElementById("inv-modo-btn-estructurado").classList.toggle("active",modo==="estructurado");
+  document.getElementById("inv-modo-btn-libre").classList.toggle("active",modo==="libre");
+  document.getElementById("inv-estructurado").classList.toggle("active",modo==="estructurado");
+  document.getElementById("inv-libre").classList.toggle("active",modo==="libre");
+}
+
+function nombreEstructurado(){
+  const modelo=document.getElementById("inv-modelo").value.trim();
+  const plastico=document.getElementById("inv-plastico").value;
+  const config=document.getElementById("inv-config").value;
+  const filtro=document.getElementById("inv-filtro-tipo").value;
+  if(!modelo) return "";
+  return "Mod."+modelo+" — "+plastico+" — "+config+" — "+filtro;
+}
+
+function actualizarPreviewNombre(){
+  const nombre=nombreEstructurado();
+  document.getElementById("inv-preview-texto").textContent=nombre||"— escribe un modelo —";
+}
+
+function nombreProductoActual(){
+  return _modoProducto==="estructurado"
+    ? nombreEstructurado()
+    : document.getElementById("inv-producto-libre").value.trim();
+}
+
+// Lista combinada: productos con stock real + configs guardadas sin stock todavía
+function listaProductosConocidos(){
+  const deStock=_inventario.map(i=>i.producto);
+  const deConfigs=getConfigsGuardadas();
+  return [...new Set([...deStock,...deConfigs])].sort();
+}
+
+function poblarQuickSelect(){
+  const sel=document.getElementById("inv-quick-select");
+  const productos=listaProductosConocidos();
+  sel.innerHTML="<option value=\"\">— Elegir de la lista —</option>"
+    +productos.map(p=>"<option value=\""+p.replace(/"/g,"&quot;")+"\">"+p+"</option>").join("");
+  // también poblar el filtro de historial
+  const selHist=document.getElementById("inv-hist-producto-filtro");
+  if(selHist){
+    selHist.innerHTML="<option value=\"\">Todos los productos</option>"
+      +productos.map(p=>"<option value=\""+p.replace(/"/g,"&quot;")+"\">"+p+"</option>").join("");
+  }
+}
+
+function seleccionarProductoRapido(){
+  const val=document.getElementById("inv-quick-select").value;
+  if(!val)return;
+  setModoProducto("libre");
+  document.getElementById("inv-producto-libre").value=val;
+}
+
 async function cargarInventario(){
-  const box=document.getElementById("inv-stock-list");
-  box.innerHTML="<div class=\"spinner\"></div>";
   try{
     const r=await fetch(API+"/inventario/"+AREA+"?todos=1");
     const data=await r.json();
     _inventario=data.inventario||[];
-    renderInventario();
-    // poblar el datalist con productos ya conocidos
-    const list=document.getElementById("inv-productos-list");
-    list.innerHTML=_inventario.map(i=>"<option value=\""+i.producto+"\">").join("");
+    poblarQuickSelect();
   }catch(e){
-    box.innerHTML="<div class=\"inv-empty\">⚠️ Error cargando inventario</div>";
+    toast("⚠️ Error cargando inventario");
   }
 }
 
-function renderInventario(){
-  const box=document.getElementById("inv-stock-list");
+// ── PESTAÑA: STOCK COMPLETO ──────────────────────────────────
+function renderStockCompleto(filtroTexto){
+  const box=document.getElementById("inv-stock-completo-list");
+  const q=(filtroTexto||document.getElementById("inv-stock-search").value||"").toLowerCase().trim();
+  const items=_inventario.filter(i=>!q||i.producto.toLowerCase().includes(q));
   if(!_inventario.length){
     box.innerHTML="<div class=\"inv-empty\">📭 Sin productos registrados todavía</div>";
     return;
   }
-  box.innerHTML=_inventario.map((item,i)=>{
-    return "<div><div class=\"inv-stock-row\">"
-      +"<div class=\"inv-stock-nombre\">"+item.producto+"<span class=\"inv-stock-cant\">"+item.cantidad_actual+"</span></div>"
-      +"<div class=\"inv-stock-actions\"><button class=\"inv-hist-btn\" onclick=\"toggleHistorial("+i+",'"+item.producto.replace(/'/g,"\\'")+"')\">Ver historial</button></div>"
-      +"</div>"
-      +"<div class=\"inv-hist-box\" id=\"inv-hist-"+i+"\"><div class=\"spinner\"></div></div>"
-      +"</div>";
-  }).join("");
+  if(!items.length){
+    box.innerHTML="<div class=\"inv-empty\">🔍 Sin coincidencias para \""+q+"\"</div>";
+    return;
+  }
+  const filas=items.map(i=>
+    "<tr><td>"+i.producto+"</td><td style=\"text-align:right;font-weight:700\">"+i.cantidad_actual+"</td></tr>"
+  ).join("");
+  box.innerHTML="<table class=\"inv-stock-table\"><thead><tr><th>Producto</th><th style=\"text-align:right\">Cantidad</th></tr></thead><tbody>"+filas+"</tbody></table>";
 }
 
-async function toggleHistorial(i,producto){
-  const box=document.getElementById("inv-hist-"+i);
-  const yaAbierto=box.classList.contains("open");
-  // cerrar todos los demás
-  document.querySelectorAll(".inv-hist-box").forEach(b=>b.classList.remove("open"));
-  if(yaAbierto)return;
-  box.classList.add("open");
+function filtrarStockCompleto(){
+  renderStockCompleto();
+}
+
+// ── PESTAÑA: HISTORIAL DE ROTACIÓN ───────────────────────────
+async function cargarHistorialGeneral(){
+  const box=document.getElementById("inv-historial-general-list");
   box.innerHTML="<div class=\"spinner\"></div>";
   try{
     const r=await fetch(API+"/inventario/"+AREA+"/movimientos");
     const data=await r.json();
-    const movs=(data.movimientos||[]).filter(m=>m.producto===producto).slice(0,10);
-    if(!movs.length){
-      box.innerHTML="<div class=\"inv-empty\">Sin movimientos registrados</div>";
-      return;
-    }
-    box.innerHTML=movs.map(m=>{
-      const fecha=m.creado_en?new Date(m.creado_en).toLocaleDateString("es-MX",{day:"2-digit",month:"short",hour:"2-digit",minute:"2-digit"}):"—";
-      const signo=m.cantidad>0?"+":"";
-      return "<div class=\"inv-hist-item\"><span class=\"inv-hist-tipo\">"+(TIPO_LABEL[m.tipo]||m.tipo)+"</span><span>"+signo+m.cantidad+" · "+fecha+(m.motivo?" · "+m.motivo:"")+"</span></div>";
-    }).join("");
+    _movimientosCache=data.movimientos||[];
+    renderHistorialGeneral();
   }catch(e){
     box.innerHTML="<div class=\"inv-empty\">⚠️ Error cargando historial</div>";
   }
 }
 
+function renderHistorialGeneral(){
+  const box=document.getElementById("inv-historial-general-list");
+  const prodFiltro=document.getElementById("inv-hist-producto-filtro").value;
+  const tipoFiltro=document.getElementById("inv-hist-tipo-filtro").value;
+  let movs=_movimientosCache;
+  if(prodFiltro) movs=movs.filter(m=>m.producto===prodFiltro);
+  if(tipoFiltro) movs=movs.filter(m=>m.tipo===tipoFiltro);
+  if(!movs.length){
+    box.innerHTML="<div class=\"inv-empty\">Sin movimientos para este filtro</div>";
+    return;
+  }
+  box.innerHTML=movs.map(m=>{
+    const fecha=m.creado_en?new Date(m.creado_en).toLocaleDateString("es-MX",{day:"2-digit",month:"short",year:"2-digit",hour:"2-digit",minute:"2-digit"}):"—";
+    const signo=m.cantidad>0?"+":"";
+    const cls=m.cantidad>0?"pos":"neg";
+    return "<div class=\"inv-hist-row\">"
+      +"<div class=\"inv-hist-row-left\"><span class=\"inv-hist-row-prod\">"+m.producto+"</span>"
+      +"<span class=\"inv-hist-row-meta\">"+(TIPO_LABEL[m.tipo]||m.tipo)+" · "+fecha+(m.motivo?" · "+m.motivo:"")+"</span></div>"
+      +"<span class=\"inv-hist-row-cant "+cls+"\">"+signo+m.cantidad+"</span>"
+      +"</div>";
+  }).join("");
+}
+
+// ── REGISTRAR MOVIMIENTO ─────────────────────────────────────
 async function registrarMovimiento(){
-  const producto=document.getElementById("inv-producto").value.trim();
+  const producto=nombreProductoActual();
   const cantidad=document.getElementById("inv-cantidad").value;
   const tipo=document.getElementById("inv-tipo").value;
   const motivo=document.getElementById("inv-motivo").value.trim();
 
-  if(!producto){toast("⚠️ Escribe el nombre del producto");return;}
+  if(!producto){
+    toast(_modoProducto==="estructurado"?"⚠️ Escribe el modelo":"⚠️ Escribe el nombre del producto");
+    return;
+  }
   if(cantidad===""||Number(cantidad)<0){toast("⚠️ Ingresa una cantidad válida");return;}
 
   const btn=document.getElementById("inv-submit-btn");
@@ -459,10 +691,14 @@ async function registrarMovimiento(){
     });
     const data=await r.json();
     if(!r.ok)throw new Error(data.error||"Error");
+
+    // Guardar la combinación como reutilizable si se pidió
+    if(_modoProducto==="estructurado" && document.getElementById("inv-guardar-config").checked){
+      guardarConfig(producto);
+    }
+
     toast("✓ "+producto+" actualizado ("+(data.diferencia>=0?"+":"")+data.diferencia+")");
-    document.getElementById("inv-producto").value="";
-    document.getElementById("inv-cantidad").value="";
-    document.getElementById("inv-motivo").value="";
+    resetFormularioInventario();
     await cargarInventario();
   }catch(e){
     toast("⚠️ Error al registrar movimiento");
