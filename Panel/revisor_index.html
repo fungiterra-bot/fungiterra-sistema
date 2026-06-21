@@ -409,9 +409,8 @@ tbody tr.row-visto-recibido:hover td{animation:none;background:rgba(1,119,191,.0
     <div class="nav-item" onclick="window.open('../Panel/fungibolsa.html')"><span class="nav-icon">📦</span> FungiBolsa</div>
     <div class="nav-item" onclick="toast('🔧 Próximamente')"><span class="nav-icon">🔬</span> Laboratorio</div>
     <div class="nav-item" onclick="toast('🔧 Próximamente')"><span class="nav-icon">⚙️</span> Transformación</div>
-    <div class="nav-section" style="margin-top:6px">Sistema</div>
-    <div class="nav-item" onclick="window.open('../repositorioD.html')"><span class="nav-icon">📊</span> Repositorio</div>
-    <div class="nav-item" onclick="window.open('../cotizadorD.html')"><span class="nav-icon">💰</span> Cotizador</div>
+    <div class="nav-item" onclick="toast('🔧 Próximamente')"><span class="nav-icon">🧰</span> Insumos</div>
+    <div class="nav-item" onclick="toast('🔧 Próximamente')"><span class="nav-icon">🍄</span> Piopis</div>
   </div>
   <div class="sidebar-footer">
     <div class="user-chip">
@@ -506,11 +505,26 @@ tbody tr.row-visto-recibido:hover td{animation:none;background:rgba(1,119,191,.0
 
     <!-- VISTA PRODUCTOS A PREPARAR -->
     <div class="vista" id="vista-productos">
-      <div id="productos-content"><div class="spinner"></div></div>
-    </div>
-
-    <!-- VISTA PRODUCTOS (solo lectura) -->
-    <div class="vista" id="vista-productos">
+      <div class="prod-subtabs">
+        <div class="prod-subtab active" id="pst-pendientes" onclick="setSubTabProductos('pendientes')">📋 Pendientes</div>
+        <div class="prod-subtab" id="pst-listos" onclick="setSubTabProductos('listos')">📦 Listos</div>
+        <div class="prod-subtab" id="pst-finalizado" onclick="setSubTabProductos('finalizado')">✅ Finalizado</div>
+      </div>
+      <div class="prod-filtro-tiempo" id="prod-filtro-tiempo" style="display:none">
+        <select class="filter-select" id="pf-fecha-rapida" onchange="aplicarFechaRapidaProductos()">
+          <option value="">📅 Todo el tiempo</option>
+          <option value="hoy">Hoy</option>
+          <option value="semana">Esta semana</option>
+          <option value="mes">Este mes</option>
+          <option value="mesant">Mes anterior</option>
+          <option value="custom">Intervalo...</option>
+        </select>
+        <div id="pf-fecha-custom" style="display:none;gap:6px;align-items:center">
+          <input type="date" class="filter-select" id="pf-fecha-desde" onchange="renderProductosVista()" style="padding:7px 8px;font-size:12px">
+          <span style="color:#7a96ad;font-size:12px">→</span>
+          <input type="date" class="filter-select" id="pf-fecha-hasta" onchange="renderProductosVista()" style="padding:7px 8px;font-size:12px">
+        </div>
+      </div>
       <div id="productos-content"><div class="spinner"></div></div>
     </div>
 
@@ -864,23 +878,50 @@ function detectarArea(nombre){
 }
 
 // ── PRODUCTOS A PREPARAR ──────────────────────────────────────
+let _subTabProductos="pendientes";
+let _todosLosProductos=[]; // cache completo, sin filtrar
+
+function setSubTabProductos(tab){
+  _subTabProductos=tab;
+  document.querySelectorAll(".prod-subtab").forEach(el=>el.classList.remove("active"));
+  document.getElementById("pst-"+tab).classList.add("active");
+  document.getElementById("prod-filtro-tiempo").style.display=(tab==="finalizado")?"flex":"none";
+  renderProductosVista();
+}
+
+function aplicarFechaRapidaProductos(){
+  const v=document.getElementById("pf-fecha-rapida").value;
+  const custom=document.getElementById("pf-fecha-custom");
+  if(v==="custom"){custom.style.display="flex";}
+  else{
+    custom.style.display="none";
+    const hoy=new Date();
+    const fmt=d=>d.toISOString().slice(0,10);
+    let desde="",hasta="";
+    if(v==="hoy"){desde=fmt(hoy);hasta=fmt(hoy);}
+    else if(v==="semana"){const lun=new Date(hoy);lun.setDate(hoy.getDate()-hoy.getDay()+1);desde=fmt(lun);hasta=fmt(hoy);}
+    else if(v==="mes"){desde=fmt(new Date(hoy.getFullYear(),hoy.getMonth(),1));hasta=fmt(hoy);}
+    else if(v==="mesant"){desde=fmt(new Date(hoy.getFullYear(),hoy.getMonth()-1,1));hasta=fmt(new Date(hoy.getFullYear(),hoy.getMonth(),0));}
+    document.getElementById("pf-fecha-desde").value=desde;
+    document.getElementById("pf-fecha-hasta").value=hasta;
+  }
+  renderProductosVista();
+}
+
 async function cargarProductos(){
   document.getElementById("productos-content").innerHTML="<div class=\"spinner\"></div>";
   await cargarReglas();
   try{
-    // Traer todos los pedidos activos con productos
-    const r=await fetch(API+"/pedidos?limite=200");
+    // Traer TODOS los pedidos (sin filtrar por estado) para poder mostrar las 3 categorías
+    const r=await fetch(API+"/pedidos?limite=300");
     const data=await r.json();
-    const pedidosActivos=data.pedidos.filter(p=>!["entregado","cancelado"].includes(p.estado_actual));
 
-    // Para cada pedido activo traer sus productos
     const todos=[];
-    await Promise.all(pedidosActivos.map(async p=>{
+    await Promise.all(data.pedidos.map(async p=>{
       try{
         const rp=await fetch(API+"/pedidos/"+p.token+"/productos");
         const dp=await rp.json();
         (dp.productos||[]).forEach(prod=>{
-          // Detectar área si viene como sin_area
           let area=prod.area;
           if(!area||area==="sin_area"){
             area=detectarArea(prod.nombre_producto)||"sin_area";
@@ -894,35 +935,62 @@ async function cargarProductos(){
             pedido_id:p.id_repositorio||p.token.substring(0,8).toUpperCase(),
             pedido_token:p.token,
             pedido_estado:p.estado_actual,
+            pedido_fecha:p.creado_en?new Date(p.creado_en).toISOString().slice(0,10):"",
             cliente:p.cliente_nombre
           });
         });
       }catch(e){}
     }));
 
-    renderProductos(todos);
+    _todosLosProductos=todos;
+    renderProductosVista();
   }catch(e){
     document.getElementById("productos-content").innerHTML="<div class=\"empty-state\"><div class=\"empty-icon\">⚠️</div><div>Error cargando productos</div></div>";
   }
 }
 
+function renderProductosVista(){
+  let lista=_todosLosProductos;
+
+  if(_subTabProductos==="pendientes"){
+    lista=lista.filter(p=>!["entregado","cancelado"].includes(p.pedido_estado) && !productoCompletado(p));
+  }
+  else if(_subTabProductos==="listos"){
+    lista=lista.filter(p=>!["entregado","cancelado"].includes(p.pedido_estado) && productoCompletado(p));
+  }
+  else if(_subTabProductos==="finalizado"){
+    lista=lista.filter(p=>p.pedido_estado==="entregado");
+    const desde=document.getElementById("pf-fecha-desde")?.value;
+    const hasta=document.getElementById("pf-fecha-hasta")?.value;
+    if(desde) lista=lista.filter(p=>p.pedido_fecha>=desde);
+    if(hasta) lista=lista.filter(p=>p.pedido_fecha<=hasta);
+  }
+
+  renderProductos(lista);
+}
+
 function renderProductos(todos){
   const cont=document.getElementById("productos-content");
+  const mensajesVacios={
+    pendientes:{icon:"🎉",text:"No hay productos pendientes"},
+    listos:{icon:"📦",text:"No hay productos listos esperando empaque"},
+    finalizado:{icon:"🗂️",text:"Sin pedidos finalizados en este rango"}
+  };
   if(!todos.length){
-    cont.innerHTML="<div class=\"empty-state\"><div class=\"empty-icon\">🎉</div><div class=\"empty-text\">No hay productos pendientes</div></div>";
+    const m=mensajesVacios[_subTabProductos]||mensajesVacios.pendientes;
+    cont.innerHTML="<div class=\"empty-state\"><div class=\"empty-icon\">"+m.icon+"</div><div class=\"empty-text\">"+m.text+"</div></div>";
     return;
   }
 
-  // Agrupar por área
   const grupos={};
   todos.forEach(p=>{
     if(!grupos[p.area]) grupos[p.area]=[];
     grupos[p.area].push(p);
   });
 
-  // Orden de áreas: sin_area primero (necesitan atención), luego el resto
   const orden=["sin_area","fungibolsa","laboratorio","transformacion","insumos","piopis"];
   const areasOrdenadas=[...orden.filter(a=>grupos[a]),...Object.keys(grupos).filter(a=>!orden.includes(a))];
+  const permiteAsignar=_subTabProductos==="pendientes";
 
   let html="";
   areasOrdenadas.forEach(area=>{
@@ -932,16 +1000,19 @@ function renderProductos(todos){
     html+="<div class=\"area-bloque\">";
     html+="<div class=\"area-bloque-header\" style=\"border-left:4px solid "+cfg.color+";\">";
     html+="<span class=\"area-bloque-icon\">"+cfg.icon+"</span>";
-    html+="<span class=\"area-bloque-titulo\">"+cfg.label+(esSinArea?" — requieren asignación":"")+"</span>";
+    html+="<span class=\"area-bloque-titulo\">"+cfg.label+(esSinArea&&permiteAsignar?" — requieren asignación":"")+"</span>";
     html+="<span class=\"area-bloque-count\" style=\"background:"+cfg.color+"20;color:"+cfg.color+"\">"+prods.length+" producto"+(prods.length!==1?"s":"")+"</span>";
     html+="</div><div class=\"area-bloque-body\">";
     prods.forEach(p=>{
-      html+="<div class=\"prod-row"+(esSinArea?" prod-sin-area":"")+"\">"+
+      html+="<div class=\"prod-row"+(esSinArea&&permiteAsignar?" prod-sin-area":"")+"\">"+
         "<div><div class=\"prod-nombre\">"+p.nombre+"</div><div class=\"prod-pedido\">"+p.pedido_id+" · "+p.cliente+"</div></div>"+
         "<span class=\"prod-cant\">×"+p.cantidad+"</span>"+
         badge(mapEstado(p.pedido_estado))+
-        +(esSinArea?"<span style=\"font-size:11px;color:#f59e0b;font-weight:600\">⚠️ Sin área</span>":"")+
-        
+        (permiteAsignar
+          ?(esSinArea
+            ?"<button class=\"btn-asignar\" data-nombre=\""+p.nombre.replace(/"/g,'&quot;')+"\" data-id=\""+p.id+"\" onclick=\"abrirModalAreaBtn(this)\" style=\"color:#f59e0b;border-color:#f59e0b\">⚡ Asignar</button>"
+            :"<button class=\"btn-asignar\" data-nombre=\""+p.nombre.replace(/"/g,'&quot;')+"\" data-id=\""+p.id+"\" onclick=\"abrirModalAreaBtn(this)\">✏️</button>")
+          :"")+
         "</div>";
     });
     html+="</div></div>";
@@ -982,31 +1053,37 @@ function selArea(area, btn){
 async function confirmarArea(){
   if(!_modalProd||!_modalAreaSel) return;
   const aprender=document.getElementById("modal-aprender").checked;
+  const btn=document.getElementById("modal-confirmar");
+  btn.disabled=true;
+  btn.textContent="Guardando...";
   try{
-    // Actualizar área del producto en la DB
-    await fetch(API+"/productos/"+_modalProd.prodId+"/estado",{
+    // 1. Actualizar área del producto en la DB
+    const r=await fetch(API+"/productos/"+_modalProd.prodId+"/area",{
       method:"PATCH",
       headers:{"Content-Type":"application/json"},
-      body:JSON.stringify({estado:"pendiente"})
+      body:JSON.stringify({area:_modalAreaSel})
     });
-    // Actualizar área via endpoint directo en pedido_productos
-    // (usamos el endpoint de estado pero también necesitamos uno de área — lo manejamos via reglas)
+    if(!r.ok) throw new Error("Error al actualizar área");
+
+    // 2. Guardar regla de aprendizaje si está marcado
     if(aprender){
-      // Guardar regla permanente
       await fetch(API+"/producto-areas",{
         method:"POST",
         headers:{"Content-Type":"application/json"},
         body:JSON.stringify({producto:_modalProd.nombre,area:_modalAreaSel})
       });
       _reglas[_modalProd.nombre.toLowerCase()]=_modalAreaSel;
-      toast("✅ Guardado: "+_modalProd.nombre+" → "+AREAS_CONFIG[_modalAreaSel]?.label);
+      toast("✅ "+_modalProd.nombre+" → "+( AREAS_CONFIG[_modalAreaSel]?.label||_modalAreaSel)+" (aprendido)");
     } else {
-      toast("✅ Asignado temporalmente");
+      toast("✅ Área asignada: "+_modalProd.nombre);
     }
     cerrarModalArea();
-    cargarProductos(); // recargar
+    cargarProductos();
   }catch(e){
-    toast("❌ Error al guardar");
+    toast("❌ Error: "+e.message);
+  } finally {
+    btn.disabled=false;
+    btn.textContent="Confirmar";
   }
 }
 
