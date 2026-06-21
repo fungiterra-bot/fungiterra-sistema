@@ -199,6 +199,7 @@ tbody tr:hover{background:#f5f9f6}
 .sem-btn.s-empaquetado{background:var(--cafe-soft);border-color:var(--cafe);color:var(--cafe)}
 .sem-btn.s-enviado{background:#e8f4fb;border-color:var(--azul-dark);color:var(--azul-dark)}
 .sem-btn.s-entregado{background:#e6f4ec;border-color:var(--verde-dark);color:var(--verde-dark)}
+.sem-btn.s-cancelado{background:#fdecea;border-color:#c0392b;color:#c0392b}
 
 .area-block{background:var(--surface2);border:1.5px solid var(--border);border-radius:8px;padding:12px 14px;margin-bottom:8px;border-left:4px solid var(--azul)}
 .area-block.lab{border-left-color:var(--verde)}
@@ -448,7 +449,7 @@ tbody tr.row-visto-recibido:hover td{animation:none;background:rgba(1,119,191,.0
         <select class="filter-select" id="f-estado" onchange="filtrar()">
           <option value="">Todos los estados</option>
           <option>Recibido</option><option>En producción</option><option>Listo</option>
-          <option>Empaquetado</option><option>Enviado</option><option>Entregado</option>
+          <option>Empaquetado</option><option>Enviado</option><option>Entregado</option><option>Cancelado</option>
         </select>
         <select class="filter-select" id="f-socio" onchange="filtrar()">
           <option value="">Todos los socios</option>
@@ -588,9 +589,9 @@ let _clientes=[];
 let _vistaActual="pedidos";
 
 const AREA_MAP={fungibolsa:{label:"FungiBolsa",cls:"area-fb",blk:""},laboratorio:{label:"Laboratorio",cls:"area-lab",blk:"lab"},transformacion:{label:"Transformación",cls:"area-tf",blk:"tf"},insumos:{label:"Insumos",cls:"area-ins",blk:"ins"},piopis:{label:"Piopis",cls:"area-pip",blk:"pip"}};
-const ESTADOS=["Recibido","En producción","Empaquetado","Enviado","Entregado"];
-const SEM_CLS={"Recibido":"s-recibido","En producción":"s-produccion","Empaquetado":"s-empaquetado","Enviado":"s-enviado","Entregado":"s-entregado"};
-const SEM_ICON={"Recibido":"🟡","En producción":"🔵","Empaquetado":"📦","Enviado":"🚚","Entregado":"✅"};
+const ESTADOS=["Recibido","En producción","Empaquetado","Enviado","Entregado","Cancelado"];
+const SEM_CLS={"Recibido":"s-recibido","En producción":"s-produccion","Empaquetado":"s-empaquetado","Enviado":"s-enviado","Entregado":"s-entregado","Cancelado":"s-cancelado"};
+const SEM_ICON={"Recibido":"🟡","En producción":"🔵","Empaquetado":"📦","Enviado":"🚚","Entregado":"✅","Cancelado":"❌"};
 
 // PRIORIDAD
 const PRIORIDAD_KEY="ft_prioridad_v1";
@@ -666,15 +667,21 @@ function toggleEstadoMenuRev(id){
 async function cambiarEstadoRapidoRev(id,estado){
   const p=_todos.find(x=>x.id===id);if(!p)return;
   document.getElementById("eselr-"+id)?.classList.remove("open");
+  let motivo="Cambio por Revisor (delegado)";
+  if(estado==="Cancelado"){
+    const r=prompt("⚠️ Vas a cancelar el pedido "+id+". Escribe el motivo de la cancelación:");
+    if(r===null) return;
+    motivo="Cancelado por Revisor: "+(r.trim()||"sin motivo especificado");
+  }
   try{
     await fetch(API+"/pedidos/"+p.token+"/estado",{
       method:"PATCH",
       headers:{"Content-Type":"application/json"},
-      body:JSON.stringify({estado_nuevo:estadoApi(estado),motivo:"Cambio por Revisor (delegado)"})
+      body:JSON.stringify({estado_nuevo:estadoApi(estado),motivo:motivo})
     });
     p.estado=estado;
     filtrar();
-    toast("✓ "+id+" → "+estado);
+    toast(estado==="Cancelado"?"✖ "+id+" cancelado":"✓ "+id+" → "+estado);
   }catch(e){toast("⚠️ Error al cambiar estado")}
 }
 document.addEventListener("click",()=>{
@@ -692,7 +699,7 @@ function mapEstado(e){
 }
 
 function estadoApi(e){
-  const m={"Recibido":"recibido","En producción":"en_produccion","Listo":"listo","Empaquetado":"empaquetado","Enviado":"enviado","Entregado":"entregado"};
+  const m={"Recibido":"recibido","En producción":"en_produccion","Listo":"listo","Empaquetado":"empaquetado","Enviado":"enviado","Entregado":"entregado","Cancelado":"cancelado"};
   return m[e]||e.toLowerCase();
 }
 
@@ -1352,16 +1359,22 @@ async function cambiarEstado(id,estado){
     return;
   }
   const p=_todos.find(x=>x.id===id);if(!p)return;
+  let motivo="Cambio por Revisor (delegado)";
+  if(estado==="Cancelado"){
+    const r=prompt("⚠️ Vas a cancelar el pedido "+id+". Escribe el motivo de la cancelación:");
+    if(r===null) return;
+    motivo="Cancelado por Revisor: "+(r.trim()||"sin motivo especificado");
+  }
   try{
     await fetch(API+"/pedidos/"+p.token+"/estado",{
       method:"PATCH",
       headers:{"Content-Type":"application/json"},
-      body:JSON.stringify({estado_nuevo:estadoApi(estado),motivo:"Cambio por Revisor (delegado)"})
+      body:JSON.stringify({estado_nuevo:estadoApi(estado),motivo:motivo})
     });
     p.estado=estado;
     filtrar();
     abrirDetalle(id);
-    toast("✓ "+id+" → "+estado);
+    toast(estado==="Cancelado"?"✖ "+id+" cancelado":"✓ "+id+" → "+estado);
   }catch(e){toast("⚠️ Error al cambiar estado")}
 }
 
