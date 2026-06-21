@@ -41,6 +41,7 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);min-height:1
 .pedido-cliente{font-size:13px;font-weight:500;color:var(--text);margin-top:2px}
 .pedido-meta{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:4px}
 .meta-tag{font-size:11px;color:var(--text3)}
+.stock-tag{display:inline-flex;align-items:center;padding:2px 8px;border-radius:10px;font-size:10px;font-weight:700;color:#1f7a3b;background:#eaf7ef;border:1.5px solid #a8d8b8}
 .area-pill{padding:2px 7px;border-radius:10px;font-size:10px;font-weight:600}
 .area-lab{background:var(--verde-soft);color:var(--verde);border:1px solid rgba(40,151,75,.2)}
 .area-tf{background:var(--cafe-soft);color:var(--cafe);border:1px solid rgba(131,75,62,.2)}
@@ -51,6 +52,8 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);min-height:1
 .producto-row:last-child{border-bottom:none}
 .producto-nombre{font-size:13px;color:var(--text);font-weight:500}
 .producto-cant{font-size:12px;color:var(--text3);margin-top:2px}
+.usar-stock-btn{margin-top:6px;padding:6px 12px;border-radius:7px;border:1.5px solid #1f7a3b;background:#eaf7ef;color:#1f7a3b;font-size:11px;font-weight:700;cursor:pointer;font-family:var(--sans)}
+.usar-stock-btn:hover{background:#1f7a3b;color:#fff}
 .estado-btns{display:flex;gap:6px;flex-wrap:wrap;margin-top:12px;padding-top:12px;border-top:1px solid var(--border)}
 .estado-btn{padding:7px 14px;border-radius:7px;font-size:12px;font-weight:600;border:1.5px solid var(--border);background:var(--surface2);color:var(--text2);cursor:pointer;font-family:var(--sans);transition:all .15s}
 .estado-btn:hover{border-color:var(--azul);color:var(--azul)}
@@ -436,6 +439,7 @@ async function cargar(){
     document.getElementById("s-total").textContent=_pedidos.length;
     document.getElementById("s-prod").textContent=_pedidos.filter(p=>(p.productos||[]).some(pr=>pr.estado==="en_produccion")).length;
     document.getElementById("s-listo").textContent=_pedidos.filter(p=>(p.productos||[]).length&&(p.productos||[]).every(pr=>pr.estado==="listo")).length;
+    await cargarInventarioSilencioso();
     renderGrid();
     document.getElementById("topbar-sub").textContent=_pedidos.length+" pedidos activos";
     verificarNuevos();
@@ -443,6 +447,17 @@ async function cargar(){
     iniciarPolling();
   }catch(e){
     document.getElementById("grid").innerHTML="<div class=\"empty-state\"><div class=\"empty-icon\">⚠️</div><div>Error conectando</div></div>";
+  }
+}
+
+// Carga el inventario sin tocar la UI del modal (para tener disponible el match pedido↔stock)
+async function cargarInventarioSilencioso(){
+  try{
+    const r=await fetch(API+"/inventario/"+AREA+"?todos=1");
+    const data=await r.json();
+    _inventario=data.inventario||[];
+  }catch(e){
+    // si falla, simplemente no habrá badges de stock — no rompe el resto del panel
   }
 }
 
@@ -469,6 +484,11 @@ function badge(e){
   return "<span class=\"badge "+m[e]+"\">"+l[e]+"</span>";
 }
 
+// Busca coincidencia EXACTA de nombre entre un producto del pedido y el inventario del área
+function matchInventario(nombreProducto){
+  return _inventario.find(i=>i.producto===nombreProducto && i.cantidad_actual>0) || null;
+}
+
 function renderGrid(){
   const grid=document.getElementById("grid");
   const lista=_pedidos.filter(p=>_subTabFB==="listos" ? estArea(p)==="listo" : estArea(p)!=="listo");
@@ -482,9 +502,25 @@ function renderGrid(){
     const e=estArea(p);
     const otras=(p.otras_areas||[]).map(a=>"<span class=\"area-pill "+AC[a]+"\">"+AL[a]+"</span>").join("");
     const prioTag=prioridadBadgeRO(p.id_repositorio||p.token.substring(0,8));
-    const prods=(p.productos||[]).map(pr=>"<div class=\"producto-row\"><div><div class=\"producto-nombre\">"+pr.nombre_producto+"</div><div class=\"producto-cant\">"+pr.cantidad+" unidades</div></div></div>").join("");
+
+    // Matching de inventario por producto
+    let hayStockBadge="";
+    const matchesPorProducto=(p.productos||[]).map(pr=>matchInventario(pr.nombre_producto));
+    const totalEnStock=matchesPorProducto.reduce((s,m)=>m?s+m.cantidad_actual:s,0);
+    if(totalEnStock>0){
+      hayStockBadge="<span class=\"meta-tag stock-tag\">📦 Hay "+totalEnStock+" en stock</span>";
+    }
+
+    const prods=(p.productos||[]).map((pr,pi)=>{
+      const match=matchesPorProducto[pi];
+      const usarBtn=match
+        ? "<button class=\"usar-stock-btn\" onclick=\"event.stopPropagation();usarDelInventario("+i+","+pi+")\">📦 Usar del inventario (hay "+match.cantidad_actual+")</button>"
+        : "";
+      return "<div class=\"producto-row\"><div><div class=\"producto-nombre\">"+pr.nombre_producto+"</div><div class=\"producto-cant\">"+pr.cantidad+" unidades</div>"+usarBtn+"</div></div>";
+    }).join("");
+
     const cls=esNuevo(p)?"nuevo":(esVisto(p.token)?"":"visto-recibido");
-    return "<div class=\"pedido-card "+cls+"\"><div class=\"pedido-header\" onclick=\"tog("+i+")\"><div><div class=\"pedido-id\">"+(p.id_repositorio||p.token.substring(0,8))+"</div><div class=\"pedido-cliente\">"+(p.cliente_nombre||"—")+"</div><div class=\"pedido-meta\"><span class=\"meta-tag\">Socio "+(p.socio||"—")+"</span>"+otras+prioTag+"</div></div>"+badge(e)+"</div><div class=\"pedido-body\" id=\"b"+i+"\"><div>"+prods+"</div><div class=\"estado-btns\"><button class=\"estado-btn"+(e==="en_stock"?" s-stock":"")+"\" onclick=\"est("+i+",'en_stock')\">📦 En stock</button><button class=\"estado-btn"+(e==="en_produccion"?" s-prod":"")+"\" onclick=\"est("+i+",'en_produccion')\">🔨 En producción</button><button class=\"estado-btn"+(e==="listo"?" s-listo":"")+"\" onclick=\"est("+i+",'listo')\">✅ Listo</button></div></div></div>";
+    return "<div class=\"pedido-card "+cls+"\"><div class=\"pedido-header\" onclick=\"tog("+i+")\"><div><div class=\"pedido-id\">"+(p.id_repositorio||p.token.substring(0,8))+"</div><div class=\"pedido-cliente\">"+(p.cliente_nombre||"—")+"</div><div class=\"pedido-meta\"><span class=\"meta-tag\">Socio "+(p.socio||"—")+"</span>"+otras+prioTag+hayStockBadge+"</div></div>"+badge(e)+"</div><div class=\"pedido-body\" id=\"b"+i+"\"><div>"+prods+"</div><div class=\"estado-btns\"><button class=\"estado-btn"+(e==="en_stock"?" s-stock":"")+"\" onclick=\"est("+i+",'en_stock')\">📦 En stock</button><button class=\"estado-btn"+(e==="en_produccion"?" s-prod":"")+"\" onclick=\"est("+i+",'en_produccion')\">🔨 En producción</button><button class=\"estado-btn"+(e==="listo"?" s-listo":"")+"\" onclick=\"est("+i+",'listo')\">✅ Listo</button></div></div></div>";
   }).join("");
 }
 
@@ -519,6 +555,54 @@ async function est(i,estado){
     toast("✓ "+(p.id_repositorio||"")+" → "+estado);
     await cargar();
   }catch(e){toast("⚠️ Error al actualizar")}
+}
+
+// Usar del inventario: descuenta stock + marca el producto como "listo"
+async function usarDelInventario(pedidoIdx,productoIdx){
+  const p=_pedidos[pedidoIdx];if(!p)return;
+  const pr=(p.productos||[])[productoIdx];if(!pr)return;
+  const match=matchInventario(pr.nombre_producto);
+  if(!match){toast("⚠️ Ya no hay stock de este producto");return;}
+
+  const cantidadPedida=pr.cantidad;
+  const stockDisponible=match.cantidad_actual;
+  if(cantidadPedida>stockDisponible){
+    toast("⚠️ El pedido pide "+cantidadPedida+" pero solo hay "+stockDisponible+" en stock");
+    return;
+  }
+
+  const nuevoTotal=stockDisponible-cantidadPedida;
+  const ok=confirm("¿Usar "+cantidadPedida+" de \""+pr.nombre_producto+"\" del inventario?\n\nQuedarán "+nuevoTotal+" en stock.\nEl producto pasará a estado Listo.");
+  if(!ok)return;
+
+  try{
+    // 1) Descontar del inventario (motivo: venta, referencia al pedido)
+    const rInv=await fetch(API+"/inventario",{
+      method:"POST",
+      headers:{"Content-Type":"application/json"},
+      body:JSON.stringify({
+        area:AREA,
+        producto:pr.nombre_producto,
+        cantidad_nueva:nuevoTotal,
+        tipo:"venta",
+        motivo:"Pedido "+(p.id_repositorio||p.token.substring(0,8))
+      })
+    });
+    if(!rInv.ok)throw new Error("No se pudo descontar el inventario");
+
+    // 2) Marcar el producto del pedido como listo (mismo endpoint que ya usan los botones de estado)
+    const rEstado=await fetch(API+"/productos/"+pr.id+"/estado",{
+      method:"PATCH",
+      headers:{"Content-Type":"application/json"},
+      body:JSON.stringify({estado:"listo"})
+    });
+    if(!rEstado.ok)throw new Error("No se pudo actualizar el estado");
+
+    toast("✓ "+pr.nombre_producto+" tomado del inventario — listo");
+    await cargar();
+  }catch(e){
+    toast("⚠️ Error al usar del inventario");
+  }
 }
 
 function toast(msg){const t=document.getElementById("toast");t.textContent=msg;t.classList.add("show");setTimeout(()=>t.classList.remove("show"),2800)}
