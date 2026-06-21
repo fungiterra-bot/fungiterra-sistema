@@ -277,8 +277,8 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);min-height:1
           <div class="inv-field">
             <label>Plástico</label>
             <select id="inv-plastico" onchange="actualizarPreviewNombre()">
-              <option value="Opaco">Opaco</option>
-              <option value="Transparente">Transparente</option>
+              <option value="opaco">Opaco</option>
+              <option value="transparente">Transparente</option>
             </select>
           </div>
           <div class="inv-field">
@@ -286,16 +286,16 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);min-height:1
             <select id="inv-config" onchange="actualizarPreviewNombre()">
               <option value="1 Filtro">1 Filtro</option>
               <option value="2 Filtros">2 Filtros</option>
-              <option value="Filtro + Puerto">Filtro + Puerto</option>
-              <option value="2 Filtros + Puerto">2 Filtros + Puerto</option>
+              <option value="Filtro+Puerto">Filtro + Puerto</option>
+              <option value="2 Filtros+Puerto">2 Filtros + Puerto</option>
             </select>
           </div>
           <div class="inv-field full">
             <label>Filtro</label>
             <select id="inv-filtro-tipo" onchange="actualizarPreviewNombre()">
-              <option value="0.2µm blanco">0.2µm — Blanco</option>
-              <option value="2µm azul">2µm — Azul</option>
-              <option value="5µm naranja">5µm — Naranja</option>
+              <option value="0.2µm (blanco)">0.2µm — Blanco</option>
+              <option value="2µm (azul)">2µm — Azul</option>
+              <option value="5µm (naranja)">5µm — Naranja</option>
             </select>
           </div>
           <div class="inv-form full" style="margin:0">
@@ -320,10 +320,10 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);min-height:1
           <div class="inv-field">
             <label>Motivo</label>
             <select id="inv-tipo" onchange="onCambioMotivo()">
-              <option value="produccion">🏭 Producción</option>
-              <option value="consumo_interno">🔧 Consumo interno</option>
-              <option value="venta_no_registrada">💰 Venta no registrada</option>
-              <option value="ajuste">⚖️ Ajuste / corrección</option>
+              <option value="produccion">🏭 Producción (+)</option>
+              <option value="consumo_interno">🔧 Consumo interno (−)</option>
+              <option value="venta_no_registrada">💰 Venta no registrada (−)</option>
+              <option value="ajuste">⚖️ Ajuste / corrección (+/−)</option>
             </select>
           </div>
           <div class="inv-field">
@@ -559,9 +559,9 @@ function resetFormularioInventario(){
   document.getElementById("inv-modelo-select").value="EC";
   document.getElementById("inv-modelo-nuevo").value="";
   document.getElementById("inv-modelo-nuevo").style.display="none";
-  document.getElementById("inv-plastico").value="Opaco";
+  document.getElementById("inv-plastico").value="opaco";
   document.getElementById("inv-config").value="1 Filtro";
-  document.getElementById("inv-filtro-tipo").value="0.2µm blanco";
+  document.getElementById("inv-filtro-tipo").value="0.2µm (blanco)";
   document.getElementById("inv-guardar-config").checked=false;
   document.getElementById("inv-producto-libre").value="";
   document.getElementById("inv-cantidad").value="";
@@ -630,11 +630,12 @@ function nombreEstructurado(){
   const modelo=sel==="__nuevo__"
     ? document.getElementById("inv-modelo-nuevo").value.trim()
     : sel;
-  const plastico=document.getElementById("inv-plastico").value;
-  const config=document.getElementById("inv-config").value;
-  const filtro=document.getElementById("inv-filtro-tipo").value;
+  const plastico=document.getElementById("inv-plastico").value;   // value real: opaco/transparente
+  const config=document.getElementById("inv-config").value;        // ya viene en formato cotizador
+  const filtro=document.getElementById("inv-filtro-tipo").value;   // ya viene en formato cotizador
   if(!modelo) return "";
-  return "Mod."+modelo+" — "+plastico+" — "+config+" — "+filtro;
+  // Formato IDÉNTICO al cotizador: 'FB Mod.'+m+' '+p+' — '+cl[c]+' '+filtro
+  return "FB Mod."+modelo+" "+plastico+" — "+config+" "+filtro;
 }
 
 function actualizarPreviewNombre(){
