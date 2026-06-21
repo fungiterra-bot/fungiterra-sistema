@@ -213,6 +213,25 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);min-height:1
 .inv-hist-row-cant.pos{color:#1f7a3b}
 .inv-hist-row-cant.neg{color:#c0392b}
 
+/* MODAL FABRICACIÓN */
+.fab-overlay{display:none;position:fixed;inset:0;background:rgba(26,35,50,.5);z-index:300;align-items:flex-start;justify-content:center;padding:24px 16px;overflow-y:auto}
+.fab-overlay.open{display:flex}
+.fab-modal{background:var(--surface);border-radius:14px;width:100%;max-width:640px;margin-top:20px;box-shadow:0 12px 40px rgba(26,35,50,.25)}
+.fab-head{padding:16px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;background:var(--surface);border-radius:14px 14px 0 0}
+.fab-head h2{font-size:16px;font-weight:700;color:var(--azul)}
+.fab-close{background:none;border:none;font-size:20px;color:var(--text3);cursor:pointer;line-height:1;padding:4px}
+.fab-close:hover{color:var(--text)}
+.fab-body{padding:20px}
+.fab-filtros{display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap}
+.fab-filtros select{flex:1;min-width:140px;padding:8px 10px;border:1.5px solid var(--border);border-radius:7px;font-size:12px;font-family:var(--sans);background:var(--surface2);color:var(--text)}
+.fab-row{display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid var(--surface2);font-size:12px}
+.fab-row:last-child{border-bottom:none}
+.fab-row-left{display:flex;flex-direction:column;gap:2px}
+.fab-row-prod{font-weight:600;color:var(--text);font-size:13px}
+.fab-row-meta{color:var(--text3);font-size:11px}
+.fab-row-cant{font-weight:700;font-size:13px;color:var(--azul);white-space:nowrap}
+.fab-empty{text-align:center;padding:30px 10px;color:var(--text3);font-size:12px}
+
 
 </style>
 </head>
@@ -228,6 +247,7 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);min-height:1
   </div>
   <div class="topbar-right">
     <button class="btn btn-white" onclick="abrirInventario()">📋 Inventario</button>
+    <button class="btn btn-white" onclick="abrirFabricacion()">🏭 Fabricación</button>
     <button class="btn btn-white" onclick="cargar()">↺ Actualizar</button>
     <button class="btn btn-white" onclick="window.open('../../Panel/admin_index.html')">🍄 Admin</button>
   </div>
@@ -376,6 +396,23 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);min-height:1
         <div id="inv-historial-general-list"><div class="spinner"></div></div>
       </div>
 
+    </div>
+  </div>
+</div>
+
+<div class="fab-overlay" id="fab-overlay" onclick="if(event.target===this)cerrarFabricacion()">
+  <div class="fab-modal">
+    <div class="fab-head">
+      <h2>🏭 Fabricación — FungiBolsa</h2>
+      <button class="fab-close" onclick="cerrarFabricacion()">✕</button>
+    </div>
+    <div class="fab-body">
+      <div class="fab-filtros">
+        <select id="fab-producto-filtro" onchange="renderFabricacion()">
+          <option value="">Todos los productos</option>
+        </select>
+      </div>
+      <div id="fab-lista"><div class="spinner"></div></div>
     </div>
   </div>
 </div>
@@ -689,6 +726,52 @@ function abrirInventario(){
 
 function cerrarInventario(){
   document.getElementById("inv-overlay").classList.remove("open");
+}
+
+// ── MODAL FABRICACIÓN ────────────────────────────────────────
+let _fabricacionCache=[];
+function abrirFabricacion(){
+  document.getElementById("fab-overlay").classList.add("open");
+  cargarFabricacion();
+}
+
+function cerrarFabricacion(){
+  document.getElementById("fab-overlay").classList.remove("open");
+}
+
+async function cargarFabricacion(){
+  const box=document.getElementById("fab-lista");
+  box.innerHTML="<div class=\"spinner\"></div>";
+  try{
+    const r=await fetch(API+"/fabricacion/"+AREA);
+    const data=await r.json();
+    _fabricacionCache=data.fabricacion||data.registros||[];
+    const sel=document.getElementById("fab-producto-filtro");
+    const productos=[...new Set(_fabricacionCache.map(f=>f.producto))].sort();
+    sel.innerHTML="<option value=\"\">Todos los productos</option>"+productos.map(p=>"<option value=\""+p+"\">"+p+"</option>").join("");
+    renderFabricacion();
+  }catch(e){
+    box.innerHTML="<div class=\"fab-empty\">⚠️ Error cargando fabricación</div>";
+  }
+}
+
+function renderFabricacion(){
+  const box=document.getElementById("fab-lista");
+  const filtro=document.getElementById("fab-producto-filtro").value;
+  let regs=_fabricacionCache;
+  if(filtro) regs=regs.filter(f=>f.producto===filtro);
+  if(!regs.length){
+    box.innerHTML="<div class=\"fab-empty\">Sin registros de fabricación</div>";
+    return;
+  }
+  box.innerHTML=regs.map(f=>{
+    const fecha=f.creado_en?new Date(f.creado_en).toLocaleDateString("es-MX",{day:"2-digit",month:"short",year:"2-digit",hour:"2-digit",minute:"2-digit"}):"—";
+    return "<div class=\"fab-row\">"
+      +"<div class=\"fab-row-left\"><span class=\"fab-row-prod\">"+f.producto+"</span>"
+      +"<span class=\"fab-row-meta\">"+(f.pedido_referencia?"Pedido "+f.pedido_referencia+" · ":"")+fecha+"</span></div>"
+      +"<span class=\"fab-row-cant\">×"+f.cantidad+"</span>"
+      +"</div>";
+  }).join("");
 }
 
 function resetFormularioInventario(){
