@@ -937,13 +937,12 @@ function renderProductosVista(){
   let lista=_todosLosProductos;
 
   if(_subTabProductos==="pendientes"){
-    // Productos cuyo pedido sigue activo (no entregado/cancelado) Y el producto mismo no está completado
+    // Producto NO completado, pedido sigue activo
     lista=lista.filter(p=>!["entregado","cancelado"].includes(p.pedido_estado) && !productoCompletado(p));
   }
   else if(_subTabProductos==="listos"){
-    // Producto completado, pero el PEDIDO sigue esperando ser empacado/enviado
-    // (recibido o en_produccion = aún no se ha movido a empaquetado/enviado/entregado)
-    lista=lista.filter(p=>["recibido","en_produccion"].includes(p.pedido_estado) && productoCompletado(p));
+    // Producto completado, pedido en cualquier etapa antes de Entregado/Cancelado
+    lista=lista.filter(p=>!["entregado","cancelado"].includes(p.pedido_estado) && productoCompletado(p));
   }
   else if(_subTabProductos==="finalizado"){
     // Pedido ya entregado — aplica filtro de tiempo
