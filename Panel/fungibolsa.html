@@ -239,7 +239,14 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);min-height:1
         <div class="inv-estructurado active" id="inv-estructurado" style="grid-template-columns:1fr 1fr;gap:10px">
           <div class="inv-field full">
             <label>Modelo</label>
-            <input type="text" id="inv-modelo" placeholder="ej. G, M, C, EC, Piopis..." oninput="actualizarPreviewNombre()">
+            <select id="inv-modelo-select" onchange="onCambioModeloSelect()">
+              <option value="EC">EC</option>
+              <option value="C">C</option>
+              <option value="M">M</option>
+              <option value="G">G</option>
+              <option value="__nuevo__">➕ Nuevo modelo...</option>
+            </select>
+            <input type="text" id="inv-modelo-nuevo" placeholder="Escribe el nombre del nuevo modelo" oninput="actualizarPreviewNombre()" style="display:none;margin-top:8px">
           </div>
           <div class="inv-field">
             <label>Plástico</label>
@@ -519,7 +526,9 @@ function cerrarInventario(){
 
 function resetFormularioInventario(){
   document.getElementById("inv-quick-select").value="";
-  document.getElementById("inv-modelo").value="";
+  document.getElementById("inv-modelo-select").value="EC";
+  document.getElementById("inv-modelo-nuevo").value="";
+  document.getElementById("inv-modelo-nuevo").style.display="none";
   document.getElementById("inv-plastico").value="Opaco";
   document.getElementById("inv-config").value="1 Filtro";
   document.getElementById("inv-filtro-tipo").value="0.2µm blanco";
@@ -549,8 +558,19 @@ function setModoProducto(modo){
   document.getElementById("inv-libre").classList.toggle("active",modo==="libre");
 }
 
+function onCambioModeloSelect(){
+  const esNuevo=document.getElementById("inv-modelo-select").value==="__nuevo__";
+  const campoNuevo=document.getElementById("inv-modelo-nuevo");
+  campoNuevo.style.display=esNuevo?"block":"none";
+  if(esNuevo) campoNuevo.focus();
+  actualizarPreviewNombre();
+}
+
 function nombreEstructurado(){
-  const modelo=document.getElementById("inv-modelo").value.trim();
+  const sel=document.getElementById("inv-modelo-select").value;
+  const modelo=sel==="__nuevo__"
+    ? document.getElementById("inv-modelo-nuevo").value.trim()
+    : sel;
   const plastico=document.getElementById("inv-plastico").value;
   const config=document.getElementById("inv-config").value;
   const filtro=document.getElementById("inv-filtro-tipo").value;
