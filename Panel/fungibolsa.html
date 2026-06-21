@@ -94,6 +94,40 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);min-height:1
 
 .toast{position:fixed;bottom:24px;right:24px;background:var(--text);color:#fff;border-radius:8px;padding:10px 16px;font-size:13px;font-weight:500;z-index:200;opacity:0;transform:translateY(6px);transition:all .2s;pointer-events:none}
 .toast.show{opacity:1;transform:translateY(0)}
+
+/* INVENTARIO MODAL */
+.inv-overlay{display:none;position:fixed;inset:0;background:rgba(26,35,50,.5);z-index:300;align-items:flex-start;justify-content:center;padding:24px 16px;overflow-y:auto}
+.inv-overlay.open{display:flex}
+.inv-modal{background:var(--surface);border-radius:14px;width:100%;max-width:640px;margin-top:20px;box-shadow:0 12px 40px rgba(26,35,50,.25)}
+.inv-head{padding:16px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;background:var(--surface);border-radius:14px 14px 0 0}
+.inv-head h2{font-size:16px;font-weight:700;color:var(--cafe)}
+.inv-close{background:none;border:none;font-size:20px;color:var(--text3);cursor:pointer;line-height:1;padding:4px}
+.inv-close:hover{color:var(--text)}
+.inv-body{padding:20px}
+.inv-section-label{font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.6px;margin-bottom:10px}
+.inv-form{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:8px}
+.inv-form .full{grid-column:1/-1}
+.inv-field label{display:block;font-size:11px;color:var(--text2);font-weight:600;margin-bottom:4px}
+.inv-field input,.inv-field select{width:100%;padding:8px 10px;border:1.5px solid var(--border);border-radius:7px;font-size:13px;font-family:var(--sans);background:var(--surface2);color:var(--text)}
+.inv-field input:focus,.inv-field select:focus{outline:none;border-color:var(--cafe);background:var(--surface)}
+.inv-submit{margin-top:6px;width:100%;padding:10px;border-radius:8px;background:var(--cafe);color:#fff;border:none;font-weight:700;font-size:13px;cursor:pointer;font-family:var(--sans)}
+.inv-submit:hover{opacity:.92}
+.inv-submit:disabled{opacity:.5;cursor:not-allowed}
+.inv-divider{height:1px;background:var(--border);margin:20px 0}
+.inv-stock-row{display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid var(--surface2)}
+.inv-stock-row:last-child{border-bottom:none}
+.inv-stock-nombre{font-size:13px;font-weight:600;color:var(--text)}
+.inv-stock-cant{font-size:13px;color:var(--text2);font-weight:700;margin-left:8px}
+.inv-stock-actions{display:flex;align-items:center;gap:10px}
+.inv-hist-btn{background:none;border:none;color:var(--azul);font-size:11px;font-weight:600;cursor:pointer;font-family:var(--sans);padding:2px 4px}
+.inv-hist-btn:hover{text-decoration:underline}
+.inv-hist-box{display:none;background:var(--surface2);border-radius:8px;padding:10px 12px;margin-top:6px;font-size:12px}
+.inv-hist-box.open{display:block}
+.inv-hist-item{display:flex;justify-content:space-between;padding:4px 0;color:var(--text2);border-bottom:1px solid var(--border)}
+.inv-hist-item:last-child{border-bottom:none}
+.inv-hist-tipo{font-weight:600}
+.inv-empty{text-align:center;padding:30px 10px;color:var(--text3);font-size:13px}
+
 </style>
 </head>
 <body>
@@ -107,6 +141,7 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);min-height:1
     </div>
   </div>
   <div class="topbar-right">
+    <button class="btn btn-white" onclick="abrirInventario()">📋 Inventario</button>
     <button class="btn btn-white" onclick="cargar()">↺ Actualizar</button>
     <button class="btn btn-white" onclick="window.open('../../Panel/admin_index.html')">🍄 Admin</button>
   </div>
@@ -120,6 +155,48 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);min-height:1
   </div>
   <div class="pedidos-grid" id="grid"><div class="spinner"></div></div>
 </div>
+<div class="inv-overlay" id="inv-overlay" onclick="if(event.target===this)cerrarInventario()">
+  <div class="inv-modal">
+    <div class="inv-head">
+      <h2>📋 Inventario — FungiBolsa</h2>
+      <button class="inv-close" onclick="cerrarInventario()">✕</button>
+    </div>
+    <div class="inv-body">
+      <div class="inv-section-label">Registrar movimiento</div>
+      <div class="inv-form">
+        <div class="inv-field full">
+          <label>Producto</label>
+          <input type="text" id="inv-producto" placeholder="ej. Fungibolsa Mod.G" list="inv-productos-list">
+          <datalist id="inv-productos-list"></datalist>
+        </div>
+        <div class="inv-field">
+          <label>Cantidad nueva (total)</label>
+          <input type="number" id="inv-cantidad" placeholder="0" min="0">
+        </div>
+        <div class="inv-field">
+          <label>Motivo</label>
+          <select id="inv-tipo">
+            <option value="produccion">🏭 Producción (entra)</option>
+            <option value="venta">💰 Venta (sale)</option>
+            <option value="consumo_interno">🔧 Consumo interno (sale)</option>
+            <option value="ajuste">⚖️ Ajuste / corrección</option>
+          </select>
+        </div>
+        <div class="inv-field full">
+          <label>Nota (opcional)</label>
+          <input type="text" id="inv-motivo" placeholder="ej. Pruebas de laboratorio">
+        </div>
+      </div>
+      <button class="inv-submit" id="inv-submit-btn" onclick="registrarMovimiento()">Registrar movimiento</button>
+
+      <div class="inv-divider"></div>
+
+      <div class="inv-section-label">Stock actual</div>
+      <div id="inv-stock-list"><div class="spinner"></div></div>
+    </div>
+  </div>
+</div>
+
 <div class="toast" id="toast"></div>
 <script>
 const API="https://fungiterra-api-production.up.railway.app";
@@ -261,6 +338,114 @@ async function est(i,estado){
 function toast(msg){const t=document.getElementById("toast");t.textContent=msg;t.classList.add("show");setTimeout(()=>t.classList.remove("show"),2800)}
 cargar();
 setInterval(cargar,60000);
+
+// ── INVENTARIO ───────────────────────────────────────────────
+const TIPO_LABEL={produccion:"🏭 Producción",venta:"💰 Venta",consumo_interno:"🔧 Consumo interno",ajuste:"⚖️ Ajuste"};
+let _inventario=[];
+
+function abrirInventario(){
+  document.getElementById("inv-overlay").classList.add("open");
+  document.getElementById("inv-producto").value="";
+  document.getElementById("inv-cantidad").value="";
+  document.getElementById("inv-motivo").value="";
+  document.getElementById("inv-tipo").value="produccion";
+  cargarInventario();
+}
+
+function cerrarInventario(){
+  document.getElementById("inv-overlay").classList.remove("open");
+}
+
+async function cargarInventario(){
+  const box=document.getElementById("inv-stock-list");
+  box.innerHTML="<div class=\"spinner\"></div>";
+  try{
+    const r=await fetch(API+"/inventario/"+AREA+"?todos=1");
+    const data=await r.json();
+    _inventario=data.inventario||[];
+    renderInventario();
+    // poblar el datalist con productos ya conocidos
+    const list=document.getElementById("inv-productos-list");
+    list.innerHTML=_inventario.map(i=>"<option value=\""+i.producto+"\">").join("");
+  }catch(e){
+    box.innerHTML="<div class=\"inv-empty\">⚠️ Error cargando inventario</div>";
+  }
+}
+
+function renderInventario(){
+  const box=document.getElementById("inv-stock-list");
+  if(!_inventario.length){
+    box.innerHTML="<div class=\"inv-empty\">📭 Sin productos registrados todavía</div>";
+    return;
+  }
+  box.innerHTML=_inventario.map((item,i)=>{
+    return "<div><div class=\"inv-stock-row\">"
+      +"<div class=\"inv-stock-nombre\">"+item.producto+"<span class=\"inv-stock-cant\">"+item.cantidad_actual+"</span></div>"
+      +"<div class=\"inv-stock-actions\"><button class=\"inv-hist-btn\" onclick=\"toggleHistorial("+i+",'"+item.producto.replace(/'/g,"\\'")+"')\">Ver historial</button></div>"
+      +"</div>"
+      +"<div class=\"inv-hist-box\" id=\"inv-hist-"+i+"\"><div class=\"spinner\"></div></div>"
+      +"</div>";
+  }).join("");
+}
+
+async function toggleHistorial(i,producto){
+  const box=document.getElementById("inv-hist-"+i);
+  const yaAbierto=box.classList.contains("open");
+  // cerrar todos los demás
+  document.querySelectorAll(".inv-hist-box").forEach(b=>b.classList.remove("open"));
+  if(yaAbierto)return;
+  box.classList.add("open");
+  box.innerHTML="<div class=\"spinner\"></div>";
+  try{
+    const r=await fetch(API+"/inventario/"+AREA+"/movimientos");
+    const data=await r.json();
+    const movs=(data.movimientos||[]).filter(m=>m.producto===producto).slice(0,10);
+    if(!movs.length){
+      box.innerHTML="<div class=\"inv-empty\">Sin movimientos registrados</div>";
+      return;
+    }
+    box.innerHTML=movs.map(m=>{
+      const fecha=m.creado_en?new Date(m.creado_en).toLocaleDateString("es-MX",{day:"2-digit",month:"short",hour:"2-digit",minute:"2-digit"}):"—";
+      const signo=m.cantidad>0?"+":"";
+      return "<div class=\"inv-hist-item\"><span class=\"inv-hist-tipo\">"+(TIPO_LABEL[m.tipo]||m.tipo)+"</span><span>"+signo+m.cantidad+" · "+fecha+(m.motivo?" · "+m.motivo:"")+"</span></div>";
+    }).join("");
+  }catch(e){
+    box.innerHTML="<div class=\"inv-empty\">⚠️ Error cargando historial</div>";
+  }
+}
+
+async function registrarMovimiento(){
+  const producto=document.getElementById("inv-producto").value.trim();
+  const cantidad=document.getElementById("inv-cantidad").value;
+  const tipo=document.getElementById("inv-tipo").value;
+  const motivo=document.getElementById("inv-motivo").value.trim();
+
+  if(!producto){toast("⚠️ Escribe el nombre del producto");return;}
+  if(cantidad===""||Number(cantidad)<0){toast("⚠️ Ingresa una cantidad válida");return;}
+
+  const btn=document.getElementById("inv-submit-btn");
+  btn.disabled=true;
+  btn.textContent="Guardando...";
+  try{
+    const r=await fetch(API+"/inventario",{
+      method:"POST",
+      headers:{"Content-Type":"application/json"},
+      body:JSON.stringify({area:AREA,producto,cantidad_nueva:Number(cantidad),tipo,motivo})
+    });
+    const data=await r.json();
+    if(!r.ok)throw new Error(data.error||"Error");
+    toast("✓ "+producto+" actualizado ("+(data.diferencia>=0?"+":"")+data.diferencia+")");
+    document.getElementById("inv-producto").value="";
+    document.getElementById("inv-cantidad").value="";
+    document.getElementById("inv-motivo").value="";
+    await cargarInventario();
+  }catch(e){
+    toast("⚠️ Error al registrar movimiento");
+  }finally{
+    btn.disabled=false;
+    btn.textContent="Registrar movimiento";
+  }
+}
 </script>
 </body>
 </html>
