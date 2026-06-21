@@ -583,6 +583,19 @@ th.sort-desc::after{content:" ▼";font-size:9px;opacity:.7}
   </div>
 </div>
 
+<div class="modal-overlay" id="modal-fusion">
+  <div class="modal-box" style="width:420px">
+    <div class="modal-titulo">Fusionar clientes</div>
+    <div class="modal-sub" style="font-size:12px;color:var(--text3);margin-bottom:14px">Vas a fusionar <strong id="fusion-principal-nombre">—</strong> con otro registro. Todos los pedidos del duplicado se moverán a este cliente, y el duplicado se eliminará. Esta acción no se puede deshacer.</div>
+    <input class="search-input" id="fusion-busqueda" placeholder="Buscar cliente duplicado por nombre, email o teléfono..." oninput="renderFusionCandidatos()" style="width:100%;margin-bottom:10px;box-sizing:border-box">
+    <div id="fusion-candidatos" style="max-height:240px;overflow-y:auto;margin-bottom:16px"></div>
+    <div style="display:flex;gap:8px;justify-content:flex-end">
+      <button class="btn btn-ghost" onclick="cerrarModalFusion()">Cancelar</button>
+      <button class="btn btn-primary" id="fusion-confirmar" onclick="confirmarFusion()" disabled>Fusionar</button>
+    </div>
+  </div>
+</div>
+
 <script>
 const API="https://fungiterra-api-production.up.railway.app";
 let _todos=[];
@@ -1086,36 +1099,42 @@ async function confirmarArea(){
 // Cerrar modal al click fuera
 document.addEventListener("click",e=>{
   if(e.target.id==="modal-area") cerrarModalArea();
+  if(e.target.id==="modal-fusion") cerrarModalFusion();
 });
 
 async function cargarClientes(){
   document.getElementById("clientes-grid").innerHTML="<div class=\"spinner\"></div>";
   try{
-    const r=await fetch(API+"/pedidos");
-    const data=await r.json();
-    // Agrupar por cliente sin duplicados, con historial completo
-    const mapa={};
-    data.pedidos.forEach(p=>{
-      const k=(p.cliente_nombre||"—").trim().toLowerCase();
-      const nombre=p.cliente_nombre||"—";
-      if(!mapa[k]){
-        mapa[k]={
-          nombre:nombre,
-          email:p.cliente_email||"—",
-          telefono:p.cliente_telefono||"—",
-          pedidos:[],
-          total:0
-        };
-      }
-      mapa[k].pedidos.push({
+    const [rc,rp]=await Promise.all([
+      fetch(API+"/clientes"),
+      fetch(API+"/pedidos")
+    ]);
+    const dc=await rc.json();
+    const dp=await rp.json();
+
+    // Historial de pedidos por cliente_id real
+    const historialPorId={};
+    dp.pedidos.forEach(p=>{
+      const cid=p.cliente_id;
+      if(!cid) return;
+      if(!historialPorId[cid]) historialPorId[cid]=[];
+      historialPorId[cid].push({
         id:p.id_repositorio||p.token.substring(0,8).toUpperCase(),
         estado:mapEstado(p.estado_actual),
         fecha:p.creado_en?new Date(p.creado_en).toLocaleDateString("es-MX"):"—",
         total:Number(p.total||0)
       });
-      mapa[k].total+=Number(p.total||0);
     });
-    _clientes=Object.values(mapa).sort((a,b)=>b.pedidos.length-a.pedidos.length);
+
+    _clientes=(dc.clientes||[]).map(c=>({
+      id:c.id,
+      nombre:c.nombre,
+      email:c.email||"—",
+      telefono:c.telefono||"—",
+      pedidos:historialPorId[c.id]||[],
+      total:Number(c.total_historico||0)
+    })).sort((a,b)=>b.pedidos.length-a.pedidos.length);
+
     renderClientes();
   }catch(e){
     document.getElementById("clientes-grid").innerHTML="<div class=\"empty-state\"><div class=\"empty-icon\">⚠️</div><div>Error cargando clientes</div></div>";
@@ -1127,18 +1146,93 @@ function renderClientes(){
   const g=document.getElementById("clientes-grid");
   let lista=_clientes;
   if(busq) lista=lista.filter(c=>c.nombre.toLowerCase().includes(busq)||c.email.toLowerCase().includes(busq)||c.telefono.includes(busq));
+  document.getElementById("cli-count").textContent=lista.length+" cliente"+(lista.length!==1?"s":"")+" único"+(lista.length!==1?"s":"");
   if(!lista.length){g.innerHTML="<div class=\"empty-state\"><div class=\"empty-icon\">👤</div><div>Sin clientes</div></div>";return;}
   g.innerHTML=lista.map(c=>{
-    const ultimoPed=c.pedidos[c.pedidos.length-1];
     const historial=c.pedidos.slice().reverse().slice(0,4).map(p=>"<div class=\"cli-ped-row\"><span class=\"cli-ped-id\">"+p.id+"</span><span class=\"cli-ped-fecha\">"+p.fecha+"</span>"+badge(p.estado)+"</div>").join("");
     return "<div class=\"cliente-card\">"
-      +"<div class=\"cliente-header\"><div class=\"cliente-avatar\">"+c.nombre.charAt(0).toUpperCase()+"</div><div><div class=\"cliente-nombre\">"+c.nombre+"</div><div class=\"cliente-sub\">"+(c.email!=="—"?"📧 "+c.email:"")+"</div></div><span class=\"cliente-pedidos\">"+c.pedidos.length+" pedidos</span></div>"
-      +(c.email!=="—"&&c.telefono!=="—"?"<div class=\"cliente-info\">📱 "+c.telefono+"</div>":"")
+      +"<div class=\"cliente-header\"><div class=\"cliente-avatar\">"+c.nombre.charAt(0).toUpperCase()+"</div><div style=\"flex:1\"><div class=\"cliente-nombre\">"+c.nombre+"</div><div class=\"cliente-sub\">ID #"+c.id+(c.email!=="—"?" · 📧 "+c.email:"")+"</div></div><span class=\"cliente-pedidos\">"+c.pedidos.length+" pedidos</span></div>"
+      +(c.telefono!=="—"?"<div class=\"cliente-info\">📱 "+c.telefono+"</div>":"")
       +"<div class=\"cliente-total\">Total histórico: "+fmx(c.total)+"</div>"
       +"<div class=\"cli-historial\">"+historial+"</div>"
       +(c.pedidos.length>4?"<div class=\"cli-mas\">+ "+(c.pedidos.length-4)+" pedidos más</div>":"")
+      +"<button class=\"btn-asignar\" style=\"margin-top:10px;width:100%\" onclick=\"abrirModalFusion("+c.id+")\">🔗 Fusionar con otro cliente</button>"
       +"</div>";
   }).join("");
+}
+
+// ── MODAL FUSIÓN DE CLIENTES ─────────────────────────────────
+let _fusionPrincipal=null;
+let _fusionSeleccionado=null;
+
+function abrirModalFusion(clienteId){
+  _fusionPrincipal=_clientes.find(c=>c.id===clienteId);
+  if(!_fusionPrincipal) return;
+  _fusionSeleccionado=null;
+  document.getElementById("fusion-principal-nombre").textContent=_fusionPrincipal.nombre+" (ID #"+_fusionPrincipal.id+")";
+  document.getElementById("fusion-busqueda").value="";
+  document.getElementById("fusion-confirmar").disabled=true;
+  renderFusionCandidatos();
+  document.getElementById("modal-fusion").classList.add("activo");
+}
+
+function cerrarModalFusion(){
+  document.getElementById("modal-fusion").classList.remove("activo");
+  _fusionPrincipal=null;
+  _fusionSeleccionado=null;
+}
+
+function renderFusionCandidatos(){
+  const box=document.getElementById("fusion-candidatos");
+  const busq=document.getElementById("fusion-busqueda").value.trim().toLowerCase();
+  if(!busq){
+    box.innerHTML="<div style=\"font-size:12px;color:var(--text3);padding:10px 4px\">Escribe para buscar el cliente duplicado</div>";
+    return;
+  }
+  const candidatos=_clientes.filter(c=>
+    c.id!==_fusionPrincipal.id &&
+    (c.nombre.toLowerCase().includes(busq)||c.email.toLowerCase().includes(busq)||c.telefono.includes(busq))
+  ).slice(0,8);
+  if(!candidatos.length){
+    box.innerHTML="<div style=\"font-size:12px;color:var(--text3);padding:10px 4px\">Sin coincidencias</div>";
+    return;
+  }
+  box.innerHTML=candidatos.map(c=>
+    "<div class=\"fusion-candidato"+(_fusionSeleccionado&&_fusionSeleccionado.id===c.id?" sel":"")+"\" data-id=\""+c.id+"\" onclick=\"seleccionarFusionCandidato("+c.id+")\" style=\"padding:10px 12px;border:1.5px solid "+(_fusionSeleccionado&&_fusionSeleccionado.id===c.id?"var(--azul)":"var(--border)")+";border-radius:8px;margin-bottom:6px;cursor:pointer;background:"+(_fusionSeleccionado&&_fusionSeleccionado.id===c.id?"var(--azul-soft)":"transparent")+"\">"
+    +"<div style=\"font-weight:600;font-size:13px\">"+c.nombre+" <span style=\"font-weight:400;color:var(--text3)\">ID #"+c.id+"</span></div>"
+    +"<div style=\"font-size:11px;color:var(--text3)\">"+c.pedidos.length+" pedidos"+(c.telefono!=="—"?" · 📱 "+c.telefono:"")+(c.email!=="—"?" · 📧 "+c.email:"")+"</div>"
+    +"</div>"
+  ).join("");
+}
+
+function seleccionarFusionCandidato(id){
+  _fusionSeleccionado=_clientes.find(c=>c.id===id);
+  document.getElementById("fusion-confirmar").disabled=false;
+  renderFusionCandidatos();
+}
+
+async function confirmarFusion(){
+  if(!_fusionPrincipal||!_fusionSeleccionado) return;
+  if(!confirm("¿Fusionar \""+_fusionSeleccionado.nombre+"\" (ID #"+_fusionSeleccionado.id+") dentro de \""+_fusionPrincipal.nombre+"\" (ID #"+_fusionPrincipal.id+")? Se moverán "+_fusionSeleccionado.pedidos.length+" pedido(s) y el registro duplicado se eliminará. Esto no se puede deshacer.")) return;
+  const btn=document.getElementById("fusion-confirmar");
+  btn.disabled=true;
+  btn.textContent="Fusionando...";
+  try{
+    const r=await fetch(API+"/clientes/"+_fusionPrincipal.id+"/fusionar",{
+      method:"POST",
+      headers:{"Content-Type":"application/json"},
+      body:JSON.stringify({duplicado_id:_fusionSeleccionado.id})
+    });
+    if(!r.ok) throw new Error("Error al fusionar");
+    toast("✅ Clientes fusionados — "+_fusionSeleccionado.pedidos.length+" pedido(s) movidos");
+    cerrarModalFusion();
+    cargarClientes();
+  }catch(e){
+    toast("❌ Error al fusionar: "+e.message);
+  } finally {
+    btn.disabled=false;
+    btn.textContent="Fusionar";
+  }
 }
 
 
