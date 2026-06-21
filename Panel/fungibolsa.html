@@ -54,6 +54,14 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);min-height:1
 .producto-cant{font-size:12px;color:var(--text3);margin-top:2px}
 .usar-stock-btn{margin-top:6px;padding:6px 12px;border-radius:7px;border:1.5px solid #1f7a3b;background:#eaf7ef;color:#1f7a3b;font-size:11px;font-weight:700;cursor:pointer;font-family:var(--sans)}
 .usar-stock-btn:hover{background:#1f7a3b;color:#fff}
+.usar-stock-btn.elegir{border-color:var(--azul);background:var(--azul-soft);color:var(--azul)}
+.usar-stock-btn.elegir:hover{background:var(--azul);color:#fff}
+.stock-parcial-box{margin-top:6px}
+.stock-parcial-aviso{font-size:11px;color:#9a7300;background:#fff6e0;border:1px solid #f0d98a;border-radius:6px;padding:5px 8px;margin-bottom:6px;font-weight:600}
+.stock-parcial-btns{display:flex;gap:6px;flex-wrap:wrap}
+.elegir-cantidad-box{display:none;gap:6px;margin-top:6px}
+.elegir-cantidad-box.open{display:flex}
+.elegir-cantidad-box input{flex:1;max-width:160px;padding:6px 9px;border:1.5px solid var(--border);border-radius:6px;font-size:12px;font-family:var(--sans)}
 .estado-btns{display:flex;gap:6px;flex-wrap:wrap;margin-top:12px;padding-top:12px;border-top:1px solid var(--border)}
 .estado-btn{padding:7px 14px;border-radius:7px;font-size:12px;font-weight:600;border:1.5px solid var(--border);background:var(--surface2);color:var(--text2);cursor:pointer;font-family:var(--sans);transition:all .15s}
 .estado-btn:hover{border-color:var(--azul);color:var(--azul)}
@@ -513,9 +521,24 @@ function renderGrid(){
 
     const prods=(p.productos||[]).map((pr,pi)=>{
       const match=matchesPorProducto[pi];
-      const usarBtn=match
-        ? "<button class=\"usar-stock-btn\" onclick=\"event.stopPropagation();usarDelInventario("+i+","+pi+")\">📦 Usar del inventario (hay "+match.cantidad_actual+")</button>"
-        : "";
+      let usarBtn="";
+      if(match){
+        if(match.cantidad_actual>=pr.cantidad){
+          usarBtn="<button class=\"usar-stock-btn\" onclick=\"event.stopPropagation();usarDelInventario("+i+","+pi+","+pr.cantidad+")\">📦 Usar del inventario (hay "+match.cantidad_actual+")</button>";
+        }else{
+          usarBtn="<div class=\"stock-parcial-box\">"
+            +"<div class=\"stock-parcial-aviso\">⚠️ Pide "+pr.cantidad+", solo hay "+match.cantidad_actual+" en stock</div>"
+            +"<div class=\"stock-parcial-btns\">"
+            +"<button class=\"usar-stock-btn\" onclick=\"event.stopPropagation();usarDelInventario("+i+","+pi+","+match.cantidad_actual+")\">📦 Usar los "+match.cantidad_actual+" disponibles</button>"
+            +"<button class=\"usar-stock-btn elegir\" onclick=\"event.stopPropagation();abrirElegirCantidad("+i+","+pi+")\">✏️ Elegir cantidad</button>"
+            +"</div>"
+            +"<div class=\"elegir-cantidad-box\" id=\"elegir-"+i+"-"+pi+"\">"
+            +"<input type=\"number\" id=\"elegir-input-"+i+"-"+pi+"\" min=\"1\" max=\""+match.cantidad_actual+"\" placeholder=\"Cantidad (máx "+match.cantidad_actual+")\">"
+            +"<button class=\"usar-stock-btn\" onclick=\"event.stopPropagation();confirmarElegirCantidad("+i+","+pi+","+match.cantidad_actual+")\">Confirmar</button>"
+            +"</div>"
+            +"</div>";
+        }
+      }
       return "<div class=\"producto-row\"><div><div class=\"producto-nombre\">"+pr.nombre_producto+"</div><div class=\"producto-cant\">"+pr.cantidad+" unidades</div>"+usarBtn+"</div></div>";
     }).join("");
 
@@ -558,7 +581,7 @@ async function est(i,estado){
 }
 
 // Usar del inventario: descuenta stock + marca el producto como "listo"
-async function usarDelInventario(pedidoIdx,productoIdx){
+async function usarDelInventario(pedidoIdx,productoIdx,cantidadAUsar){
   const p=_pedidos[pedidoIdx];if(!p)return;
   const pr=(p.productos||[])[productoIdx];if(!pr)return;
   const match=matchInventario(pr.nombre_producto);
@@ -566,17 +589,26 @@ async function usarDelInventario(pedidoIdx,productoIdx){
 
   const cantidadPedida=pr.cantidad;
   const stockDisponible=match.cantidad_actual;
-  if(cantidadPedida>stockDisponible){
-    toast("⚠️ El pedido pide "+cantidadPedida+" pero solo hay "+stockDisponible+" en stock");
-    return;
-  }
+  cantidadAUsar=Number(cantidadAUsar);
 
-  const nuevoTotal=stockDisponible-cantidadPedida;
-  const ok=confirm("¿Usar "+cantidadPedida+" de \""+pr.nombre_producto+"\" del inventario?\n\nQuedarán "+nuevoTotal+" en stock.\nEl producto pasará a estado Listo.");
+  if(!cantidadAUsar||cantidadAUsar<=0){toast("⚠️ Ingresa una cantidad válida");return;}
+  if(cantidadAUsar>stockDisponible){toast("⚠️ No hay "+cantidadAUsar+" disponibles (solo hay "+stockDisponible+")");return;}
+  if(cantidadAUsar>cantidadPedida){toast("⚠️ No puedes usar más de lo que pide el pedido ("+cantidadPedida+")");return;}
+
+  const esCompleto=cantidadAUsar>=cantidadPedida;
+  const nuevoTotal=stockDisponible-cantidadAUsar;
+  const faltante=cantidadPedida-cantidadAUsar;
+
+  const mensaje=esCompleto
+    ? "¿Usar "+cantidadAUsar+" de \""+pr.nombre_producto+"\" del inventario?\n\nQuedarán "+nuevoTotal+" en stock.\nEl producto pasará a estado Listo."
+    : "¿Usar "+cantidadAUsar+" de \""+pr.nombre_producto+"\" del inventario?\n\nQuedarán "+nuevoTotal+" en stock.\nFaltan "+faltante+" por fabricar — el producto se queda En producción.";
+  const ok=confirm(mensaje);
   if(!ok)return;
 
   try{
-    // 1) Descontar del inventario (motivo: venta, referencia al pedido)
+    // 1) Descontar del inventario lo que sí se toma (motivo: venta, referencia al pedido)
+    const motivoTexto="Pedido "+(p.id_repositorio||p.token.substring(0,8))
+      +(esCompleto?"":" (parcial: usa "+cantidadAUsar+" de "+cantidadPedida+", faltan "+faltante+")");
     const rInv=await fetch(API+"/inventario",{
       method:"POST",
       headers:{"Content-Type":"application/json"},
@@ -585,24 +617,45 @@ async function usarDelInventario(pedidoIdx,productoIdx){
         producto:pr.nombre_producto,
         cantidad_nueva:nuevoTotal,
         tipo:"venta",
-        motivo:"Pedido "+(p.id_repositorio||p.token.substring(0,8))
+        motivo:motivoTexto
       })
     });
     if(!rInv.ok)throw new Error("No se pudo descontar el inventario");
 
-    // 2) Marcar el producto del pedido como listo (mismo endpoint que ya usan los botones de estado)
+    // 2) Si cubre completo → Listo. Si es parcial → se queda/pasa a En producción.
+    const nuevoEstado=esCompleto?"listo":"en_produccion";
     const rEstado=await fetch(API+"/productos/"+pr.id+"/estado",{
       method:"PATCH",
       headers:{"Content-Type":"application/json"},
-      body:JSON.stringify({estado:"listo"})
+      body:JSON.stringify({estado:nuevoEstado})
     });
     if(!rEstado.ok)throw new Error("No se pudo actualizar el estado");
 
-    toast("✓ "+pr.nombre_producto+" tomado del inventario — listo");
+    toast(esCompleto
+      ? "✓ "+pr.nombre_producto+" tomado del inventario — listo"
+      : "✓ Se tomaron "+cantidadAUsar+" del inventario — faltan "+faltante+" por fabricar");
     await cargar();
   }catch(e){
     toast("⚠️ Error al usar del inventario");
   }
+}
+
+function abrirElegirCantidad(pedidoIdx,productoIdx){
+  document.querySelectorAll(".elegir-cantidad-box.open").forEach(b=>b.classList.remove("open"));
+  const box=document.getElementById("elegir-"+pedidoIdx+"-"+productoIdx);
+  if(box){
+    box.classList.add("open");
+    const input=document.getElementById("elegir-input-"+pedidoIdx+"-"+productoIdx);
+    if(input)input.focus();
+  }
+}
+
+function confirmarElegirCantidad(pedidoIdx,productoIdx,maxDisponible){
+  const input=document.getElementById("elegir-input-"+pedidoIdx+"-"+productoIdx);
+  const val=Number(input.value);
+  if(!val||val<=0){toast("⚠️ Ingresa una cantidad válida");return;}
+  if(val>maxDisponible){toast("⚠️ Máximo disponible: "+maxDisponible);return;}
+  usarDelInventario(pedidoIdx,productoIdx,val);
 }
 
 function toast(msg){const t=document.getElementById("toast");t.textContent=msg;t.classList.add("show");setTimeout(()=>t.classList.remove("show"),2800)}
