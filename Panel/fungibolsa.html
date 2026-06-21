@@ -162,6 +162,32 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);min-height:1
 .inv-stock-table td{padding:9px 8px;border-bottom:1px solid var(--surface2)}
 .inv-stock-table tr:hover td{background:var(--surface2)}
 .inv-search{width:100%;padding:9px 12px;border:1.5px solid var(--border);border-radius:8px;font-size:13px;font-family:var(--sans);background:var(--surface2);margin-bottom:14px}
+
+/* MOTIVO con signo + toggle sumar/restar */
+.inv-tipo-signo{font-size:10px;font-weight:700;padding:1px 6px;border-radius:8px;margin-left:4px}
+.inv-signo-mas{background:#e8f7ee;color:#1f7a3b}
+.inv-signo-menos{background:#fdeeec;color:#c0392b}
+.inv-signo-ambos{background:#fff6e0;color:#9a7300}
+.inv-cant-label{display:flex;align-items:center;gap:6px}
+.inv-toggle-signo{display:none;gap:4px;margin-bottom:6px}
+.inv-toggle-signo.active{display:flex}
+.inv-toggle-signo button{flex:1;padding:6px;border-radius:6px;border:1.5px solid var(--border);background:var(--surface2);font-size:11px;font-weight:700;cursor:pointer;font-family:var(--sans);color:var(--text2)}
+.inv-toggle-signo button.active.suma{background:#e8f7ee;border-color:#1f7a3b;color:#1f7a3b}
+.inv-toggle-signo button.active.resta{background:#fdeeec;border-color:#c0392b;color:#c0392b}
+
+/* EDITOR INLINE de cantidad en Stock completo */
+.inv-cant-clickable{cursor:pointer;text-decoration:underline dotted;text-underline-offset:3px}
+.inv-cant-clickable:hover{color:var(--cafe)}
+.inv-edit-row td{background:var(--surface2);padding:14px 8px}
+.inv-edit-box{display:flex;flex-direction:column;gap:8px}
+.inv-edit-fields{display:grid;grid-template-columns:110px 1fr;gap:8px}
+.inv-edit-fields input,.inv-edit-fields select{padding:7px 9px;border:1.5px solid var(--border);border-radius:6px;font-size:12px;font-family:var(--sans);background:var(--surface)}
+.inv-edit-nota{display:none}
+.inv-edit-nota.show{display:block}
+.inv-edit-actions{display:flex;gap:8px;justify-content:flex-end}
+.inv-edit-actions button{padding:6px 14px;border-radius:6px;border:none;font-size:12px;font-weight:700;cursor:pointer;font-family:var(--sans)}
+.inv-edit-cancel{background:var(--surface);color:var(--text2);border:1.5px solid var(--border)!important}
+.inv-edit-guardar{background:var(--cafe);color:#fff}
 .inv-search:focus{outline:none;border-color:var(--cafe);background:var(--surface)}
 
 /* HISTORIAL ROTACION */
@@ -292,17 +318,21 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);min-height:1
 
         <div class="inv-form">
           <div class="inv-field">
-            <label>Cantidad nueva (total)</label>
-            <input type="number" id="inv-cantidad" placeholder="0" min="0">
-          </div>
-          <div class="inv-field">
             <label>Motivo</label>
-            <select id="inv-tipo">
-              <option value="produccion">🏭 Producción (entra)</option>
-              <option value="venta">💰 Venta (sale)</option>
-              <option value="consumo_interno">🔧 Consumo interno (sale)</option>
+            <select id="inv-tipo" onchange="onCambioMotivo()">
+              <option value="produccion">🏭 Producción</option>
+              <option value="consumo_interno">🔧 Consumo interno</option>
+              <option value="venta_no_registrada">💰 Venta no registrada</option>
               <option value="ajuste">⚖️ Ajuste / corrección</option>
             </select>
+          </div>
+          <div class="inv-field">
+            <label class="inv-cant-label">Cantidad <span id="inv-cant-signo" class="inv-tipo-signo inv-signo-mas">+ entra</span></label>
+            <div class="inv-toggle-signo" id="inv-toggle-signo">
+              <button type="button" id="inv-btn-suma" class="suma active" onclick="setSignoAjuste('suma')">➕ Sumar</button>
+              <button type="button" id="inv-btn-resta" class="resta" onclick="setSignoAjuste('resta')">➖ Restar</button>
+            </div>
+            <input type="number" id="inv-cantidad" placeholder="0" min="0">
           </div>
           <div class="inv-field full">
             <label>Nota (opcional)</label>
@@ -327,8 +357,8 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);min-height:1
           <select id="inv-hist-tipo-filtro" onchange="cargarHistorialGeneral()">
             <option value="">Todos los motivos</option>
             <option value="produccion">🏭 Producción</option>
-            <option value="venta">💰 Venta</option>
             <option value="consumo_interno">🔧 Consumo interno</option>
+            <option value="venta_no_registrada">💰 Venta no registrada</option>
             <option value="ajuste">⚖️ Ajuste</option>
           </select>
         </div>
@@ -496,7 +526,7 @@ cargar();
 setInterval(cargar,60000);
 
 // ── INVENTARIO ───────────────────────────────────────────────
-const TIPO_LABEL={produccion:"🏭 Producción",venta:"💰 Venta",consumo_interno:"🔧 Consumo interno",ajuste:"⚖️ Ajuste"};
+const TIPO_LABEL={produccion:"🏭 Producción",venta:"💰 Venta",venta_no_registrada:"💰 Venta no registrada",consumo_interno:"🔧 Consumo interno",ajuste:"⚖️ Ajuste"};
 const CONFIGS_KEY="ft_fb_configs_v1";
 let _inventario=[];       // stock real desde la API: [{producto, cantidad_actual}]
 let _movimientosCache=[]; // historial completo cacheado
@@ -537,8 +567,37 @@ function resetFormularioInventario(){
   document.getElementById("inv-cantidad").value="";
   document.getElementById("inv-motivo").value="";
   document.getElementById("inv-tipo").value="produccion";
+  _signoAjuste="suma";
   setModoProducto("estructurado");
   actualizarPreviewNombre();
+  onCambioMotivo();
+}
+
+// Motivos con signo fijo. 'ajuste' es el único con signo variable (toggle).
+const MOTIVO_SIGNO={produccion:"suma",consumo_interno:"resta",venta_no_registrada:"resta",ajuste:"variable"};
+let _signoAjuste="suma";
+
+function onCambioMotivo(){
+  const tipo=document.getElementById("inv-tipo").value;
+  const signo=MOTIVO_SIGNO[tipo];
+  const badge=document.getElementById("inv-cant-signo");
+  const toggle=document.getElementById("inv-toggle-signo");
+  if(signo==="variable"){
+    toggle.classList.add("active");
+    badge.textContent=_signoAjuste==="suma"?"+ entra":"− sale";
+    badge.className="inv-tipo-signo "+(_signoAjuste==="suma"?"inv-signo-mas":"inv-signo-menos");
+  }else{
+    toggle.classList.remove("active");
+    badge.textContent=signo==="suma"?"+ entra":"− sale";
+    badge.className="inv-tipo-signo "+(signo==="suma"?"inv-signo-mas":"inv-signo-menos");
+  }
+}
+
+function setSignoAjuste(s){
+  _signoAjuste=s;
+  document.getElementById("inv-btn-suma").classList.toggle("active",s==="suma");
+  document.getElementById("inv-btn-resta").classList.toggle("active",s==="resta");
+  onCambioMotivo();
 }
 
 function setInvTab(tab){
@@ -628,6 +687,14 @@ async function cargarInventario(){
 }
 
 // ── PESTAÑA: STOCK COMPLETO ──────────────────────────────────
+const MOTIVOS_AJUSTE_STOCK={
+  conteo_fisico:"📦 Conteo físico",
+  danado:"🔨 Producto dañado o defectuoso",
+  error_captura:"✂️ Error de captura previo",
+  otro:"📝 Otro"
+};
+let _editandoIdx=null;
+
 function renderStockCompleto(filtroTexto){
   const box=document.getElementById("inv-stock-completo-list");
   const q=(filtroTexto||document.getElementById("inv-stock-search").value||"").toLowerCase().trim();
@@ -640,14 +707,80 @@ function renderStockCompleto(filtroTexto){
     box.innerHTML="<div class=\"inv-empty\">🔍 Sin coincidencias para \""+q+"\"</div>";
     return;
   }
-  const filas=items.map(i=>
-    "<tr><td>"+i.producto+"</td><td style=\"text-align:right;font-weight:700\">"+i.cantidad_actual+"</td></tr>"
-  ).join("");
+  const filas=items.map((i)=>{
+    const idx=_inventario.indexOf(i);
+    let fila="<tr><td>"+i.producto+"</td><td style=\"text-align:right;font-weight:700\">"
+      +"<span class=\"inv-cant-clickable\" ondblclick=\"abrirEditorStock("+idx+")\">"+i.cantidad_actual+"</span></td></tr>";
+    if(_editandoIdx===idx){
+      fila+="<tr class=\"inv-edit-row\"><td colspan=\"2\"><div class=\"inv-edit-box\">"
+        +"<div class=\"inv-edit-fields\">"
+        +"<input type=\"number\" id=\"inv-edit-cantidad\" value=\""+i.cantidad_actual+"\" min=\"0\">"
+        +"<select id=\"inv-edit-motivo\" onchange=\"onCambioMotivoEdit()\">"
+        +Object.entries(MOTIVOS_AJUSTE_STOCK).map(([k,v])=>"<option value=\""+k+"\">"+v+"</option>").join("")
+        +"</select>"
+        +"</div>"
+        +"<input type=\"text\" id=\"inv-edit-nota\" class=\"inv-edit-nota\" placeholder=\"Describe el motivo...\">"
+        +"<div class=\"inv-edit-actions\">"
+        +"<button class=\"inv-edit-cancel\" onclick=\"cerrarEditorStock()\">Cancelar</button>"
+        +"<button class=\"inv-edit-guardar\" onclick=\"confirmarEdicionStock("+idx+")\">Guardar cambio</button>"
+        +"</div>"
+        +"</div></td></tr>";
+    }
+    return fila;
+  }).join("");
   box.innerHTML="<table class=\"inv-stock-table\"><thead><tr><th>Producto</th><th style=\"text-align:right\">Cantidad</th></tr></thead><tbody>"+filas+"</tbody></table>";
+  if(_editandoIdx!==null) onCambioMotivoEdit();
 }
 
 function filtrarStockCompleto(){
   renderStockCompleto();
+}
+
+function abrirEditorStock(idx){
+  _editandoIdx=idx;
+  renderStockCompleto();
+}
+
+function cerrarEditorStock(){
+  _editandoIdx=null;
+  renderStockCompleto();
+}
+
+function onCambioMotivoEdit(){
+  const sel=document.getElementById("inv-edit-motivo");
+  const nota=document.getElementById("inv-edit-nota");
+  if(!sel)return;
+  nota.classList.toggle("show",sel.value==="otro");
+}
+
+async function confirmarEdicionStock(idx){
+  const item=_inventario[idx];
+  const nuevoTotal=Number(document.getElementById("inv-edit-cantidad").value);
+  const motivoKey=document.getElementById("inv-edit-motivo").value;
+  const nota=document.getElementById("inv-edit-nota").value.trim();
+
+  if(isNaN(nuevoTotal)||nuevoTotal<0){toast("⚠️ Ingresa una cantidad válida");return;}
+  if(nuevoTotal===item.cantidad_actual){toast("Sin cambios — la cantidad es igual");return;}
+
+  const ok=confirm("¿Seguro que quieres cambiar \""+item.producto+"\" de "+item.cantidad_actual+" a "+nuevoTotal+"?");
+  if(!ok)return;
+
+  const motivoTexto=MOTIVOS_AJUSTE_STOCK[motivoKey]+(nota?": "+nota:"");
+  try{
+    const r=await fetch(API+"/inventario",{
+      method:"POST",
+      headers:{"Content-Type":"application/json"},
+      body:JSON.stringify({area:AREA,producto:item.producto,cantidad_nueva:nuevoTotal,tipo:"ajuste",motivo:motivoTexto})
+    });
+    const data=await r.json();
+    if(!r.ok)throw new Error(data.error||"Error");
+    toast("✓ "+item.producto+" ajustado a "+nuevoTotal);
+    _editandoIdx=null;
+    await cargarInventario();
+    renderStockCompleto();
+  }catch(e){
+    toast("⚠️ Error al guardar el ajuste");
+  }
 }
 
 // ── PESTAÑA: HISTORIAL DE ROTACIÓN ───────────────────────────
@@ -690,7 +823,7 @@ function renderHistorialGeneral(){
 // ── REGISTRAR MOVIMIENTO ─────────────────────────────────────
 async function registrarMovimiento(){
   const producto=nombreProductoActual();
-  const cantidad=document.getElementById("inv-cantidad").value;
+  const cantidadMovida=document.getElementById("inv-cantidad").value;
   const tipo=document.getElementById("inv-tipo").value;
   const motivo=document.getElementById("inv-motivo").value.trim();
 
@@ -698,7 +831,16 @@ async function registrarMovimiento(){
     toast(_modoProducto==="estructurado"?"⚠️ Escribe el modelo":"⚠️ Escribe el nombre del producto");
     return;
   }
-  if(cantidad===""||Number(cantidad)<0){toast("⚠️ Ingresa una cantidad válida");return;}
+  if(cantidadMovida===""||Number(cantidadMovida)<=0){toast("⚠️ Ingresa una cantidad válida");return;}
+
+  // Determinar signo real según el motivo (ajuste usa el toggle elegido)
+  const signo=MOTIVO_SIGNO[tipo]==="variable" ? _signoAjuste : MOTIVO_SIGNO[tipo];
+  const stockActual=(_inventario.find(i=>i.producto===producto)||{cantidad_actual:0}).cantidad_actual;
+  let cantidadNueva=signo==="suma" ? stockActual+Number(cantidadMovida) : stockActual-Number(cantidadMovida);
+  if(cantidadNueva<0){
+    toast("⚠️ No puedes restar más de lo que hay en stock ("+stockActual+")");
+    return;
+  }
 
   const btn=document.getElementById("inv-submit-btn");
   btn.disabled=true;
@@ -707,7 +849,7 @@ async function registrarMovimiento(){
     const r=await fetch(API+"/inventario",{
       method:"POST",
       headers:{"Content-Type":"application/json"},
-      body:JSON.stringify({area:AREA,producto,cantidad_nueva:Number(cantidad),tipo,motivo})
+      body:JSON.stringify({area:AREA,producto,cantidad_nueva:cantidadNueva,tipo,motivo})
     });
     const data=await r.json();
     if(!r.ok)throw new Error(data.error||"Error");
@@ -717,7 +859,7 @@ async function registrarMovimiento(){
       guardarConfig(producto);
     }
 
-    toast("✓ "+producto+" actualizado ("+(data.diferencia>=0?"+":"")+data.diferencia+")");
+    toast("✓ "+producto+" "+(signo==="suma"?"+":"−")+cantidadMovida+" (total: "+cantidadNueva+")");
     resetFormularioInventario();
     await cargarInventario();
   }catch(e){
