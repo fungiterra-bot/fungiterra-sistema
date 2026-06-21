@@ -92,6 +92,13 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);min-height:1
 .prioridad-tag.p-urgente{color:#c0392b;border-color:#e74c3c;background:#fff0ee}
 .prioridad-tag.p-sinprisa{color:#1f7a3b;border-color:#a8d8b8;background:#f0fbf4}
 
+/* SUB-TABS ACTIVOS / LISTOS */
+.prod-subtabs{display:flex;gap:6px;margin-bottom:14px;border-bottom:2px solid var(--border)}
+.prod-subtab{padding:10px 16px;font-size:13px;font-weight:600;color:var(--text3);cursor:pointer;
+  border-bottom:2px solid transparent;margin-bottom:-2px;transition:all .15s}
+.prod-subtab:hover{color:var(--text2)}
+.prod-subtab.active{color:var(--azul);border-bottom-color:var(--azul)}
+
 .toast{position:fixed;bottom:24px;right:24px;background:var(--text);color:#fff;border-radius:8px;padding:10px 16px;font-size:13px;font-weight:500;z-index:200;opacity:0;transform:translateY(6px);transition:all .2s;pointer-events:none}
 .toast.show{opacity:1;transform:translateY(0)}
 
@@ -152,6 +159,10 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);min-height:1
     <div class="stat-card"><div class="stat-label">Total</div><div class="stat-val" id="s-total">—</div></div>
     <div class="stat-card"><div class="stat-label">En producción</div><div class="stat-val" id="s-prod">—</div></div>
     <div class="stat-card"><div class="stat-label">Listos</div><div class="stat-val" id="s-listo">—</div></div>
+  </div>
+  <div class="prod-subtabs">
+    <div class="prod-subtab active" id="pst-activos" onclick="setSubTabFB('activos')">📋 Activos</div>
+    <div class="prod-subtab" id="pst-listos" onclick="setSubTabFB('listos')">✅ Listos</div>
   </div>
   <div class="pedidos-grid" id="grid"><div class="spinner"></div></div>
 </div>
@@ -274,6 +285,14 @@ async function cargar(){
   }
 }
 
+let _subTabFB="activos";
+function setSubTabFB(tab){
+  _subTabFB=tab;
+  document.getElementById("pst-activos").classList.toggle("active",tab==="activos");
+  document.getElementById("pst-listos").classList.toggle("active",tab==="listos");
+  renderGrid();
+}
+
 function estArea(p){
   const pr=p.productos||[];
   if(!pr.length)return"pendiente";
@@ -291,8 +310,14 @@ function badge(e){
 
 function renderGrid(){
   const grid=document.getElementById("grid");
-  if(!_pedidos.length){grid.innerHTML="<div class=\"empty-state\"><div class=\"empty-icon\">📭</div><div>Sin pedidos activos</div></div>";return;}
-  grid.innerHTML=_pedidos.map((p,i)=>{
+  const lista=_pedidos.filter(p=>_subTabFB==="listos" ? estArea(p)==="listo" : estArea(p)!=="listo");
+  if(!lista.length){
+    const msg=_subTabFB==="listos"?"Sin pedidos listos todavía":"Sin pedidos activos";
+    grid.innerHTML="<div class=\"empty-state\"><div class=\"empty-icon\">📭</div><div>"+msg+"</div></div>";
+    return;
+  }
+  grid.innerHTML=lista.map((p)=>{
+    const i=_pedidos.indexOf(p);
     const e=estArea(p);
     const otras=(p.otras_areas||[]).map(a=>"<span class=\"area-pill "+AC[a]+"\">"+AL[a]+"</span>").join("");
     const prioTag=prioridadBadgeRO(p.id_repositorio||p.token.substring(0,8));
