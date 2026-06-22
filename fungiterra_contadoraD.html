@@ -1,0 +1,939 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Gestor de Facturación · FUNGITERRA · contadoraD</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Syne:wght@600;700;800&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --verde:#1a4a2e;
+  --verde-mid:#2d7a48;
+  --verde-light:#e8f5ee;
+  --verde-borde:#a8d5b8;
+  --crema:#faf9f6;
+  --crema-dark:#f0ede6;
+  --borde:#e2ddd4;
+  --text:#1c1c18;
+  --text2:#5a5750;
+  --text3:#9a9690;
+  --naranja:#c45e0a;
+  --naranja-bg:#fff4e8;
+  --naranja-borde:#f4b572;
+  --rojo:#8b1a1a;
+  --rojo-bg:#fdf0f0;
+  --azul:#1a3060;
+  --mono:'DM Mono',monospace;
+  --sans:'DM Sans',sans-serif;
+  --display:'Syne',sans-serif;
+  --shadow:0 2px 12px rgba(26,74,46,.08);
+  --shadow-lg:0 8px 32px rgba(26,74,46,.14);
+}
+body{font-family:var(--sans);background:var(--crema);color:var(--text);font-size:14px;min-height:100vh}
+
+/* HEADER */
+header{
+  background:var(--verde);color:white;padding:0 28px;
+  height:64px;display:flex;align-items:center;justify-content:space-between;
+  position:sticky;top:0;z-index:200;box-shadow:0 2px 20px rgba(0,0,0,.25);
+}
+.hdr-left{display:flex;align-items:center;gap:14px}
+.hdr-logo{width:40px;height:40px;border-radius:50%;object-fit:cover;border:2px solid rgba(255,255,255,.3)}
+.hdr-title{font-family:var(--display);font-weight:800;font-size:16px;letter-spacing:-.3px;line-height:1}
+.hdr-sub{font-size:10px;font-weight:500;opacity:.7;letter-spacing:1.5px;text-transform:uppercase;margin-top:2px}
+.hdr-sep{width:1px;height:30px;background:rgba(255,255,255,.2);margin:0 4px}
+.hdr-right{display:flex;align-items:center;gap:10px}
+.badge-pend{
+  background:#e8543a;color:white;border-radius:20px;padding:4px 12px;
+  font-size:12px;font-weight:700;font-family:var(--mono);
+  display:none;align-items:center;gap:5px;animation:pulse 2s infinite;
+}
+.badge-pend.visible{display:flex}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.7}}
+.btn-hdr{
+  background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.22);
+  color:white;border-radius:8px;padding:7px 14px;cursor:pointer;
+  font-size:12px;font-family:var(--sans);font-weight:500;
+  transition:all .15s;display:flex;align-items:center;gap:6px;
+}
+.btn-hdr:hover{background:rgba(255,255,255,.22)}
+
+/* ALERTA PENDIENTES VENCIDOS */
+.alerta-banner{
+  background:#fff3cd;border:1px solid #f4b572;border-radius:10px;
+  padding:12px 18px;margin-bottom:14px;font-size:13px;color:#7a4a00;
+  display:none;align-items:flex-start;gap:10px;
+}
+.alerta-banner.visible{display:flex}
+.alerta-banner ul{margin:6px 0 0 16px;font-size:12px}
+.alerta-banner li{margin-bottom:2px}
+
+/* WRAP */
+.wrap{max-width:1280px;margin:0 auto;padding:24px 20px}
+
+/* STATS */
+.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:20px}
+.stat{background:white;border-radius:12px;padding:16px 20px;border:1px solid var(--borde);box-shadow:var(--shadow)}
+.stat-n{font-family:var(--display);font-size:26px;font-weight:700;line-height:1;color:var(--verde)}
+.stat-l{font-size:11px;color:var(--text3);text-transform:uppercase;letter-spacing:.8px;font-weight:600;margin-top:4px}
+.stat.pend .stat-n{color:var(--naranja)}
+.stat.timb .stat-n{color:var(--verde-mid)}
+.stat.monto .stat-n{font-size:18px;letter-spacing:-.5px}
+
+/* CONTROLES */
+.ctrl{
+  background:white;border:1px solid var(--borde);border-radius:12px;
+  padding:12px 16px;margin-bottom:14px;
+  display:flex;gap:10px;align-items:center;flex-wrap:wrap;box-shadow:var(--shadow);
+}
+.sw{flex:1;min-width:180px;position:relative}
+.sw input{
+  width:100%;padding:8px 12px 8px 32px;border:1.5px solid var(--borde);
+  border-radius:8px;font-family:var(--sans);font-size:13px;outline:none;
+  background:var(--crema);color:var(--text);transition:border-color .15s;
+}
+.sw input:focus{border-color:var(--verde-mid);background:white}
+.si{position:absolute;left:9px;top:50%;transform:translateY(-50%);color:var(--text3);font-size:13px;pointer-events:none}
+.fechas{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--text3)}
+.fechas input{
+  padding:7px 8px;border:1.5px solid var(--borde);border-radius:7px;
+  font-size:12px;font-family:var(--sans);outline:none;
+  background:var(--crema);color:var(--text);transition:border-color .15s;
+}
+.fechas input:focus{border-color:var(--verde-mid);background:white}
+.filtros{display:flex;gap:5px}
+.fb{
+  padding:7px 12px;border-radius:8px;border:1.5px solid var(--borde);
+  background:white;cursor:pointer;font-size:12px;font-weight:600;
+  font-family:var(--sans);color:var(--text2);transition:all .15s;white-space:nowrap;
+}
+.fb:hover{border-color:var(--verde-mid);color:var(--verde)}
+.fb.on{background:var(--verde);color:white;border-color:var(--verde)}
+.fb.on-n{background:var(--naranja);color:white;border-color:var(--naranja)}
+.fb.on-v{background:var(--verde-mid);color:white;border-color:var(--verde-mid)}
+
+/* TABLA */
+.tabla-w{background:white;border:1px solid var(--borde);border-radius:12px;overflow:hidden;box-shadow:var(--shadow)}
+.tabla-top{
+  padding:10px 16px;border-bottom:1px solid var(--borde);
+  display:flex;align-items:center;justify-content:space-between;background:var(--crema);
+}
+.tabla-top h2{font-family:var(--display);font-size:11px;font-weight:700;color:var(--verde);text-transform:uppercase;letter-spacing:.6px}
+.tcnt{font-size:11px;color:var(--text3);font-family:var(--mono)}
+table{width:100%;border-collapse:collapse;font-size:13px}
+thead tr{background:var(--verde);color:white}
+thead th{padding:9px 12px;text-align:left;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.7px;white-space:nowrap}
+th.r,td.r{text-align:right}
+th.c,td.c{text-align:center}
+tbody tr{border-bottom:1px solid var(--crema-dark);cursor:pointer;transition:all .12s}
+tbody tr:last-child{border-bottom:none}
+tbody tr:hover{background:var(--verde-light)}
+tbody tr.sel{background:var(--verde-light);border-left:3px solid var(--verde-mid)}
+tbody tr.rp:hover{background:var(--naranja-bg)}
+tbody tr.rp.sel{background:var(--naranja-bg);border-left:3px solid var(--naranja)}
+td{padding:10px 12px;vertical-align:middle}
+.tid{font-family:var(--mono);font-size:12px;font-weight:500;color:var(--azul)}
+.tfecha{font-size:12px;color:var(--text2);white-space:nowrap}
+.tnom{font-weight:500;max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.trfc{font-family:var(--mono);font-size:11px;color:var(--text3)}
+.ttotal{font-family:var(--mono);font-size:13px;font-weight:500;white-space:nowrap}
+
+/* BADGES */
+.badge{display:inline-flex;align-items:center;gap:4px;padding:3px 9px;border-radius:20px;font-size:11px;font-weight:700}
+.bp{background:var(--naranja-bg);color:var(--naranja);border:1px solid var(--naranja-borde)}
+.bt{background:var(--verde-light);color:var(--verde-mid);border:1px solid var(--verde-borde)}
+.be{background:var(--rojo-bg);color:var(--rojo);border:1px solid #f4b0b0}
+.sbadge{
+  display:inline-flex;align-items:center;justify-content:center;
+  width:24px;height:24px;border-radius:50%;background:var(--verde);
+  color:white;font-size:10px;font-weight:700;font-family:var(--mono);
+  cursor:help;
+}
+
+/* PANEL DETALLE */
+.det-row td{padding:0!important;background:white}
+.det-panel{
+  border-top:2px solid var(--verde-mid);
+  background:white;
+  animation:slideDown .2s ease;
+}
+@keyframes slideDown{from{opacity:0;transform:translateY(-8px)}to{opacity:1;transform:translateY(0)}}
+.det-inner{padding:20px 24px;display:grid;grid-template-columns:1fr 1fr 1fr;gap:20px}
+.det-section{}
+.det-section h4{
+  font-family:var(--display);font-size:10px;font-weight:700;
+  text-transform:uppercase;letter-spacing:.8px;color:var(--verde);
+  margin-bottom:10px;padding-bottom:6px;border-bottom:1px solid var(--borde);
+}
+.det-field{margin-bottom:8px}
+.det-label{font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.6px;font-weight:600}
+.det-value{font-size:13px;color:var(--text);margin-top:2px;word-break:break-word}
+.det-value.mono{font-family:var(--mono);font-size:12px}
+.prods-list{list-style:none;padding:0;margin:0}
+.prods-list li{
+  padding:5px 8px;border-radius:6px;font-size:12px;
+  background:var(--crema);border:1px solid var(--borde);
+  margin-bottom:4px;font-family:var(--mono);color:var(--text2);
+}
+
+/* ACCIONES PANEL */
+.det-actions{
+  grid-column:1/-1;
+  border-top:1px solid var(--borde);
+  padding-top:16px;
+  display:flex;gap:10px;flex-wrap:wrap;align-items:center;
+}
+.btn{
+  padding:8px 18px;border-radius:8px;cursor:pointer;font-size:13px;
+  font-family:var(--sans);font-weight:600;transition:all .15s;
+  border:1.5px solid transparent;display:flex;align-items:center;gap:6px;
+}
+.btn-primary{background:var(--verde);color:white;border-color:var(--verde)}
+.btn-primary:hover{background:#143d24}
+.btn-primary:disabled{opacity:.5;cursor:not-allowed}
+.btn-sec{background:white;color:var(--text2);border-color:var(--borde)}
+.btn-sec:hover{border-color:var(--verde-mid);color:var(--verde)}
+.btn-danger{background:white;color:var(--rojo);border-color:#f4b0b0}
+.btn-danger:hover{background:var(--rojo-bg)}
+.btn-copy{background:var(--azul-bg,#eef3fb);color:var(--azul);border-color:#c0d0ef}
+.btn-copy:hover{background:#dae6f8}
+
+/* MODAL TIMBRAR */
+.modal-overlay{
+  position:fixed;inset:0;background:rgba(0,0,0,.5);
+  z-index:500;display:none;align-items:center;justify-content:center;
+  animation:fadeIn .15s ease;
+}
+.modal-overlay.open{display:flex}
+@keyframes fadeIn{from{opacity:0}to{opacity:1}}
+.modal{
+  background:white;border-radius:16px;padding:0;
+  width:min(520px,95vw);max-height:90vh;overflow-y:auto;
+  box-shadow:var(--shadow-lg);animation:popIn .2s ease;
+}
+@keyframes popIn{from{opacity:0;transform:scale(.95)}to{opacity:1;transform:scale(1)}}
+.modal-hdr{
+  padding:20px 24px 16px;border-bottom:1px solid var(--borde);
+  display:flex;align-items:center;justify-content:space-between;
+  position:sticky;top:0;background:white;z-index:1;
+}
+.modal-hdr h3{font-family:var(--display);font-size:16px;font-weight:700;color:var(--verde)}
+.modal-close{
+  background:none;border:none;font-size:20px;cursor:pointer;
+  color:var(--text3);padding:2px 6px;border-radius:6px;transition:.1s;
+}
+.modal-close:hover{background:var(--crema);color:var(--text)}
+.modal-body{padding:20px 24px}
+.form-group{margin-bottom:16px}
+.form-label{font-size:12px;font-weight:600;color:var(--text2);margin-bottom:6px;display:block}
+.form-input{
+  width:100%;padding:9px 12px;border:1.5px solid var(--borde);
+  border-radius:8px;font-family:var(--sans);font-size:13px;outline:none;
+  color:var(--text);transition:border-color .15s;background:var(--crema);
+}
+.form-input:focus{border-color:var(--verde-mid);background:white}
+.form-input.error{border-color:var(--rojo)}
+.form-hint{font-size:11px;color:var(--text3);margin-top:4px}
+.upload-area{
+  border:2px dashed var(--borde);border-radius:10px;
+  padding:16px;text-align:center;cursor:pointer;
+  transition:all .15s;background:var(--crema);
+}
+.upload-area:hover{border-color:var(--verde-mid);background:var(--verde-light)}
+.upload-area.has-files{border-color:var(--verde-mid);background:var(--verde-light)}
+.upload-file-list{text-align:left;margin-top:10px}
+.upload-file-item{
+  display:flex;align-items:center;gap:8px;
+  padding:6px 10px;background:white;border-radius:6px;
+  border:1px solid var(--verde-borde);margin-bottom:4px;
+  font-size:12px;
+}
+.recom-badge{
+  display:inline-flex;align-items:center;gap:4px;
+  background:#fff3cd;color:#7a4a00;border:1px solid #f4b572;
+  border-radius:6px;padding:4px 10px;font-size:11px;font-weight:600;
+  margin-bottom:12px;
+}
+.modal-footer{
+  padding:16px 24px;border-top:1px solid var(--borde);
+  display:flex;gap:10px;justify-content:flex-end;
+  position:sticky;bottom:0;background:white;
+}
+
+/* MODAL REVERTIR */
+.modal-rev .modal-hdr{border-bottom-color:#f4b0b0}
+.modal-rev .modal-hdr h3{color:var(--rojo)}
+
+/* MODAL CORREGIR */
+.modal-cor .modal-hdr h3{color:var(--azul)}
+
+/* MODAL ENVIAR */
+.modal-env .modal-hdr h3{color:var(--verde-mid)}
+
+/* ESTADO VACÍO */
+.vacio{padding:56px 24px;text-align:center;color:var(--text3)}
+.spinner{width:28px;height:28px;border:3px solid var(--borde);border-top-color:var(--verde-mid);border-radius:50%;animation:spin .7s linear infinite;margin:0 auto 12px}
+@keyframes spin{to{transform:rotate(360deg)}}
+.vacio h3{font-size:14px;color:var(--text2);font-weight:600;margin-bottom:4px}
+.vacio p{font-size:12px}
+
+/* ERROR */
+.err-bar{
+  background:var(--rojo-bg);border:1px solid #f4b0b0;border-radius:10px;
+  padding:12px 16px;margin-bottom:14px;font-size:13px;color:var(--rojo);
+  display:none;align-items:center;gap:8px;
+}
+.err-bar.v{display:flex}
+
+/* TOAST */
+#toast{
+  position:fixed;bottom:24px;left:50%;transform:translateX(-50%);
+  padding:10px 22px;border-radius:24px;font-size:13px;font-weight:600;
+  box-shadow:0 4px 20px rgba(0,0,0,.2);z-index:9999;opacity:0;
+  transition:opacity .3s;pointer-events:none;color:white;white-space:nowrap;
+}
+.azul-bg{background:#eef3fb}
+
+@media(max-width:768px){
+  .stats{grid-template-columns:1fr 1fr}
+  .ctrl{flex-direction:column;align-items:stretch}
+  header{padding:0 14px}
+  .wrap{padding:12px}
+  .det-inner{grid-template-columns:1fr}
+  .trfc{display:none}
+}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="hdr-left">
+    <div>
+      <div class="hdr-title">Fungiterra</div>
+      <div class="hdr-sub">Gestor de Facturación · contadoraD</div>
+    </div>
+    <div class="hdr-sep"></div>
+  </div>
+  <div class="hdr-right">
+    <div class="badge-pend" id="badge-pend">⚠️ <span id="badge-n">0</span> pendientes</div>
+    <button class="btn-hdr" onclick="cargarFacturas()">↺ Actualizar</button>
+  </div>
+</header>
+
+<div class="wrap">
+
+  <div class="err-bar" id="err-bar">⚠️ <span id="err-msg">Error al conectar.</span></div>
+
+  <div class="alerta-banner" id="alerta-venc">
+    <div>⚠️ <strong>Facturas sin timbrar con 3+ días:</strong>
+      <ul id="alerta-list"></ul>
+    </div>
+  </div>
+
+  <div class="stats">
+    <div class="stat"><div class="stat-n" id="sn-total">—</div><div class="stat-l">Total</div></div>
+    <div class="stat pend"><div class="stat-n" id="sn-pend">—</div><div class="stat-l">Pendientes</div></div>
+    <div class="stat timb"><div class="stat-n" id="sn-timb">—</div><div class="stat-l">Timbradas</div></div>
+    <div class="stat monto"><div class="stat-n" id="sn-monto">—</div><div class="stat-l">Monto total</div></div>
+  </div>
+
+  <div class="ctrl">
+    <div class="sw"><span class="si">🔍</span>
+      <input type="text" id="q" placeholder="Buscar por ID, cliente o RFC..." oninput="filtrar()">
+    </div>
+    <div class="fechas">
+      Desde <input type="date" id="fd" onchange="filtrar()">
+      Hasta <input type="date" id="fh" onchange="filtrar()">
+    </div>
+    <div class="filtros">
+      <button class="fb on"  id="f-t" onclick="setF('todas')">Todas</button>
+      <button class="fb"     id="f-p" onclick="setF('pendiente')">⏳ Pendientes</button>
+      <button class="fb"     id="f-v" onclick="setF('timbrada')">✅ Timbradas</button>
+    </div>
+  </div>
+
+  <div class="tabla-w">
+    <div class="tabla-top">
+      <h2>Facturas</h2>
+      <span class="tcnt" id="tcnt">— registros</span>
+    </div>
+    <div style="overflow-x:auto">
+      <table>
+        <thead>
+          <tr>
+            <th>ID</th><th>Fecha</th><th>Cliente</th><th>RFC</th>
+            <th class="r">Total</th><th class="c">Tipo</th>
+            <th class="c">Socio</th><th class="c">Estado</th>
+          </tr>
+        </thead>
+        <tbody id="tbody">
+          <tr><td colspan="8"><div class="vacio"><div class="spinner"></div><h3>Cargando...</h3><p>Conectando con el servidor</p></div></td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+</div>
+
+<!-- MODAL TIMBRAR -->
+<div class="modal-overlay" id="modal-timb">
+  <div class="modal">
+    <div class="modal-hdr">
+      <h3>✅ Timbrar factura <span id="mt-id"></span></h3>
+      <button class="modal-close" onclick="cerrarModal('modal-timb')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-group">
+        <label class="form-label">UUID / Folio Fiscal *</label>
+        <input type="text" class="form-input" id="mt-uuid" placeholder="XXXXXXXX-XXXX-XXXX-XXXX-XXXXXXXXXXXX">
+        <div class="form-hint">El folio fiscal que genera el SAT al timbrar en tu PAC</div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Link de factura (opcional)</label>
+        <input type="text" class="form-input" id="mt-link" placeholder="https://...">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Notas (opcional)</label>
+        <input type="text" class="form-input" id="mt-notas" placeholder="Observaciones del timbrado...">
+      </div>
+      <div class="recom-badge">⚠️ Recomendado: adjunta XML y PDF para notificar al cliente</div>
+      <div class="form-group">
+        <input type="file" id="file-input" accept=".xml,.pdf" multiple style="display:none" onchange="handleFiles(this.files)">
+        <div class="upload-area" id="upload-area">
+          <div style="font-size:22px;margin-bottom:6px">📎</div>
+          <div><strong>Arrastra aquí</strong> o haz clic para adjuntar</div>
+          <div style="font-size:11px;color:var(--text3);margin-top:4px">XML y/o PDF · Se enviarán por correo al cliente</div>
+        </div>
+        <div class="upload-file-list" id="file-list"></div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-sec" onclick="cerrarModal('modal-timb')">Cancelar</button>
+      <button class="btn btn-primary" id="btn-confirmar-timb" onclick="confirmarTimbrado()">✅ Confirmar timbrado</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL REVERTIR -->
+<div class="modal-overlay" id="modal-rev">
+  <div class="modal modal-rev">
+    <div class="modal-hdr">
+      <h3>↩️ Revertir factura <span id="mr-id"></span></h3>
+      <button class="modal-close" onclick="cerrarModal('modal-rev')">✕</button>
+    </div>
+    <div class="modal-body">
+      <p style="font-size:13px;color:var(--text2);margin-bottom:16px">
+        Esta acción regresará la factura a estado <strong>Pendiente</strong> y borrará el UUID registrado.
+      </p>
+      <div class="form-group">
+        <label class="form-label">Motivo de reversión *</label>
+        <input type="text" class="form-input" id="rev-motivo" placeholder="Ej: Error en RFC, datos incorrectos...">
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-sec" onclick="cerrarModal('modal-rev')">Cancelar</button>
+      <button class="btn btn-danger" onclick="confirmarReversion()">↩️ Revertir</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL CORREGIR -->
+<div class="modal-overlay" id="modal-cor">
+  <div class="modal modal-cor">
+    <div class="modal-hdr">
+      <h3>✏️ Corregir datos — <span id="mc-id"></span></h3>
+      <button class="modal-close" onclick="cerrarModal('modal-cor')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+        <div class="form-group">
+          <label class="form-label">Nombre / Razón Social</label>
+          <input type="text" class="form-input" id="cor-nombre">
+        </div>
+        <div class="form-group">
+          <label class="form-label">RFC</label>
+          <input type="text" class="form-input" id="cor-rfc" style="font-family:var(--mono)">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Régimen Fiscal</label>
+          <input type="text" class="form-input" id="cor-regimen">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Uso de CFDI</label>
+          <input type="text" class="form-input" id="cor-cfdi">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Código Postal</label>
+          <input type="text" class="form-input" id="cor-cp" maxlength="5" style="font-family:var(--mono)">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Correo electrónico</label>
+          <input type="email" class="form-input" id="cor-correo">
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-sec" onclick="cerrarModal('modal-cor')">Cancelar</button>
+      <button class="btn btn-primary" style="background:var(--azul);border-color:var(--azul)" onclick="confirmarCorreccion()">✏️ Guardar cambios</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL ENVIAR COMPROBANTES -->
+<div class="modal-overlay" id="modal-env">
+  <div class="modal modal-env">
+    <div class="modal-hdr">
+      <h3>📧 Enviar comprobantes — <span id="me-id"></span></h3>
+      <button class="modal-close" onclick="cerrarModal('modal-env')">✕</button>
+    </div>
+    <div class="modal-body">
+      <p style="font-size:13px;color:var(--text2);margin-bottom:16px">
+        Adjunta el XML y PDF para enviarlos al cliente por correo.
+      </p>
+      <div class="recom-badge">📧 Se enviarán a: <strong id="me-correo"></strong> con copia a gerencia</div>
+      <div class="form-group">
+        <input type="file" id="file-input-env" accept=".xml,.pdf" multiple style="display:none" onchange="handleFilesEnv(this.files)">
+        <div class="upload-area" id="upload-area-env">
+          <div style="font-size:22px;margin-bottom:6px">📎</div>
+          <div><strong>Arrastra aquí</strong> o haz clic para adjuntar</div>
+          <div style="font-size:11px;color:var(--text3);margin-top:4px">XML y/o PDF</div>
+        </div>
+        <div class="upload-file-list" id="file-list-env"></div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-sec" onclick="cerrarModal('modal-env')">Cancelar</button>
+      <button class="btn btn-primary" onclick="confirmarEnvio()">📧 Enviar comprobantes</button>
+    </div>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<script>
+var URL = 'https://script.google.com/macros/s/AKfycbxFDD_lSZjG5VjeAr1odNRRFJpUye_c-2tW7IjKgBdbtN6B_q_fpuUJLo-6TFBXF7hl2Q/exec';
+
+var SOCIOS = {
+  'M':'María Martínez Bárcena',
+  'J':'Juan Antonio Martínez Bárcena',
+  'V':'Victor Martínez Bárcena',
+  'I':'Isabel'
+};
+
+var _facts   = [];
+var _filtro  = 'todas';
+var _selId   = null;
+var _archivos = [];
+var _archivosEnv = [];
+
+function cargarFacturas() {
+  loading(true); hideErr();
+  fetch(URL + '?accion=facturas')
+    .then(function(r){ return r.json(); })
+    .then(function(d){
+      _facts = d.facturas || [];
+      _selId = null;
+      stats(); alertasVencidas(); filtrar();
+      loading(false);
+      toast('✅ ' + _facts.length + ' facturas cargadas', true);
+    })
+    .catch(function(){
+      loading(false);
+      showErr('No se pudo conectar. Verifica tu conexión o el Apps Script.');
+    });
+}
+
+function stats() {
+  var tot  = _facts.length;
+  var pend = _facts.filter(function(f){ return /pendiente/i.test(f.estado||''); }).length;
+  var timb = _facts.filter(function(f){ return /timbrada/i.test(f.estado||''); }).length;
+  var mont = _facts.reduce(function(s,f){ return s+(parseFloat(f.total)||0); }, 0);
+  document.getElementById('sn-total').textContent = tot;
+  document.getElementById('sn-pend').textContent  = pend;
+  document.getElementById('sn-timb').textContent  = timb;
+  document.getElementById('sn-monto').textContent = fmx(mont);
+  var bp = document.getElementById('badge-pend');
+  document.getElementById('badge-n').textContent = pend;
+  pend > 0 ? bp.classList.add('visible') : bp.classList.remove('visible');
+}
+
+function alertasVencidas() {
+  var hoy  = new Date();
+  var venc = _facts.filter(function(f) {
+    if (!/pendiente/i.test(f.estado||'')) return false;
+    var fd = parseFecha(f.fecha);
+    if (!fd) return false;
+    return Math.floor((hoy - fd) / 86400000) >= 3;
+  });
+  var banner = document.getElementById('alerta-venc');
+  var list   = document.getElementById('alerta-list');
+  if (venc.length > 0) {
+    list.innerHTML = venc.map(function(f) {
+      var dias = Math.floor((hoy - parseFecha(f.fecha)) / 86400000);
+      return '<li>' + f.id + ' — ' + (f.nombre||'') + ' — ' + dias + ' días</li>';
+    }).join('');
+    banner.classList.add('visible');
+  } else {
+    banner.classList.remove('visible');
+  }
+}
+
+function setF(f) {
+  _filtro = f;
+  document.getElementById('f-t').className = 'fb' + (f==='todas'     ? ' on'   : '');
+  document.getElementById('f-p').className = 'fb' + (f==='pendiente' ? ' on-n' : '');
+  document.getElementById('f-v').className = 'fb' + (f==='timbrada'  ? ' on-v' : '');
+  filtrar();
+}
+
+function filtrar() {
+  var q     = (document.getElementById('q').value||'').toLowerCase().trim();
+  var desde = document.getElementById('fd').value;
+  var hasta = document.getElementById('fh').value;
+  var res = _facts.filter(function(f) {
+    var est = (f.estado||'pendiente').toLowerCase();
+    if (_filtro==='pendiente' && est!=='pendiente') return false;
+    if (_filtro==='timbrada'  && est!=='timbrada')  return false;
+    if (q && !((f.id||'').toLowerCase().includes(q)||(f.nombre||'').toLowerCase().includes(q)||(f.rfc||'').toLowerCase().includes(q))) return false;
+    if (desde||hasta) {
+      var fd = parseFecha(f.fecha);
+      if (fd) {
+        if (desde && fd < new Date(desde)) return false;
+        if (hasta) { var hd=new Date(hasta); hd.setDate(hd.getDate()+1); if(fd>=hd) return false; }
+      }
+    }
+    return true;
+  });
+  render(res);
+  document.getElementById('tcnt').textContent = res.length + ' registros';
+}
+
+function render(lista) {
+  var tb = document.getElementById('tbody');
+  if (!lista.length) {
+    tb.innerHTML = '<tr><td colspan="8"><div class="vacio"><h3>Sin resultados</h3><p>Prueba con otros filtros.</p></div></td></tr>';
+    return;
+  }
+  var rows = '';
+  lista.forEach(function(f) {
+    var est = f.estado || 'Pendiente';
+    var ep  = /pendiente/i.test(est);
+    var et  = /timbrada/i.test(est);
+    var bc  = ep ? 'badge bp' : et ? 'badge bt' : 'badge be';
+    var bi  = ep ? '⏳' : et ? '✅' : '⚠️';
+    var tipo = (f.tipo||'') === 'Público General'
+      ? '<span style="font-size:11px;color:var(--text3)">PG</span>'
+      : '<span style="font-size:11px;color:var(--azul);font-weight:600">PE</span>';
+    var socio = f.socio || '?';
+    var socioNombre = SOCIOS[socio] || socio;
+    var sel = (_selId === f.id) ? ' sel' : '';
+    rows += '<tr class="' + (ep?'rp':'')+sel+'" data-id="' + f.id + '" onclick="toggleDet(this.dataset.id)">' +
+      '<td class="tid">' + (f.id||'—') + '</td>' +
+      '<td class="tfecha">' + fmtFecha(f.fecha) + '</td>' +
+      '<td class="tnom" title="'+(f.nombre||'')+'">' + (f.nombre||'—') + '</td>' +
+      '<td class="trfc">' + (f.rfc||'—') + '</td>' +
+      '<td class="r ttotal">' + fmx(parseFloat(f.total)||0) + '</td>' +
+      '<td class="c">' + tipo + '</td>' +
+      '<td class="c"><span class="sbadge" title="'+socioNombre+'">' + socio + '</span></td>' +
+      '<td class="c"><span class="'+bc+'">'+bi+' '+est+'</span></td>' +
+    '</tr>';
+    if (_selId === f.id) {
+      rows += '<tr class="det-row"><td colspan="8"><div class="det-panel">' + renderDet(f) + '</div></td></tr>';
+    }
+  });
+  tb.innerHTML = rows;
+}
+
+function renderDet(f) {
+  var prods = (f.productos||'').split('|').map(function(p){ return p.trim(); }).filter(Boolean);
+  var socioNombre = SOCIOS[f.socio||''] || (f.socio||'—');
+  var ep = /pendiente/i.test(f.estado||'');
+  var et = /timbrada/i.test(f.estado||'');
+  return '<div class="det-inner">' +
+    '<div class="det-section">' +
+      '<h4>📋 Datos del receptor</h4>' +
+      df('Nombre', f.nombre) +
+      df('RFC', f.rfc, true) +
+      df('Régimen fiscal', f.regimen) +
+      df('Uso de CFDI', f.cfdi) +
+      df('Código Postal', f.cp, true, true) +
+      df('Correo', f.correo) +
+    '</div>' +
+    '<div class="det-section">' +
+      '<h4>🧾 Datos de la factura</h4>' +
+      df('ID', f.id, true) +
+      df('Fecha', fmtFecha(f.fecha)) +
+      df('Tipo', f.tipo) +
+      df('Forma de pago', f.forma_pago) +
+      df('Socio', socioNombre) +
+      df('RFC Emisor', f.rfc_emisor, true) +
+      df('Referencia', f.referencia) +
+      (f.notas ? df('Notas', f.notas) : '') +
+    '</div>' +
+    '<div class="det-section">' +
+      '<h4>📦 Productos</h4>' +
+      '<ul class="prods-list">' + prods.map(function(p){ return '<li>'+p+'</li>'; }).join('') + '</ul>' +
+      '<div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--borde)">' +
+        '<div class="det-label">Total</div>' +
+        '<div class="det-value mono" style="font-size:16px;color:var(--verde);font-weight:700">' + fmx(parseFloat(f.total)||0) + '</div>' +
+      '</div>' +
+      (et ? '<div style="margin-top:10px">' + df('UUID', f.uuid, true) + df('Timbrado', f.fecha_timbrado) + (f.link ? df('Link', '<a href="'+f.link+'" target="_blank" style="color:var(--verde-mid)">Ver factura</a>') : '') + '</div>' : '') +
+    '</div>' +
+    '<div class="det-actions">' +
+      (ep ? '<button class="btn btn-primary" data-action="timbrar" data-id="' + f.id + '">✅ Timbrar</button>' : '') +
+      (et ? '<button class="btn btn-sec" data-action="enviar" data-id="' + f.id + '">📧 Enviar comprobantes</button>' : '') +
+      '<button class="btn btn-sec" data-action="corregir" data-id="' + f.id + '">✏️ Corregir datos</button>' +
+      (et ? '<button class="btn btn-danger" data-action="revertir" data-id="' + f.id + '">↩️ Revertir</button>' : '') +
+      '<button class="btn btn-copy" data-action="copiar" data-id="' + f.id + '">📋 Copiar datos</button>' +
+      '<span style="margin-left:auto;font-size:11px;color:var(--text3)">Fila seleccionada: <b style="font-family:var(--mono)">' + f.id + '</b></span>' +
+    '</div>' +
+  '</div>';
+}
+
+function df(label, val, mono, obligatorio) {
+  if (!val && !obligatorio) return '';
+  var display = val || '—';
+  return '<div class="det-field"><div class="det-label">'+label+'</div><div class="det-value'+(mono?' mono':'')+'">'+(display)+'</div></div>';
+}
+
+function toggleDet(id) {
+  _selId = (_selId === id) ? null : id;
+  filtrar();
+}
+
+document.addEventListener('click', function(e) {
+  var btn = e.target.closest('[data-action]');
+  if (!btn) return;
+  e.stopPropagation();
+  var action = btn.dataset.action;
+  var id     = btn.dataset.id;
+  if (action === 'timbrar')  abrirTimbrar(id);
+  if (action === 'enviar')   abrirEnviar(id);
+  if (action === 'corregir') abrirCorregir(id);
+  if (action === 'revertir') abrirRevertir(id);
+  if (action === 'copiar')   copiarDatos(id);
+});
+
+function parseFecha(s) {
+  if (!s) return null;
+  var m = s.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+  if (m) return new Date(+m[3], +m[2]-1, +m[1]);
+  var d = new Date(s); return isNaN(d)?null:d;
+}
+
+function fmtFecha(s) {
+  if (!s) return '—';
+  var d = parseFecha(s);
+  if (d) return d.getDate()+'/'+(d.getMonth()+1)+'/'+d.getFullYear();
+  return s;
+}
+
+function fmx(n) {
+  return '$'+Number(n||0).toLocaleString('es-MX',{minimumFractionDigits:2,maximumFractionDigits:2});
+}
+
+function abrirTimbrar(id) {
+  document.getElementById('mt-id').textContent = id;
+  document.getElementById('mt-uuid').value = '';
+  document.getElementById('mt-link').value = '';
+  document.getElementById('mt-notas').value = '';
+  document.getElementById('file-list').innerHTML = '';
+  document.getElementById('upload-area').classList.remove('has-files');
+  _archivos = [];
+  document.getElementById('modal-timb').classList.add('open');
+  setTimeout(function(){ document.getElementById('mt-uuid').focus(); }, 100);
+}
+
+function handleFiles(files) {
+  _archivos = Array.from(files);
+  renderFileList(_archivos, 'file-list', 'upload-area', false);
+}
+
+function handleFilesEnv(files) {
+  _archivosEnv = Array.from(files);
+  renderFileList(_archivosEnv, 'file-list-env', 'upload-area-env', true);
+}
+
+function renderFileList(files, listId, areaId, isEnv) {
+  var area = document.getElementById(areaId);
+  var list = document.getElementById(listId);
+  if (!files.length) { area.classList.remove('has-files'); list.innerHTML = ''; return; }
+  area.classList.add('has-files');
+  var tieneXml = files.some(function(f){ return f.name.toLowerCase().endsWith('.xml'); });
+  var tienePdf = files.some(function(f){ return f.name.toLowerCase().endsWith('.pdf'); });
+  var badges = '';
+  if (tieneXml) badges += '<span style="background:var(--verde-light);color:var(--verde-mid);border:1px solid var(--verde-borde);border-radius:12px;padding:2px 8px;font-size:11px;font-weight:700">✅ XML</span> ';
+  if (tienePdf) badges += '<span style="background:var(--naranja-bg);color:var(--naranja);border:1px solid var(--naranja-borde);border-radius:12px;padding:2px 8px;font-size:11px;font-weight:700">✅ PDF</span>';
+  list.innerHTML = '<div style="margin:8px 0 6px;display:flex;gap:6px;align-items:center">' + badges + '</div>' +
+    files.map(function(f, i) {
+      var icon = f.name.toLowerCase().endsWith('.xml') ? '📄' : '📕';
+      var kb   = (f.size / 1024).toFixed(1);
+      return '<div class="upload-file-item">' + icon +
+        ' <span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + f.name + '</span>' +
+        '<span style="color:var(--text3);font-size:11px;margin-left:8px;flex-shrink:0">' + kb + ' KB</span>' +
+        '<button onclick="quitarArchivo(' + i + ',' + (isEnv?'true':'false') + ')" style="background:none;border:none;cursor:pointer;color:var(--text3);font-size:15px;padding:0 2px;margin-left:6px;line-height:1" title="Quitar">✕</button>' +
+        '</div>';
+    }).join('');
+}
+
+function quitarArchivo(idx, isEnv) {
+  if (isEnv) { _archivosEnv.splice(idx,1); renderFileList(_archivosEnv,'file-list-env','upload-area-env',true); }
+  else        { _archivos.splice(idx,1);    renderFileList(_archivos,'file-list','upload-area',false); }
+}
+
+function initUploadArea(areaId, inputId, isEnv) {
+  var area  = document.getElementById(areaId);
+  var input = document.getElementById(inputId);
+  if (!area || !input) return;
+  area.addEventListener('click', function(){ input.click(); });
+  area.addEventListener('dragover', function(e){ e.preventDefault(); area.style.borderColor='var(--verde-mid)'; area.style.background='var(--verde-light)'; });
+  area.addEventListener('dragleave', function(){ area.style.borderColor=''; area.style.background=''; });
+  area.addEventListener('drop', function(e){
+    e.preventDefault(); area.style.borderColor=''; area.style.background='';
+    var validos = Array.from(e.dataTransfer.files).filter(function(f){ return f.name.toLowerCase().endsWith('.xml')||f.name.toLowerCase().endsWith('.pdf'); });
+    if (!validos.length) { toast('⚠️ Solo se aceptan XML y PDF', false); return; }
+    if (isEnv) handleFilesEnv(validos); else handleFiles(validos);
+  });
+}
+
+function confirmarTimbrado() {
+  var id   = document.getElementById('mt-id').textContent.trim();
+  var uuid = document.getElementById('mt-uuid').value.trim();
+  if (!uuid) { document.getElementById('mt-uuid').classList.add('error'); toast('⚠️ El UUID es obligatorio', false); return; }
+  document.getElementById('mt-uuid').classList.remove('error');
+  var f = _facts.find(function(x){ return x.id === id; });
+  document.getElementById('btn-confirmar-timb').disabled = true;
+  document.getElementById('btn-confirmar-timb').textContent = 'Procesando...';
+  Promise.all(_archivos.map(function(file) {
+    return new Promise(function(res) {
+      var reader = new FileReader();
+      reader.onload = function(e) { res({ nombre:file.name, base64:e.target.result.split(',')[1], tipo:file.name.endsWith('.xml')?'xml':'pdf' }); };
+      reader.readAsDataURL(file);
+    });
+  })).then(function(archivos64) {
+    var body = { accion:'timbrar', id:id, uuid:uuid, link:document.getElementById('mt-link').value.trim(), notas_timbre:document.getElementById('mt-notas').value.trim(), correo_cliente:(f&&f.correo)||'', nombre_cliente:(f&&f.nombre)||'', total:(f&&f.total)||'', productos:(f&&f.productos)||'' };
+    var xml = archivos64.find(function(a){ return a.tipo==='xml'; });
+    var pdf = archivos64.find(function(a){ return a.tipo==='pdf'; });
+    if (xml) { body.xml_base64=xml.base64; body.xml_nombre=xml.nombre; }
+    if (pdf) { body.pdf_base64=pdf.base64; body.pdf_nombre=pdf.nombre; }
+    return fetch(URL, {method:'POST', body:JSON.stringify(body)});
+  }).then(function(r){ return r.json(); })
+  .then(function(d) {
+    document.getElementById('btn-confirmar-timb').disabled = false;
+    document.getElementById('btn-confirmar-timb').textContent = '✅ Confirmar timbrado';
+    if (d.ok) { cerrarModal('modal-timb'); toast(d.correo_enviado?'✅ Timbrada y comprobantes enviados':'✅ Factura timbrada', true); cargarFacturas(); }
+    else { toast('⚠️ ' + (d.error||'Error al timbrar'), false); }
+  }).catch(function() {
+    document.getElementById('btn-confirmar-timb').disabled = false;
+    document.getElementById('btn-confirmar-timb').textContent = '✅ Confirmar timbrado';
+    toast('⚠️ Error de conexión', false);
+  });
+}
+
+function abrirRevertir(id) {
+  document.getElementById('mr-id').textContent = id;
+  document.getElementById('rev-motivo').value = '';
+  document.getElementById('modal-rev').classList.add('open');
+  setTimeout(function(){ document.getElementById('rev-motivo').focus(); }, 100);
+}
+
+function confirmarReversion() {
+  var id     = document.getElementById('mr-id').textContent.trim();
+  var motivo = document.getElementById('rev-motivo').value.trim();
+  if (!motivo) { toast('⚠️ Escribe el motivo', false); return; }
+  fetch(URL, {method:'POST', body:JSON.stringify({accion:'revertir', id:id, motivo:motivo})})
+    .then(function(r){ return r.json(); })
+    .then(function(d) { cerrarModal('modal-rev'); if(d.ok){toast('↩️ Factura revertida a Pendiente',true);cargarFacturas();}else{toast('⚠️'+(d.error||'Error'),false);} })
+    .catch(function(){ toast('⚠️ Error de conexión',false); });
+}
+
+function abrirCorregir(id) {
+  var f = _facts.find(function(x){ return x.id===id; });
+  if (!f) return;
+  document.getElementById('mc-id').textContent = id;
+  document.getElementById('cor-nombre').value  = f.nombre  || '';
+  document.getElementById('cor-rfc').value     = f.rfc     || '';
+  document.getElementById('cor-regimen').value = f.regimen || '';
+  document.getElementById('cor-cfdi').value    = f.cfdi    || '';
+  document.getElementById('cor-cp').value      = f.cp      || '';
+  document.getElementById('cor-correo').value  = f.correo  || '';
+  document.getElementById('modal-cor').classList.add('open');
+}
+
+function confirmarCorreccion() {
+  var id = document.getElementById('mc-id').textContent.trim();
+  var body = { accion:'corregir', id:id, nombre:document.getElementById('cor-nombre').value.trim(), rfc:document.getElementById('cor-rfc').value.trim(), regimen:document.getElementById('cor-regimen').value.trim(), cfdi:document.getElementById('cor-cfdi').value.trim(), cp:document.getElementById('cor-cp').value.trim(), correo:document.getElementById('cor-correo').value.trim() };
+  fetch(URL, {method:'POST', body:JSON.stringify(body)})
+    .then(function(r){ return r.json(); })
+    .then(function(d){ cerrarModal('modal-cor'); if(d.ok){toast('✏️ Datos corregidos',true);cargarFacturas();}else{toast('⚠️'+(d.error||'Error'),false);} })
+    .catch(function(){ toast('⚠️ Error de conexión',false); });
+}
+
+function abrirEnviar(id) {
+  var f = _facts.find(function(x){ return x.id===id; });
+  document.getElementById('me-id').textContent     = id;
+  document.getElementById('me-correo').textContent = (f&&f.correo)||'sin correo registrado';
+  document.getElementById('file-list-env').innerHTML = '';
+  document.getElementById('upload-area-env').classList.remove('has-files');
+  _archivosEnv = [];
+  document.getElementById('modal-env').classList.add('open');
+}
+
+function confirmarEnvio() {
+  var id = document.getElementById('me-id').textContent.trim();
+  var f  = _facts.find(function(x){ return x.id===id; });
+  if (!_archivosEnv.length) { toast('⚠️ Adjunta al menos un archivo', false); return; }
+  Promise.all(_archivosEnv.map(function(file) {
+    return new Promise(function(res) {
+      var reader = new FileReader();
+      reader.onload = function(e){ res({nombre:file.name,base64:e.target.result.split(',')[1],tipo:file.name.endsWith('.xml')?'xml':'pdf'}); };
+      reader.readAsDataURL(file);
+    });
+  })).then(function(archivos64) {
+    var body = { accion:'timbrar', id:id, uuid:(f&&f.uuid)||'', link:(f&&f.link)||'', notas_timbre:'', correo_cliente:(f&&f.correo)||'', nombre_cliente:(f&&f.nombre)||'', total:(f&&f.total)||'', solo_correo:true };
+    var xml = archivos64.find(function(a){ return a.tipo==='xml'; });
+    var pdf = archivos64.find(function(a){ return a.tipo==='pdf'; });
+    if (xml) { body.xml_base64=xml.base64; body.xml_nombre=xml.nombre; }
+    if (pdf) { body.pdf_base64=pdf.base64; body.pdf_nombre=pdf.nombre; }
+    return fetch(URL, {method:'POST', body:JSON.stringify(body)});
+  }).then(function(r){ return r.json(); })
+  .then(function(d){ cerrarModal('modal-env'); if(d.ok||d.correo_enviado){toast('📧 Comprobantes enviados',true);}else{toast('⚠️'+(d.advertencia||d.error||'Verifica el correo'),false);} })
+  .catch(function(){ toast('⚠️ Error de conexión',false); });
+}
+
+function copiarDatos(id) {
+  var f = _facts.find(function(x){ return x.id===id; });
+  if (!f) return;
+  var txt = 'ID: '+(f.id||'')+'\nNombre: '+(f.nombre||'')+'\nRFC: '+(f.rfc||'')+'\nRégimen: '+(f.regimen||'')+'\nCFDI: '+(f.cfdi||'')+'\nCP: '+(f.cp||'')+'\nCorreo: '+(f.correo||'')+'\nTotal: '+fmx(parseFloat(f.total)||0)+'\nForma de pago: '+(f.forma_pago||'')+'\nProductos: '+(f.productos||'');
+  navigator.clipboard.writeText(txt).then(function(){ toast('📋 Datos copiados',true); }).catch(function(){ toast('⚠️ No se pudo copiar',false); });
+}
+
+function cerrarModal(id) { document.getElementById(id).classList.remove('open'); }
+document.querySelectorAll('.modal-overlay').forEach(function(el){
+  el.addEventListener('click', function(e){ if(e.target===el) cerrarModal(el.id); });
+});
+
+function loading(on) {
+  if (!on) return;
+  document.getElementById('tbody').innerHTML = '<tr><td colspan="8"><div class="vacio"><div class="spinner"></div><h3>Cargando...</h3><p>Conectando con el servidor</p></div></td></tr>';
+  ['sn-total','sn-pend','sn-timb','sn-monto'].forEach(function(id){ document.getElementById(id).textContent='—'; });
+}
+function showErr(m) { document.getElementById('err-msg').textContent=m; document.getElementById('err-bar').classList.add('v'); }
+function hideErr() { document.getElementById('err-bar').classList.remove('v'); }
+function toast(m, ok) {
+  var t = document.getElementById('toast');
+  t.textContent=m; t.style.background=ok?'#1a4a2e':'#8b1a1a'; t.style.opacity='1';
+  clearTimeout(t._t); t._t=setTimeout(function(){ t.style.opacity='0'; },3500);
+}
+
+window.onload = function() {
+  var h = new Date();
+  document.getElementById('fh').value = h.getFullYear()+'-'+String(h.getMonth()+1).padStart(2,'0')+'-'+String(h.getDate()).padStart(2,'0');
+  initUploadArea('upload-area',     'file-input',     false);
+  initUploadArea('upload-area-env', 'file-input-env', true);
+  cargarFacturas();
+};
+</script>
+</body>
+</html>
