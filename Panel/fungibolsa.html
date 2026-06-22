@@ -672,7 +672,7 @@ async function usarDelInventario(pedidoIdx,productoIdx,cantidadAUsar){
     const rEstado=await fetch(API+"/productos/"+pr.id+"/estado",{
       method:"PATCH",
       headers:{"Content-Type":"application/json"},
-      body:JSON.stringify({estado:nuevoEstado})
+      body:JSON.stringify({estado:nuevoEstado,...(!esCompleto&&{cantidad_fabricar:faltante})})
     });
     if(!rEstado.ok)throw new Error("No se pudo actualizar el estado");
 
