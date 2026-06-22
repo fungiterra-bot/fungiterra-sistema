@@ -1346,19 +1346,14 @@ function renderSeguimiento(){
       +"</div>"
       +(estadoEnvioTexto?"<div style=\"font-size:12px;color:var(--azul);margin-bottom:6px\">"+estadoEnvioTexto+(p.ultima_ubicacion_envio?" · "+p.ultima_ubicacion_envio:"")+(ultimaAct?" · "+ultimaAct:"")+"</div>":"")
       +(esEntregado
-        // Historial: solo muestra guía y paquetería como texto, sin inputs
-        +"<div style=\"font-size:12px;color:var(--text3)\">"
-        +(p.paqueteria?"<strong>"+p.paqueteria+"</strong> · ":"")
-        +"Guía: <span style=\"font-family:monospace\">"+(p.guia_numero||"—")+"</span>"
-        +"</div>"
-        // Activos: inputs para registrar/actualizar guía
-        :"<div style=\"display:flex;gap:8px;flex-wrap:wrap\">"
-        +"<input type=\"text\" placeholder=\"Número de guía\" value=\""+(p.guia_numero||"")+"\" id=\"seg-guia-"+p.id+"\" style=\"flex:1;min-width:140px;padding:7px 10px;border:1.5px solid var(--border);border-radius:7px;font-size:12px;font-family:var(--sans)\">"
-        +"<select id=\"seg-paq-"+p.id+"\" style=\"padding:7px 10px;border:1.5px solid var(--border);border-radius:7px;font-size:12px;font-family:var(--sans);background:var(--surface)\">"
-        +["Estafeta","DHL","FedEx","UPS","Redpack","Otra"].map(pq=>"<option"+(p.paqueteria===pq?" selected":"")+">"+pq+"</option>").join("")
-        +"</select>"
-        +"<button class=\"btn btn-primary btn-sm\" onclick=\"guardarGuia('"+p.token+"','"+p.id+"')\">"+(p.guia_numero?"Actualizar":"Guardar")+"</button>"
-        +"</div>")
+        ? "<div style=\"font-size:12px;color:var(--text3)\">"+(p.paqueteria?"<strong>"+p.paqueteria+"</strong> · ":"")+"Guía: <span style=\"font-family:monospace\">"+(p.guia_numero||"—")+"</span></div>"
+        : "<div style=\"display:flex;gap:8px;flex-wrap:wrap\">"
+          +"<input type=\"text\" placeholder=\"Número de guía\" value=\""+(p.guia_numero||"")+"\" id=\"seg-guia-"+p.id+"\" style=\"flex:1;min-width:140px;padding:7px 10px;border:1.5px solid var(--border);border-radius:7px;font-size:12px;font-family:var(--sans)\">"
+          +"<select id=\"seg-paq-"+p.id+"\" style=\"padding:7px 10px;border:1.5px solid var(--border);border-radius:7px;font-size:12px;font-family:var(--sans);background:var(--surface)\">"
+          +["Estafeta","DHL","FedEx","UPS","Redpack","Otra"].map(pq=>"<option"+(p.paqueteria===pq?" selected":"")+">"+pq+"</option>").join("")
+          +"</select>"
+          +"<button class=\"btn btn-primary btn-sm\" onclick=\"guardarGuia('"+p.token+"','"+p.id+"')\">"+(p.guia_numero?"Actualizar":"Guardar")+"</button>"
+          +"</div>")
       +"</div>";
   }).join("");
 }
