@@ -425,7 +425,10 @@ th.sort-desc::after{content:" ▼";font-size:9px;opacity:.7}
 <div class="main">
   <div class="topbar">
     <div style="display:flex;align-items:center;gap:0"><button class="btn-menu" id="btn-menu" onclick="toggleMenu()">☰</button><div class="topbar-left"><h1 id="topbar-titulo">Pedidos</h1><p id="topbar-sub">Cargando...</p></div></div>
-    <button class="btn btn-white" onclick="recargar()">↺ Actualizar</button>
+    <div style="display:flex;gap:8px">
+      <button class="btn btn-white" onclick="abrirSeguimiento()">🚚 Seguimiento de envíos</button>
+      <button class="btn btn-white" onclick="recargar()">↺ Actualizar</button>
+    </div>
   </div>
 
   <div class="content">
@@ -596,7 +599,30 @@ th.sort-desc::after{content:" ▼";font-size:9px;opacity:.7}
   </div>
 </div>
 
+<div class="modal-overlay" id="modal-seguimiento" onclick="if(event.target===this)cerrarSeguimiento()">
+  <div class="modal-box" style="width:600px;max-width:94vw;max-height:84vh;overflow-y:auto">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+      <div class="modal-titulo" style="margin-bottom:0">🚚 Seguimiento de envíos</div>
+      <button class="modal-cerrar" onclick="cerrarSeguimiento()" style="background:none;border:none;font-size:18px;color:var(--text3);cursor:pointer">✕</button>
+    </div>
+    <div class="modal-sub" style="font-size:12px;color:var(--text3);margin-bottom:14px">Pega la guía cuando generes el envío en Envia.com. El pedido pasa a "Enviado" automáticamente, y el estado se actualizará solo conforme la paquetería reporte avances.</div>
+    <div class="filters-bar" style="margin-bottom:12px">
+      <div class="search-wrap">
+        <span class="search-icon">🔍</span>
+        <input class="search-input" id="seg-busqueda" placeholder="Buscar por ID, cliente o guía..." oninput="renderSeguimiento()">
+      </div>
+      <select class="filter-select" id="seg-filtro" onchange="renderSeguimiento()">
+        <option value="todos">Todos</option>
+        <option value="sin_guia">Sin guía registrada</option>
+        <option value="con_guia">Con guía registrada</option>
+      </select>
+    </div>
+    <div id="seguimiento-lista"><div class="spinner"></div></div>
+  </div>
+</div>
+
 <script>
+
 const API="https://fungiterra-api-production.up.railway.app";
 let _todos=[];
 let _clientes=[];
@@ -1232,6 +1258,98 @@ async function confirmarFusion(){
   } finally {
     btn.disabled=false;
     btn.textContent="Fusionar";
+  }
+}
+
+// ── SEGUIMIENTO DE ENVÍOS ─────────────────────────────────────
+let _seguimiento=[];
+
+async function abrirSeguimiento(){
+  document.getElementById("modal-seguimiento").classList.add("activo");
+  document.getElementById("seg-busqueda").value="";
+  document.getElementById("seg-filtro").value="todos";
+  await cargarSeguimiento();
+}
+
+function cerrarSeguimiento(){
+  document.getElementById("modal-seguimiento").classList.remove("activo");
+}
+
+async function cargarSeguimiento(){
+  document.getElementById("seguimiento-lista").innerHTML="<div class=\"spinner\"></div>";
+  try{
+    const r=await fetch(API+"/pedidos?limite=300");
+    const data=await r.json();
+    // Solo nos interesan pedidos que ya están enviados, en camino, o entregados (no cancelados)
+    _seguimiento=data.pedidos.filter(p=>["enviado","entregado"].includes(p.estado_actual)||p.guia_numero);
+    renderSeguimiento();
+  }catch(e){
+    document.getElementById("seguimiento-lista").innerHTML="<div class=\"empty-state\"><div class=\"empty-icon\">⚠️</div><div>Error cargando envíos</div></div>";
+  }
+}
+
+const ESTADO_ENVIO_LABEL={
+  guia_generada:"📦 Guía generada — esperando recolección",
+  picked_up:"🚚 Recolectado por la paquetería",
+  in_transit:"🚚 En tránsito",
+  out_for_delivery:"🚚 En reparto",
+  delivered:"✅ Entregado",
+  exception:"⚠️ Incidencia reportada por la paquetería"
+};
+
+function renderSeguimiento(){
+  const box=document.getElementById("seguimiento-lista");
+  const busq=document.getElementById("seg-busqueda").value.trim().toLowerCase();
+  const filtro=document.getElementById("seg-filtro").value;
+  let lista=_seguimiento;
+  if(filtro==="sin_guia") lista=lista.filter(p=>!p.guia_numero);
+  if(filtro==="con_guia") lista=lista.filter(p=>!!p.guia_numero);
+  if(busq) lista=lista.filter(p=>
+    (p.id_repositorio||p.token.substring(0,8)).toLowerCase().includes(busq)||
+    (p.cliente_nombre||"").toLowerCase().includes(busq)||
+    (p.guia_numero||"").toLowerCase().includes(busq)
+  );
+  if(!lista.length){
+    box.innerHTML="<div class=\"empty-state\"><div class=\"empty-icon\">🚚</div><div>Sin pedidos para mostrar</div></div>";
+    return;
+  }
+  box.innerHTML=lista.map(p=>{
+    const idCorto=p.id_repositorio||p.token.substring(0,8).toUpperCase();
+    const estadoEnvioTexto=p.estado_envio?(ESTADO_ENVIO_LABEL[p.estado_envio]||p.estado_envio):null;
+    const ultimaAct=p.ultima_actualizacion_envio?new Date(p.ultima_actualizacion_envio).toLocaleString("es-MX",{day:"2-digit",month:"short",hour:"2-digit",minute:"2-digit"}):null;
+    return "<div style=\"border:1px solid var(--border);border-radius:10px;padding:14px 16px;margin-bottom:10px\">"
+      +"<div style=\"display:flex;justify-content:space-between;align-items:center;margin-bottom:8px\">"
+      +"<div><strong style=\"font-size:13px\">"+idCorto+"</strong> <span style=\"color:var(--text3);font-size:12px\">· "+(p.cliente_nombre||"—")+"</span></div>"
+      +badge(mapEstado(p.estado_actual))
+      +"</div>"
+      +(estadoEnvioTexto?"<div style=\"font-size:12px;color:var(--azul);margin-bottom:6px\">"+estadoEnvioTexto+(p.ultima_ubicacion_envio?" · "+p.ultima_ubicacion_envio:"")+(ultimaAct?" · "+ultimaAct:"")+"</div>":"")
+      +"<div style=\"display:flex;gap:8px;flex-wrap:wrap\">"
+      +"<input type=\"text\" placeholder=\"Número de guía\" value=\""+(p.guia_numero||"")+"\" id=\"seg-guia-"+p.id+"\" style=\"flex:1;min-width:140px;padding:7px 10px;border:1.5px solid var(--border);border-radius:7px;font-size:12px;font-family:var(--sans)\">"
+      +"<select id=\"seg-paq-"+p.id+"\" style=\"padding:7px 10px;border:1.5px solid var(--border);border-radius:7px;font-size:12px;font-family:var(--sans);background:var(--surface)\">"
+      +["Estafeta","DHL","FedEx","UPS","Redpack","Otra"].map(pq=>"<option"+(p.paqueteria===pq?" selected":"")+">"+pq+"</option>").join("")
+      +"</select>"
+      +"<button class=\"btn btn-primary btn-sm\" onclick=\"guardarGuia('"+p.token+"','"+p.id+"')\">"+(p.guia_numero?"Actualizar":"Guardar")+"</button>"
+      +"</div>"
+      +"</div>";
+  }).join("");
+}
+
+async function guardarGuia(token,pedidoId){
+  const guia=document.getElementById("seg-guia-"+pedidoId).value.trim();
+  const paqueteria=document.getElementById("seg-paq-"+pedidoId).value;
+  if(!guia){ toast("⚠️ Escribe el número de guía"); return; }
+  try{
+    const r=await fetch(API+"/pedidos/"+token+"/guia",{
+      method:"PATCH",
+      headers:{"Content-Type":"application/json"},
+      body:JSON.stringify({guia_numero:guia,paqueteria:paqueteria})
+    });
+    if(!r.ok) throw new Error("Error al guardar guía");
+    toast("✅ Guía registrada — pedido marcado como Enviado");
+    cargarSeguimiento();
+    filtrar(); // refresca también la tabla principal de pedidos por si está visible
+  }catch(e){
+    toast("❌ Error al guardar la guía");
   }
 }
 
