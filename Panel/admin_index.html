@@ -1608,7 +1608,7 @@ async function cambiarEstado(id,estado){
 
 function generarLink(id){
   const p=_todos.find(x=>x.id===id);if(!p)return;
-  const url=window.location.origin+"/fungiterra-sistema/cliente/"+p.token;
+  const url="https://fungiterra-bot.github.io/fungiterra-sistema/cliente.html?token="+p.token;
   navigator.clipboard.writeText(url).then(()=>toast("🔗 Link copiado al portapapeles")).catch(()=>toast("Link: "+p.token.substring(0,16)+"..."));
 }
 

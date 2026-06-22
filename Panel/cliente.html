@@ -11,22 +11,32 @@
 body{margin:0;background:#eef1f4;font-family:'Inter',sans-serif}
 .ft-page{max-width:480px;margin:0 auto;padding:20px 16px 40px}
 .ft-wrap{font-family:'Inter',sans-serif;background:#f4f6f8;padding:16px;border-radius:16px}
-.ft-header{background:#2B7FC0;border-radius:12px;padding:16px 20px;margin-bottom:16px;display:flex;align-items:center;gap:12px}
-.ft-logo-circle{width:40px;height:40px;background:white;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:600;font-size:13px;color:#2B7FC0;flex-shrink:0}
+.ft-header{background:#0177bf;border-radius:12px;padding:16px 20px;margin-bottom:16px;display:flex;align-items:center;gap:12px}
+.ft-logo-circle{width:40px;height:40px;background:white;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px;color:#0177bf;flex-shrink:0}
 .ft-header-text h2{margin:0;font-size:15px;font-weight:600;color:white}
 .ft-header-text p{margin:0;font-size:12px;color:rgba(255,255,255,0.75)}
 .ft-card{background:white;border-radius:12px;padding:16px 20px;margin-bottom:12px;border:0.5px solid #e5e7eb}
 .ft-order-id{font-size:11px;color:#6b7280;margin-bottom:2px}
 .ft-client-name{font-size:17px;font-weight:600;color:#111827;margin-bottom:4px}
 .ft-order-meta{font-size:12px;color:#6b7280}
+.ft-fecha-estimada{display:inline-flex;align-items:center;gap:5px;margin-top:8px;font-size:12px;color:#0177bf;background:#e8f4fb;padding:4px 10px;border-radius:20px;font-weight:500}
+
+/* PRODUCTOS */
+.ft-productos-titulo{font-size:11px;font-weight:600;color:#6b7280;text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px}
+.ft-prod-row{display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:0.5px solid #f3f4f6;font-size:13px}
+.ft-prod-row:last-child{border-bottom:none}
+.ft-prod-nombre{color:#374151;flex:1}
+.ft-prod-cant{font-weight:600;color:#0177bf;font-size:12px;margin-left:8px;white-space:nowrap}
+
+/* SEMAFORO */
 .ft-steps{position:relative;padding:8px 0}
 .ft-step{display:flex;align-items:flex-start;gap:14px;margin-bottom:0;position:relative}
 .ft-step:not(:last-child) .ft-step-line{position:absolute;left:15px;top:32px;width:2px;height:calc(100% + 4px);background:#e5e7eb;z-index:0}
-.ft-step:not(:last-child) .ft-step-line.done{background:#3A8C2F}
-.ft-step:not(:last-child) .ft-step-line.active{background:linear-gradient(to bottom,#3A8C2F 0%,#e5e7eb 100%)}
+.ft-step:not(:last-child) .ft-step-line.done{background:#28974b}
+.ft-step:not(:last-child) .ft-step-line.active{background:linear-gradient(to bottom,#28974b 0%,#e5e7eb 100%)}
 .ft-step-dot{width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0;position:relative;z-index:1;margin-bottom:20px}
-.ft-step-dot.done{background:#3A8C2F}
-.ft-step-dot.active{background:#2B7FC0;box-shadow:0 0 0 4px rgba(43,127,192,0.2)}
+.ft-step-dot.done{background:#28974b}
+.ft-step-dot.active{background:#0177bf;box-shadow:0 0 0 4px rgba(1,119,191,0.2)}
 .ft-step-dot.pending{background:#f3f4f6;border:2px solid #e5e7eb}
 .ft-step-dot.cancelado{background:#dc2626}
 .ft-step-dot i{font-size:15px;color:white}
@@ -35,31 +45,33 @@ body{margin:0;background:#eef1f4;font-family:'Inter',sans-serif}
 .ft-step-title{font-size:14px;font-weight:500;color:#111827;margin-bottom:2px}
 .ft-step-title.pending{color:#9ca3af}
 .ft-step-sub{font-size:12px;color:#6b7280}
-.ft-step-badge{display:inline-block;font-size:11px;font-weight:500;padding:2px 8px;border-radius:20px;margin-top:4px}
-.ft-step-badge.fab{background:#fef3c7;color:#92400e}
-.ft-step-badge.prep{background:#dbeafe;color:#1e40af}
 .ft-pulse{animation:ftpulse 2s infinite}
-@keyframes ftpulse{0%,100%{box-shadow:0 0 0 4px rgba(43,127,192,0.2)}50%{box-shadow:0 0 0 8px rgba(43,127,192,0.08)}}
+@keyframes ftpulse{0%,100%{box-shadow:0 0 0 4px rgba(1,119,191,0.2)}50%{box-shadow:0 0 0 8px rgba(1,119,191,0.08)}}
+
+/* TABS */
 .ft-tabs{display:flex;gap:8px;margin-bottom:12px}
 .ft-tab{flex:1;padding:8px;border:0.5px solid #e5e7eb;border-radius:8px;background:white;font-size:12px;font-weight:500;color:#6b7280;cursor:pointer;text-align:center;transition:all .15s}
-.ft-tab.active{background:#2B7FC0;border-color:#2B7FC0;color:white}
+.ft-tab.active{background:#0177bf;border-color:#0177bf;color:white}
+
+/* ENVIO */
 .ft-tracking-box{background:#f0f9ff;border:0.5px solid #bae6fd;border-radius:8px;padding:12px 14px;font-size:12px;color:#0c4a6e}
 .ft-tracking-row{display:flex;justify-content:space-between;margin-bottom:6px;gap:10px}
 .ft-tracking-label{color:#6b7280;flex-shrink:0}
 .ft-tracking-row span:last-child{text-align:right}
 .ft-tracking-status-box{background:#f9fafb;border:0.5px solid #e5e7eb;border-radius:8px;padding:12px 14px;font-size:12px;color:#374151;margin-top:10px;line-height:1.5}
-.ft-copy-btn{background:none;border:0.5px solid #e5e7eb;border-radius:6px;padding:2px 8px;font-size:11px;color:#374151;cursor:pointer}
-.ft-factura-card{background:#f0fdf4;border:0.5px solid #bbf7d0;border-radius:12px;padding:16px 20px;margin-bottom:12px}
-.ft-factura-title{font-size:14px;font-weight:600;color:#14532d;margin-bottom:6px}
-.ft-factura-sub{font-size:12px;color:#166534;margin-bottom:12px}
-.ft-btn-primary{width:100%;padding:11px;background:#3A8C2F;border:none;border-radius:8px;color:white;font-size:14px;font-weight:500;cursor:pointer;margin-bottom:8px;font-family:inherit}
-.ft-btn-secondary{width:100%;padding:11px;background:white;border:0.5px solid #d1fae5;border-radius:8px;color:#166534;font-size:14px;font-weight:500;cursor:pointer;font-family:inherit}
-.ft-area-row{display:flex;gap:8px;margin-top:8px;flex-wrap:wrap}
-.ft-area-pill{flex:1;min-width:120px;border-radius:20px;padding:5px 10px;font-size:11px;font-weight:500;text-align:center}
-.ft-area-done{background:#dcfce7;color:#166534}
-.ft-area-pending{background:#fef9c3;color:#854d0e}
+.ft-rastrear-btn{display:flex;align-items:center;justify-content:center;gap:6px;width:100%;margin-top:10px;padding:10px;background:white;border:0.5px solid #e5e7eb;border-radius:8px;font-size:13px;font-weight:500;color:#374151;cursor:pointer;text-decoration:none;transition:all .15s}
+.ft-rastrear-btn:hover{border-color:#0177bf;color:#0177bf}
+
+/* ENTREGADO */
+.ft-entregado-card{background:linear-gradient(135deg,#f0fdf4,#dcfce7);border:0.5px solid #86efac;border-radius:12px;padding:24px 20px;text-align:center;margin-bottom:12px}
+.ft-entregado-icon{width:56px;height:56px;background:#28974b;border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 12px}
+.ft-entregado-icon i{font-size:28px;color:white}
+.ft-entregado-titulo{font-size:17px;font-weight:600;color:#14532d;margin-bottom:4px}
+.ft-entregado-sub{font-size:13px;color:#166534}
+
 .ft-empty,.ft-loading,.ft-error{text-align:center;padding:60px 20px;color:#6b7280;font-size:13px}
 .ft-error{color:#991b1b}
+.ft-refresh-indicator{text-align:center;font-size:11px;color:#9ca3af;margin-top:8px}
 </style>
 </head>
 <body>
@@ -72,15 +84,17 @@ body{margin:0;background:#eef1f4;font-family:'Inter',sans-serif}
         <p>Fungiterra — Hongos a tu servicio</p>
       </div>
     </div>
-
     <div id="ft-contenido">
       <div class="ft-loading">Cargando tu pedido...</div>
     </div>
+    <div class="ft-refresh-indicator" id="ft-refresh-txt"></div>
   </div>
 </div>
 
 <script>
 const API="https://fungiterra-api-production.up.railway.app";
+let _refreshTimer=null;
+let _pedidoActual=null;
 
 function getToken(){
   const params=new URLSearchParams(window.location.search);
@@ -89,19 +103,26 @@ function getToken(){
   return partes[partes.length-1]||"";
 }
 
+const URLS_PAQUETERIA={
+  "Estafeta":"https://www.estafeta.com/herramientas/rastreo?wayBillType=1&wayBill=",
+  "DHL":"https://www.dhl.com/mx-es/home/rastreo.html?tracking-id=",
+  "FedEx":"https://www.fedex.com/fedextrack/?trknbr=",
+  "UPS":"https://www.ups.com/track?tracknum=",
+  "Redpack":"https://www.redpack.com.mx/es/rastreo/?guia="
+};
+
 const ESTADO_ENVIO_MENSAJE={
   guia_generada:"Guía generada — esperando que la paquetería recolecte el paquete. Esto puede tardar unas horas.",
   picked_up:"Tu paquete fue recolectado por la paquetería y va en camino a su primer punto de tránsito.",
   in_transit:"Tu paquete está en tránsito hacia tu domicilio.",
   out_for_delivery:"Tu paquete salió a reparto — debería llegar hoy.",
-  delivered:"Tu paquete fue entregado.",
-  exception:"La paquetería reportó una incidencia con este envío. Si tienes dudas, contáctanos."
+  delivered:"Tu paquete fue entregado exitosamente.",
+  exception:"La paquetería reportó una incidencia. Si tienes dudas, contáctanos."
 };
 
 function tiempoDesde(fechaStr){
   if(!fechaStr) return null;
-  const horas=(Date.now()-new Date(fechaStr).getTime())/3600000;
-  return horas;
+  return (Date.now()-new Date(fechaStr).getTime())/3600000;
 }
 
 async function cargarPedido(){
@@ -122,16 +143,61 @@ async function cargarPedido(){
     }
     const data=await rp.json();
     const dprod=await rprod.json();
+    _pedidoActual=data.pedido;
     render(data.pedido,dprod.productos||[]);
+    programarRefresh();
   }catch(e){
     cont.innerHTML="<div class=\"ft-error\">No pudimos cargar tu pedido en este momento. Intenta de nuevo en un momento.</div>";
   }
+}
+
+function programarRefresh(){
+  if(_refreshTimer) clearTimeout(_refreshTimer);
+  // No refrescar si ya está entregado o cancelado
+  if(_pedidoActual&&["entregado","cancelado"].includes(_pedidoActual.estado_actual)) return;
+  let segundos=60;
+  const txt=document.getElementById("ft-refresh-txt");
+  function tick(){
+    if(segundos<=0){
+      txt.textContent="Actualizando...";
+      cargarPedido();
+      return;
+    }
+    txt.textContent="Se actualiza en "+segundos+"s";
+    segundos--;
+    _refreshTimer=setTimeout(tick,1000);
+  }
+  tick();
 }
 
 function render(p,productos){
   const cont=document.getElementById("ft-contenido");
   const idCorto=p.id_repositorio||p.token.substring(0,8).toUpperCase();
   const fecha=p.creado_en?new Date(p.creado_en).toLocaleDateString("es-MX",{day:"2-digit",month:"short",year:"numeric"}):"—";
+  const esEntregado=p.estado_actual==="entregado";
+
+  // Pantalla especial si ya fue entregado
+  if(esEntregado){
+    const fechaEntrega=p.ultima_actualizacion_envio
+      ?new Date(p.ultima_actualizacion_envio).toLocaleDateString("es-MX",{day:"2-digit",month:"long",year:"numeric"})
+      :fecha;
+    cont.innerHTML=
+      "<div class=\"ft-entregado-card\">"+
+      "<div class=\"ft-entregado-icon\"><i class=\"ti ti-circle-check\"></i></div>"+
+      "<div class=\"ft-entregado-titulo\">¡Tu pedido fue entregado!</div>"+
+      "<div class=\"ft-entregado-sub\">Entregado el "+fechaEntrega+"</div>"+
+      "</div>"+
+      "<div class=\"ft-card\">"+
+      "<div class=\"ft-order-id\">Pedido #"+idCorto+"</div>"+
+      "<div class=\"ft-client-name\">"+(p.cliente_nombre||"—")+"</div>"+
+      (productos.length?"<div style=\"margin-top:12px\">"+renderProductosHTML(productos)+"</div>":"")+
+      "</div>"+
+      (p.guia_numero?"<div class=\"ft-card\"><div class=\"ft-tracking-box\">"+
+      "<div class=\"ft-tracking-row\"><span class=\"ft-tracking-label\">Paquetería</span><span style=\"font-weight:500\">"+(p.paqueteria||"—")+"</span></div>"+
+      "<div class=\"ft-tracking-row\" style=\"margin-bottom:0\"><span class=\"ft-tracking-label\">Guía</span><span style=\"font-weight:500;font-family:monospace\">"+p.guia_numero+"</span></div>"+
+      "</div></div>":"");
+    return;
+  }
 
   cont.innerHTML=
     "<div class=\"ft-tabs\">"+
@@ -143,13 +209,25 @@ function render(p,productos){
     "<div class=\"ft-order-id\">Pedido #"+idCorto+"</div>"+
     "<div class=\"ft-client-name\">"+(p.cliente_nombre||"—")+"</div>"+
     "<div class=\"ft-order-meta\">"+productos.length+" producto"+(productos.length!==1?"s":"")+" · "+fecha+"</div>"+
+    (p.fecha_estimada?"<div class=\"ft-fecha-estimada\"><i class=\"ti ti-calendar\" style=\"font-size:13px\"></i>Entrega estimada: "+new Date(p.fecha_estimada).toLocaleDateString("es-MX",{day:"2-digit",month:"long"})+"</div>":"")+
     "</div>"+
+    (productos.length?"<div class=\"ft-card\">"+renderProductosHTML(productos)+"</div>":"")+
     "<div class=\"ft-card\"><div class=\"ft-steps\" id=\"steps-container\"></div></div>"+
     "</div>"+
     "<div id=\"tab-envio\" style=\"display:none\"></div>";
 
   renderSteps(p);
   renderEnvio(p);
+}
+
+function renderProductosHTML(productos){
+  return "<div class=\"ft-productos-titulo\">Productos</div>"+
+    productos.map(pr=>
+      "<div class=\"ft-prod-row\">"+
+      "<span class=\"ft-prod-nombre\">"+(pr.nombre_producto||pr.nombre||"—")+"</span>"+
+      "<span class=\"ft-prod-cant\">×"+pr.cantidad+"</span>"+
+      "</div>"
+    ).join("");
 }
 
 const PASOS_BASE=[
@@ -184,9 +262,6 @@ function renderSteps(p){
     if(paso.key==="enviado"&&estado!=="pending"&&p.guia_numero){
       sub="Guía activa"+(p.paqueteria?" · "+p.paqueteria:"");
     }
-    if(paso.key==="entregado"&&estado==="done"&&p.ultima_actualizacion_envio){
-      sub="Entregado el "+new Date(p.ultima_actualizacion_envio).toLocaleDateString("es-MX",{day:"2-digit",month:"short"});
-    }
 
     const lineClass=estado==="done"?"done":estado==="active"?"active":"";
     const pulseClass=estado==="active"?" ft-pulse":"";
@@ -209,22 +284,26 @@ function renderEnvio(p){
     return;
   }
 
-  let mensajeEstado=ESTADO_ENVIO_MENSAJE[p.estado_envio]||"Estamos esperando la primera actualización de la paquetería.";
+  const mensajeEstado=ESTADO_ENVIO_MENSAJE[p.estado_envio]||"Estamos esperando la primera actualización de la paquetería.";
   const horasSinActualizar=tiempoDesde(p.ultima_actualizacion_envio);
   let avisoTardanza="";
   if(p.estado_envio&&p.estado_envio!=="delivered"&&horasSinActualizar!==null&&horasSinActualizar>48){
     avisoTardanza="<div class=\"ft-tracking-status-box\" style=\"border-color:#fde68a;background:#fffbeb;color:#92400e\">"+
       "<i class=\"ti ti-clock\" style=\"font-size:13px;vertical-align:-2px;margin-right:4px\"></i>"+
-      "Sin actualizaciones recientes — esto puede pasar ocasionalmente con las paqueterías. Si tarda más de lo esperado, contáctanos."+
+      "Sin actualizaciones recientes — esto puede pasar ocasionalmente. Si tarda más de lo esperado, contáctanos."+
       "</div>";
   } else if(!p.estado_envio){
     avisoTardanza="<div class=\"ft-tracking-status-box\">"+
       "<i class=\"ti ti-clock\" style=\"font-size:13px;vertical-align:-2px;margin-right:4px\"></i>"+
-      "Guía generada — esperando que la paquetería recolecte el paquete. Es normal que tarde unas horas en aparecer movimiento."+
+      "Guía generada — esperando que la paquetería recolecte el paquete. Es normal que tarde unas horas."+
       "</div>";
   }
 
   const ultimaAct=p.ultima_actualizacion_envio?new Date(p.ultima_actualizacion_envio).toLocaleString("es-MX",{day:"2-digit",month:"short",hour:"2-digit",minute:"2-digit"}):"—";
+  const urlRastreo=(URLS_PAQUETERIA[p.paqueteria]||"")+p.guia_numero;
+  const btnRastrear=p.paqueteria&&URLS_PAQUETERIA[p.paqueteria]
+    ?"<a href=\""+urlRastreo+"\" target=\"_blank\" class=\"ft-rastrear-btn\"><i class=\"ti ti-external-link\" style=\"font-size:14px\"></i>Rastrear en "+p.paqueteria+"</a>"
+    :"";
 
   cont.innerHTML=
     "<div class=\"ft-card\">"+
@@ -237,6 +316,7 @@ function renderEnvio(p){
     "</div>"+
     (p.estado_envio?"<div class=\"ft-tracking-status-box\">"+mensajeEstado+"</div>":"")+
     avisoTardanza+
+    btnRastrear+
     "</div>";
 }
 
