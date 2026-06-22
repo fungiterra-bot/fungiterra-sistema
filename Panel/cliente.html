@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Seguimiento de pedido — Fungiterra</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/dist/tabler-icons.min.css">
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap');
+*{box-sizing:border-box}
+body{margin:0;background:#eef1f4;font-family:'Inter',sans-serif}
+.ft-page{max-width:480px;margin:0 auto;padding:20px 16px 40px}
+.ft-wrap{font-family:'Inter',sans-serif;background:#f4f6f8;padding:16px;border-radius:16px}
+.ft-header{background:#2B7FC0;border-radius:12px;padding:16px 20px;margin-bottom:16px;display:flex;align-items:center;gap:12px}
+.ft-logo-circle{width:40px;height:40px;background:white;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:600;font-size:13px;color:#2B7FC0;flex-shrink:0}
+.ft-header-text h2{margin:0;font-size:15px;font-weight:600;color:white}
+.ft-header-text p{margin:0;font-size:12px;color:rgba(255,255,255,0.75)}
+.ft-card{background:white;border-radius:12px;padding:16px 20px;margin-bottom:12px;border:0.5px solid #e5e7eb}
+.ft-order-id{font-size:11px;color:#6b7280;margin-bottom:2px}
+.ft-client-name{font-size:17px;font-weight:600;color:#111827;margin-bottom:4px}
+.ft-order-meta{font-size:12px;color:#6b7280}
+.ft-steps{position:relative;padding:8px 0}
+.ft-step{display:flex;align-items:flex-start;gap:14px;margin-bottom:0;position:relative}
+.ft-step:not(:last-child) .ft-step-line{position:absolute;left:15px;top:32px;width:2px;height:calc(100% + 4px);background:#e5e7eb;z-index:0}
+.ft-step:not(:last-child) .ft-step-line.done{background:#3A8C2F}
+.ft-step:not(:last-child) .ft-step-line.active{background:linear-gradient(to bottom,#3A8C2F 0%,#e5e7eb 100%)}
+.ft-step-dot{width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0;position:relative;z-index:1;margin-bottom:20px}
+.ft-step-dot.done{background:#3A8C2F}
+.ft-step-dot.active{background:#2B7FC0;box-shadow:0 0 0 4px rgba(43,127,192,0.2)}
+.ft-step-dot.pending{background:#f3f4f6;border:2px solid #e5e7eb}
+.ft-step-dot.cancelado{background:#dc2626}
+.ft-step-dot i{font-size:15px;color:white}
+.ft-step-dot.pending i{color:#d1d5db}
+.ft-step-info{padding-top:4px;flex:1}
+.ft-step-title{font-size:14px;font-weight:500;color:#111827;margin-bottom:2px}
+.ft-step-title.pending{color:#9ca3af}
+.ft-step-sub{font-size:12px;color:#6b7280}
+.ft-step-badge{display:inline-block;font-size:11px;font-weight:500;padding:2px 8px;border-radius:20px;margin-top:4px}
+.ft-step-badge.fab{background:#fef3c7;color:#92400e}
+.ft-step-badge.prep{background:#dbeafe;color:#1e40af}
+.ft-pulse{animation:ftpulse 2s infinite}
+@keyframes ftpulse{0%,100%{box-shadow:0 0 0 4px rgba(43,127,192,0.2)}50%{box-shadow:0 0 0 8px rgba(43,127,192,0.08)}}
+.ft-tabs{display:flex;gap:8px;margin-bottom:12px}
+.ft-tab{flex:1;padding:8px;border:0.5px solid #e5e7eb;border-radius:8px;background:white;font-size:12px;font-weight:500;color:#6b7280;cursor:pointer;text-align:center;transition:all .15s}
+.ft-tab.active{background:#2B7FC0;border-color:#2B7FC0;color:white}
+.ft-tracking-box{background:#f0f9ff;border:0.5px solid #bae6fd;border-radius:8px;padding:12px 14px;font-size:12px;color:#0c4a6e}
+.ft-tracking-row{display:flex;justify-content:space-between;margin-bottom:6px;gap:10px}
+.ft-tracking-label{color:#6b7280;flex-shrink:0}
+.ft-tracking-row span:last-child{text-align:right}
+.ft-tracking-status-box{background:#f9fafb;border:0.5px solid #e5e7eb;border-radius:8px;padding:12px 14px;font-size:12px;color:#374151;margin-top:10px;line-height:1.5}
+.ft-copy-btn{background:none;border:0.5px solid #e5e7eb;border-radius:6px;padding:2px 8px;font-size:11px;color:#374151;cursor:pointer}
+.ft-factura-card{background:#f0fdf4;border:0.5px solid #bbf7d0;border-radius:12px;padding:16px 20px;margin-bottom:12px}
+.ft-factura-title{font-size:14px;font-weight:600;color:#14532d;margin-bottom:6px}
+.ft-factura-sub{font-size:12px;color:#166534;margin-bottom:12px}
+.ft-btn-primary{width:100%;padding:11px;background:#3A8C2F;border:none;border-radius:8px;color:white;font-size:14px;font-weight:500;cursor:pointer;margin-bottom:8px;font-family:inherit}
+.ft-btn-secondary{width:100%;padding:11px;background:white;border:0.5px solid #d1fae5;border-radius:8px;color:#166534;font-size:14px;font-weight:500;cursor:pointer;font-family:inherit}
+.ft-area-row{display:flex;gap:8px;margin-top:8px;flex-wrap:wrap}
+.ft-area-pill{flex:1;min-width:120px;border-radius:20px;padding:5px 10px;font-size:11px;font-weight:500;text-align:center}
+.ft-area-done{background:#dcfce7;color:#166534}
+.ft-area-pending{background:#fef9c3;color:#854d0e}
+.ft-empty,.ft-loading,.ft-error{text-align:center;padding:60px 20px;color:#6b7280;font-size:13px}
+.ft-error{color:#991b1b}
+</style>
+</head>
+<body>
+<div class="ft-page">
+  <div class="ft-wrap">
+    <div class="ft-header">
+      <div class="ft-logo-circle">FT</div>
+      <div class="ft-header-text">
+        <h2>Seguimiento de pedido</h2>
+        <p>Fungiterra — Hongos a tu servicio</p>
+      </div>
+    </div>
+
+    <div id="ft-contenido">
+      <div class="ft-loading">Cargando tu pedido...</div>
+    </div>
+  </div>
+</div>
+
+<script>
+const API="https://fungiterra-api-production.up.railway.app";
+
+function getToken(){
+  const params=new URLSearchParams(window.location.search);
+  if(params.get("token")) return params.get("token");
+  const partes=window.location.pathname.split("/").filter(Boolean);
+  return partes[partes.length-1]||"";
+}
+
+const ESTADO_ENVIO_MENSAJE={
+  guia_generada:"Guía generada — esperando que la paquetería recolecte el paquete. Esto puede tardar unas horas.",
+  picked_up:"Tu paquete fue recolectado por la paquetería y va en camino a su primer punto de tránsito.",
+  in_transit:"Tu paquete está en tránsito hacia tu domicilio.",
+  out_for_delivery:"Tu paquete salió a reparto — debería llegar hoy.",
+  delivered:"Tu paquete fue entregado.",
+  exception:"La paquetería reportó una incidencia con este envío. Si tienes dudas, contáctanos."
+};
+
+function tiempoDesde(fechaStr){
+  if(!fechaStr) return null;
+  const horas=(Date.now()-new Date(fechaStr).getTime())/3600000;
+  return horas;
+}
+
+async function cargarPedido(){
+  const token=getToken();
+  const cont=document.getElementById("ft-contenido");
+  if(!token){
+    cont.innerHTML="<div class=\"ft-error\">Link inválido — falta el código de seguimiento.</div>";
+    return;
+  }
+  try{
+    const [rp,rprod]=await Promise.all([
+      fetch(API+"/pedidos/"+token),
+      fetch(API+"/pedidos/"+token+"/productos")
+    ]);
+    if(!rp.ok){
+      cont.innerHTML="<div class=\"ft-error\">No encontramos este pedido. Verifica tu link o contáctanos.</div>";
+      return;
+    }
+    const data=await rp.json();
+    const dprod=await rprod.json();
+    render(data.pedido,dprod.productos||[]);
+  }catch(e){
+    cont.innerHTML="<div class=\"ft-error\">No pudimos cargar tu pedido en este momento. Intenta de nuevo en un momento.</div>";
+  }
+}
+
+function render(p,productos){
+  const cont=document.getElementById("ft-contenido");
+  const idCorto=p.id_repositorio||p.token.substring(0,8).toUpperCase();
+  const fecha=p.creado_en?new Date(p.creado_en).toLocaleDateString("es-MX",{day:"2-digit",month:"short",year:"numeric"}):"—";
+
+  cont.innerHTML=
+    "<div class=\"ft-tabs\">"+
+    "<div class=\"ft-tab active\" id=\"ft-tab-estado\" onclick=\"setTab('estado')\">Estado</div>"+
+    "<div class=\"ft-tab\" id=\"ft-tab-envio\" onclick=\"setTab('envio')\">Envío</div>"+
+    "</div>"+
+    "<div id=\"tab-estado\">"+
+    "<div class=\"ft-card\">"+
+    "<div class=\"ft-order-id\">Pedido #"+idCorto+"</div>"+
+    "<div class=\"ft-client-name\">"+(p.cliente_nombre||"—")+"</div>"+
+    "<div class=\"ft-order-meta\">"+productos.length+" producto"+(productos.length!==1?"s":"")+" · "+fecha+"</div>"+
+    "</div>"+
+    "<div class=\"ft-card\"><div class=\"ft-steps\" id=\"steps-container\"></div></div>"+
+    "</div>"+
+    "<div id=\"tab-envio\" style=\"display:none\"></div>";
+
+  renderSteps(p);
+  renderEnvio(p);
+}
+
+const PASOS_BASE=[
+  {key:"recibido",icon:"ti-circle-check",title:"Pedido recibido"},
+  {key:"en_produccion",icon:"ti-tools",title:"En producción"},
+  {key:"empaquetado",icon:"ti-package",title:"Empaquetado"},
+  {key:"enviado",icon:"ti-truck",title:"En camino"},
+  {key:"entregado",icon:"ti-circle-check",title:"Entregado"}
+];
+
+function renderSteps(p){
+  const orden=["recibido","en_produccion","empaquetado","enviado","entregado"];
+  const estadoActual=p.estado_actual;
+
+  if(estadoActual==="cancelado"){
+    document.getElementById("steps-container").innerHTML=
+      "<div class=\"ft-step\">"+
+      "<div class=\"ft-step-dot cancelado\"><i class=\"ti ti-x\"></i></div>"+
+      "<div class=\"ft-step-info\"><div class=\"ft-step-title\">Pedido cancelado</div>"+
+      "<div class=\"ft-step-sub\">Si tienes dudas sobre este pedido, contáctanos.</div></div>"+
+      "</div>";
+    return;
+  }
+
+  const idxActual=orden.indexOf(estadoActual);
+  const html=PASOS_BASE.map((paso,i)=>{
+    let estado="pending";
+    if(i<idxActual) estado="done";
+    else if(i===idxActual) estado="active";
+
+    let sub="";
+    if(paso.key==="enviado"&&estado!=="pending"&&p.guia_numero){
+      sub="Guía activa"+(p.paqueteria?" · "+p.paqueteria:"");
+    }
+    if(paso.key==="entregado"&&estado==="done"&&p.ultima_actualizacion_envio){
+      sub="Entregado el "+new Date(p.ultima_actualizacion_envio).toLocaleDateString("es-MX",{day:"2-digit",month:"short"});
+    }
+
+    const lineClass=estado==="done"?"done":estado==="active"?"active":"";
+    const pulseClass=estado==="active"?" ft-pulse":"";
+    let s="<div class=\"ft-step\">";
+    if(i<PASOS_BASE.length-1) s+="<div class=\"ft-step-line "+lineClass+"\"></div>";
+    s+="<div class=\"ft-step-dot "+estado+pulseClass+"\"><i class=\"ti "+paso.icon+"\"></i></div>";
+    s+="<div class=\"ft-step-info\"><div class=\"ft-step-title"+(estado==="pending"?" pending":"")+"\">"+paso.title+"</div>";
+    if(sub) s+="<div class=\"ft-step-sub\">"+sub+"</div>";
+    s+="</div></div>";
+    return s;
+  }).join("");
+
+  document.getElementById("steps-container").innerHTML=html;
+}
+
+function renderEnvio(p){
+  const cont=document.getElementById("tab-envio");
+  if(!p.guia_numero){
+    cont.innerHTML="<div class=\"ft-card\"><p style=\"font-size:13px;color:#6b7280;margin:0\">Aún no hay información de envío para este pedido. En cuanto se genere la guía, la verás aquí.</p></div>";
+    return;
+  }
+
+  let mensajeEstado=ESTADO_ENVIO_MENSAJE[p.estado_envio]||"Estamos esperando la primera actualización de la paquetería.";
+  const horasSinActualizar=tiempoDesde(p.ultima_actualizacion_envio);
+  let avisoTardanza="";
+  if(p.estado_envio&&p.estado_envio!=="delivered"&&horasSinActualizar!==null&&horasSinActualizar>48){
+    avisoTardanza="<div class=\"ft-tracking-status-box\" style=\"border-color:#fde68a;background:#fffbeb;color:#92400e\">"+
+      "<i class=\"ti ti-clock\" style=\"font-size:13px;vertical-align:-2px;margin-right:4px\"></i>"+
+      "Sin actualizaciones recientes — esto puede pasar ocasionalmente con las paqueterías. Si tarda más de lo esperado, contáctanos."+
+      "</div>";
+  } else if(!p.estado_envio){
+    avisoTardanza="<div class=\"ft-tracking-status-box\">"+
+      "<i class=\"ti ti-clock\" style=\"font-size:13px;vertical-align:-2px;margin-right:4px\"></i>"+
+      "Guía generada — esperando que la paquetería recolecte el paquete. Es normal que tarde unas horas en aparecer movimiento."+
+      "</div>";
+  }
+
+  const ultimaAct=p.ultima_actualizacion_envio?new Date(p.ultima_actualizacion_envio).toLocaleString("es-MX",{day:"2-digit",month:"short",hour:"2-digit",minute:"2-digit"}):"—";
+
+  cont.innerHTML=
+    "<div class=\"ft-card\">"+
+    "<p style=\"font-size:13px;font-weight:500;color:#111827;margin:0 0 10px\">Información de envío</p>"+
+    "<div class=\"ft-tracking-box\">"+
+    "<div class=\"ft-tracking-row\"><span class=\"ft-tracking-label\">Paquetería</span><span style=\"font-weight:500\">"+(p.paqueteria||"—")+"</span></div>"+
+    "<div class=\"ft-tracking-row\"><span class=\"ft-tracking-label\">Guía</span><span style=\"font-weight:500;font-family:monospace\">"+p.guia_numero+"</span></div>"+
+    (p.ultima_ubicacion_envio?"<div class=\"ft-tracking-row\"><span class=\"ft-tracking-label\">Última ubicación</span><span>"+p.ultima_ubicacion_envio+"</span></div>":"")+
+    "<div class=\"ft-tracking-row\" style=\"margin-bottom:0\"><span class=\"ft-tracking-label\">Última actualización</span><span>"+ultimaAct+"</span></div>"+
+    "</div>"+
+    (p.estado_envio?"<div class=\"ft-tracking-status-box\">"+mensajeEstado+"</div>":"")+
+    avisoTardanza+
+    "</div>";
+}
+
+function setTab(tab){
+  document.getElementById("ft-tab-estado").classList.toggle("active",tab==="estado");
+  document.getElementById("ft-tab-envio").classList.toggle("active",tab==="envio");
+  document.getElementById("tab-estado").style.display=tab==="estado"?"block":"none";
+  document.getElementById("tab-envio").style.display=tab==="envio"?"block":"none";
+}
+
+cargarPedido();
+</script>
+</body>
+</html>
