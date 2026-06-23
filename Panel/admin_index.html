@@ -1336,15 +1336,52 @@ function renderSeguimiento(){
 
   box.innerHTML=lista.map(p=>{
     const idCorto=p.id_repositorio||p.token.substring(0,8).toUpperCase();
-    const estadoEnvioTexto=p.estado_envio?(ESTADO_ENVIO_LABEL[p.estado_envio]||p.estado_envio):null;
     const ultimaAct=p.ultima_actualizacion_envio?new Date(p.ultima_actualizacion_envio).toLocaleString("es-MX",{day:"2-digit",month:"short",hour:"2-digit",minute:"2-digit"}):null;
     const esEntregado=p.estado_actual==="entregado";
+
+    // Mini línea de progreso de envío
+    const PASOS_ENVIO=[
+      {key:"guia_generada",label:"Guía"},
+      {key:"picked_up",label:"Recolectado"},
+      {key:"in_transit",label:"En tránsito"},
+      {key:"out_for_delivery",label:"En reparto"},
+      {key:"delivered",label:"Entregado"}
+    ];
+    const ORDEN_ENVIO=["guia_generada","picked_up","in_transit","out_for_delivery","delivered"];
+    const idxEnvio=p.estado_envio?ORDEN_ENVIO.indexOf(p.estado_envio):-1;
+    const progreso=p.guia_numero
+      ?"<div style=\"margin-top:10px;padding-top:10px;border-top:1px solid var(--border)\">"
+        +"<div style=\"display:flex;align-items:center;gap:0;margin-bottom:6px\">"
+        +PASOS_ENVIO.map((paso,i)=>{
+          const done=i<=idxEnvio;
+          const active=i===idxEnvio;
+          const color=done?"var(--verde)":"var(--border)";
+          const dot="<div style=\"width:10px;height:10px;border-radius:50%;background:"+color+";flex-shrink:0;"+(active?"box-shadow:0 0 0 3px rgba(40,151,75,0.2);":"")+"\"></div>";
+          const line=i<PASOS_ENVIO.length-1?"<div style=\"flex:1;height:2px;background:"+(done&&i<idxEnvio?"var(--verde)":"var(--border)")+"\"></div>":"";
+          return dot+line;
+        }).join("")
+        +"</div>"
+        +"<div style=\"display:flex;justify-content:space-between\">"
+        +PASOS_ENVIO.map((paso,i)=>{
+          const done=i<=idxEnvio;
+          return "<div style=\"font-size:10px;color:"+(done?"var(--verde)":"var(--text3)")+";text-align:center;flex:1;min-width:0\">"+(i===0||i===PASOS_ENVIO.length-1?paso.label:"")+"</div>";
+        }).join("")
+        +"</div>"
+        +(p.ultima_ubicacion_envio||ultimaAct
+          ?"<div style=\"font-size:11px;color:var(--text3);margin-top:4px\">"
+            +(p.ultima_ubicacion_envio?"📍 "+p.ultima_ubicacion_envio:"")
+            +(p.ultima_ubicacion_envio&&ultimaAct?" · ":"")
+            +(ultimaAct?ultimaAct:"")
+            +"</div>"
+          :"")
+        +"</div>"
+      :"";
+
     return "<div style=\"border:1px solid var(--border);border-radius:10px;padding:14px 16px;margin-bottom:10px\">"
       +"<div style=\"display:flex;justify-content:space-between;align-items:center;margin-bottom:8px\">"
       +"<div><strong style=\"font-size:13px\">"+idCorto+"</strong> <span style=\"color:var(--text3);font-size:12px\">· "+(p.cliente_nombre||"—")+"</span></div>"
       +badge(mapEstado(p.estado_actual))
       +"</div>"
-      +(estadoEnvioTexto?"<div style=\"font-size:12px;color:var(--azul);margin-bottom:6px\">"+estadoEnvioTexto+(p.ultima_ubicacion_envio?" · "+p.ultima_ubicacion_envio:"")+(ultimaAct?" · "+ultimaAct:"")+"</div>":"")
       +(esEntregado
         ? "<div style=\"font-size:12px;color:var(--text3)\">"+(p.paqueteria?"<strong>"+p.paqueteria+"</strong> · ":"")+"Guía: <span style=\"font-family:monospace\">"+(p.guia_numero||"—")+"</span></div>"
         : "<div style=\"display:flex;gap:8px;flex-wrap:wrap\">"
@@ -1354,6 +1391,7 @@ function renderSeguimiento(){
           +"</select>"
           +"<button class=\"btn btn-primary btn-sm\" onclick=\"guardarGuia('"+p.token+"','"+p.id+"')\">"+(p.guia_numero?"Actualizar":"Guardar")+"</button>"
           +"</div>")
+      +progreso
       +"</div>";
   }).join("");
 }
