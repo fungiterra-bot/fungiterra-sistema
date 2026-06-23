@@ -296,39 +296,44 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);min-height:1
 
         <div class="inv-estructurado active" id="inv-estructurado" style="grid-template-columns:1fr 1fr;gap:10px">
           <div class="inv-field full">
-            <label>Modelo</label>
-            <select id="inv-modelo-select" onchange="onCambioModeloSelect()">
-              <option value="EC">EC</option>
-              <option value="C">C</option>
-              <option value="M">M</option>
-              <option value="G">G</option>
-              <option value="__nuevo__">➕ Nuevo modelo...</option>
-            </select>
-            <input type="text" id="inv-modelo-nuevo" placeholder="Escribe el nombre del nuevo modelo" oninput="actualizarPreviewNombre()" style="display:none;margin-top:8px">
-          </div>
-          <div class="inv-field">
-            <label>Plástico</label>
-            <select id="inv-plastico" onchange="actualizarPreviewNombre()">
-              <option value="opaco">Opaco</option>
-              <option value="transparente">Transparente</option>
-            </select>
-          </div>
-          <div class="inv-field">
-            <label>Configuración</label>
-            <select id="inv-config" onchange="actualizarPreviewNombre()">
-              <option value="1 Filtro">1 Filtro</option>
-              <option value="2 Filtros">2 Filtros</option>
-              <option value="Filtro+Puerto">Filtro + Puerto</option>
-              <option value="2 Filtros+Puerto">2 Filtros + Puerto</option>
+            <label>Especie</label>
+            <select id="inv-especie" onchange="onCambioEspecie()">
+              <optgroup label="Comunes">
+                <option value="Shiitake">Shiitake</option>
+                <option value="Portobello">Portobello</option>
+                <option value="Seta de Ajo">Seta de Ajo</option>
+                <option value="Champiñón Blanco">Champiñón Blanco</option>
+                <option value="Hongo Barbuda">Hongo Barbuda</option>
+                <option value="Nameko">Nameko</option>
+                <option value="Chestnut">Chestnut</option>
+                <option value="Piopino">Piopino</option>
+                <option value="Enokitake Golden">Enokitake Golden</option>
+                <option value="Melena de León">Melena de León</option>
+                <option value="Cola de Pavo">Cola de Pavo</option>
+                <option value="Reishi multipileum">Reishi multipileum</option>
+                <option value="Reishi resinaceum">Reishi resinaceum</option>
+                <option value="Cordyceps">Cordyceps</option>
+              </optgroup>
+              <optgroup label="Especiales">
+                <option value="Hongo de Pino">Hongo de Pino</option>
+                <option value="Seta de Agave">Seta de Agave</option>
+                <option value="Shiitake Donko">Shiitake Donko</option>
+                <option value="Hongo Diente de Oso">Hongo Diente de Oso</option>
+                <option value="Champiñón Almendra">Champiñón Almendra</option>
+              </optgroup>
             </select>
           </div>
           <div class="inv-field full">
-            <label>Filtro</label>
-            <select id="inv-filtro-tipo" onchange="actualizarPreviewNombre()">
-              <option value="0.2µm (blanco)">0.2µm — Blanco</option>
-              <option value="2µm (azul)">2µm — Azul</option>
-              <option value="5µm (naranja)">5µm — Naranja</option>
+            <label>Tipo</label>
+            <select id="inv-tipo-lab" onchange="actualizarPreviewNombre()">
+              <option value="Cepa (petri)">Cepa (petri)</option>
+              <option value="Micelio">Micelio</option>
+              <option value="Mushbag 1.5kg">Mushbag 1.5kg</option>
+              <option value="Mushbag 3kg">Mushbag 3kg</option>
             </select>
+          </div>
+          <div id="inv-aviso-insumos" style="display:none;background:#fff6e0;border:1px solid #f0d98a;border-radius:6px;padding:6px 10px;font-size:11px;font-weight:600;color:#9a7300;width:100%;box-sizing:border-box">
+            ⚠️ Mushbags de esta especie pertenecen a <b>Insumos</b>. Solo se pueden registrar aquí Cepa o Micelio.
           </div>
           <div class="inv-form full" style="margin:0">
             <div class="inv-preview-nombre full">Se guardará como: <b id="inv-preview-texto">—</b></div>
@@ -825,12 +830,8 @@ function renderFabricacion(){
 
 function resetFormularioInventario(){
   document.getElementById("inv-quick-select").value="";
-  document.getElementById("inv-modelo-select").value="EC";
-  document.getElementById("inv-modelo-nuevo").value="";
-  document.getElementById("inv-modelo-nuevo").style.display="none";
-  document.getElementById("inv-plastico").value="opaco";
-  document.getElementById("inv-config").value="1 Filtro";
-  document.getElementById("inv-filtro-tipo").value="0.2µm (blanco)";
+  document.getElementById("inv-especie").value="Shiitake";
+  document.getElementById("inv-tipo-lab").value="Cepa (petri)";
   document.getElementById("inv-guardar-config").checked=false;
   document.getElementById("inv-producto-libre").value="";
   document.getElementById("inv-cantidad").value="";
@@ -886,25 +887,39 @@ function setModoProducto(modo){
   document.getElementById("inv-libre").classList.toggle("active",modo==="libre");
 }
 
-function onCambioModeloSelect(){
-  const esNuevo=document.getElementById("inv-modelo-select").value==="__nuevo__";
-  const campoNuevo=document.getElementById("inv-modelo-nuevo");
-  campoNuevo.style.display=esNuevo?"block":"none";
-  if(esNuevo) campoNuevo.focus();
+// Especies cuyas mushbags pertenecen a Insumos, no a Laboratorio
+const ESPECIES_INSUMOS_MUSHBAG=["Champiñón Blanco","Champiñón Almendra","Seta de Ajo","Seta de Agave"];
+
+function onCambioEspecie(){
+  const especie=document.getElementById("inv-especie").value;
+  const selTipo=document.getElementById("inv-tipo-lab");
+  const aviso=document.getElementById("inv-aviso-insumos");
+  const esInsumo=ESPECIES_INSUMOS_MUSHBAG.includes(especie);
+
+  // Actualizar opciones de tipo: ocultar mushbags si es especie de insumos
+  Array.from(selTipo.options).forEach(opt=>{
+    const esMushbag=opt.value.startsWith("Mushbag");
+    opt.disabled=esInsumo&&esMushbag;
+    opt.style.display=(esInsumo&&esMushbag)?"none":"";
+  });
+
+  // Si el tipo actual quedó deshabilitado, resetear a Cepa
+  if(selTipo.options[selTipo.selectedIndex].disabled){
+    selTipo.value="Cepa (petri)";
+  }
+
+  // Mostrar/ocultar aviso
+  aviso.style.display=esInsumo?"block":"none";
+
   actualizarPreviewNombre();
 }
 
+
 function nombreEstructurado(){
-  const sel=document.getElementById("inv-modelo-select").value;
-  const modelo=sel==="__nuevo__"
-    ? document.getElementById("inv-modelo-nuevo").value.trim()
-    : sel;
-  const plastico=document.getElementById("inv-plastico").value;   // value real: opaco/transparente
-  const config=document.getElementById("inv-config").value;        // ya viene en formato cotizador
-  const filtro=document.getElementById("inv-filtro-tipo").value;   // ya viene en formato cotizador
-  if(!modelo) return "";
-  // Formato IDÉNTICO al cotizador: 'FB Mod.'+m+' '+p+' — '+cl[c]+' '+filtro
-  return "FB Mod."+modelo+" "+plastico+" — "+config+" "+filtro;
+  const especie=document.getElementById("inv-especie").value;
+  const tipoLab=document.getElementById("inv-tipo-lab").value;
+  if(!especie||!tipoLab) return "";
+  return especie+" — "+tipoLab;
 }
 
 function actualizarPreviewNombre(){
