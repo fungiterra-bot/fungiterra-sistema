@@ -408,6 +408,10 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);min-height:1
       <button class="fab-close" onclick="cerrarFabricacion()">✕</button>
     </div>
     <div class="fab-body">
+      <div class="prod-subtabs" style="margin-bottom:12px">
+        <div class="prod-subtab active" id="fab-tab-activos" onclick="setSubTabFab('activos')">🔧 En producción</div>
+        <div class="prod-subtab" id="fab-tab-completados" onclick="setSubTabFab('completados')">✅ Completados</div>
+      </div>
       <div class="fab-filtros">
         <select id="fab-producto-filtro" onchange="renderFabricacion()">
           <option value="">Todos los productos</option>
@@ -738,8 +742,19 @@ function cerrarInventario(){
 
 // ── MODAL FABRICACIÓN ────────────────────────────────────────
 let _fabricacionCache=[];
+let _subTabFab="activos";
+
+function setSubTabFab(tab){
+  _subTabFab=tab;
+  document.getElementById("fab-tab-activos").classList.toggle("active",tab==="activos");
+  document.getElementById("fab-tab-completados").classList.toggle("active",tab==="completados");
+  renderFabricacion();
+}
 function abrirFabricacion(){
   document.getElementById("fab-overlay").classList.add("open");
+  _subTabFab="activos";
+  document.getElementById("fab-tab-activos").classList.add("active");
+  document.getElementById("fab-tab-completados").classList.remove("active");
   cargarFabricacion();
 }
 
@@ -781,11 +796,21 @@ function renderFabricacion(){
   const box=document.getElementById("fab-lista");
   const prodFiltro=document.getElementById("fab-producto-filtro").value;
   const pedFiltro=document.getElementById("fab-pedido-filtro").value;
-  let regs=_fabricacionCache;
+
+  // Estados activos = en producción; completados = todo lo demás
+  const estadosActivos=["recibido","en_produccion"];
+  let regs=_fabricacionCache.filter(f=>{
+    const pedido=_pedidos.find(p=>p.id_repositorio===f.pedido_referencia||String(p.id)===String(f.pedido_id));
+    const estado=pedido?pedido.estado_actual:"en_produccion";
+    return _subTabFab==="activos"?estadosActivos.includes(estado):!estadosActivos.includes(estado);
+  });
+
   if(prodFiltro) regs=regs.filter(f=>f.producto===prodFiltro);
   if(pedFiltro) regs=regs.filter(f=>f.pedido_referencia===pedFiltro);
   if(!regs.length){
-    box.innerHTML="<div class=\"fab-empty\">Sin registros de fabricación para este filtro</div>";
+    box.innerHTML="<div class=\"fab-empty\">"
+      +(_subTabFab==="activos"?"Sin productos en producción actualmente":"Sin fabricaciones completadas aún")
+      +"</div>";
     return;
   }
   box.innerHTML=regs.map(f=>{
