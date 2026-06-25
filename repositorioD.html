@@ -511,6 +511,63 @@ td.gris{color:#6b7280;font-size:12px}
   </div>
 </div>
 
+<!-- ══ MODAL ANALIZADOR BANCARIO ══ -->
+<div class="anl-overlay" id="anl-overlay">
+  <div class="anl-modal">
+    <div class="anl-header">
+      <div>
+        <h2>🏦 Conciliador Bancario</h2>
+        <p>Compara el estado de cuenta con cotizaciones del repositorio</p>
+      </div>
+      <button class="btn-x" onclick="cerrarAnalizador()" style="color:white;font-size:24px">×</button>
+    </div>
+    <div class="anl-tabs">
+      <div class="anl-tab activo" data-tab="entrada" onclick="anlSetTab('entrada')">📋 Estado de cuenta</div>
+      <div class="anl-tab" data-tab="resultados" onclick="anlSetTab('resultados')">📊 Resultados</div>
+    </div>
+    <!-- SECCIÓN: ENTRADA -->
+    <div class="anl-body" id="anl-sec-entrada">
+      <div id="anl-drop" class="anl-drop">
+        <div class="anl-drop-icon">📂</div>
+        <p>Arrastra tu archivo Excel o CSV aquí</p>
+        <small>O haz clic para seleccionar · .xlsx · .csv</small>
+      </div>
+      <input type="file" id="anl-file-input" accept=".xlsx,.xls,.csv,.txt" style="display:none">
+      <div style="text-align:center;color:#9ca3af;font-size:12px;margin:10px 0">— o pega el texto directamente —</div>
+      <textarea id="anl-texto" class="anl-textarea"
+        placeholder="Pega aquí el contenido del estado de cuenta (separado por tabs):&#10;&#10;24/06/2026	SPEI RECIBIDO BANAMEX		2,962.92	87,688.44&#10;23/06/2026	SPEI RECIBIDO SANTANDER / V148		2,313.00	66,231.32&#10;..."></textarea>
+      <div class="anl-hint">
+        💡 Columnas esperadas: <strong>FECHA · DESCRIPCIÓN · CARGO · ABONO · SALDO</strong><br>
+        Los cargos (salidas) se ignoran. Solo se analizan los abonos (entradas).<br>
+        <span id="anl-hint-registros" style="color:#2d6a2d;font-weight:600"></span>
+      </div>
+      <div style="margin-top:12px">
+        <button id="anl-btn-analizar" class="anl-btn-analizar">🔍 Analizar</button>
+      </div>
+    </div>
+    <!-- SECCIÓN: RESULTADOS -->
+    <div class="anl-body" id="anl-sec-resultados" style="display:none;padding-top:12px">
+      <div class="anl-resumen">
+        <div class="anl-kpi"><div class="anl-kpi-val" id="anl-kpi-match" style="color:#166534">—</div><div class="anl-kpi-lbl">✅ Emparejados</div></div>
+        <div class="anl-kpi"><div class="anl-kpi-val" id="anl-kpi-posible" style="color:#92400e">—</div><div class="anl-kpi-lbl">⚠️ Posibles</div></div>
+        <div class="anl-kpi"><div class="anl-kpi-val" id="anl-kpi-sinreg" style="color:#6b7280">—</div><div class="anl-kpi-lbl">❓ Sin registro</div></div>
+        <div class="anl-kpi"><div class="anl-kpi-val" id="anl-kpi-sinpago" style="color:#b91c1c">—</div><div class="anl-kpi-lbl">⏳ Cot. sin pago</div></div>
+      </div>
+      <div style="display:flex;gap:6px;margin-bottom:12px;border-bottom:2px solid #e5e7eb;padding-bottom:0">
+        <div class="anl-tab anl-subtab activo" data-sub="match"   onclick="anlRenderTab('match')"   style="font-size:11px;padding:7px 14px">✅ Emparejados</div>
+        <div class="anl-tab anl-subtab"        data-sub="posible" onclick="anlRenderTab('posible')" style="font-size:11px;padding:7px 14px">⚠️ Posibles</div>
+        <div class="anl-tab anl-subtab"        data-sub="sinreg"  onclick="anlRenderTab('sinreg')"  style="font-size:11px;padding:7px 14px">❓ Sin registro</div>
+        <div class="anl-tab anl-subtab"        data-sub="sinpago" onclick="anlRenderTab('sinpago')" style="font-size:11px;padding:7px 14px">⏳ Cot. pendientes</div>
+      </div>
+      <div id="anl-resultado-body"></div>
+    </div>
+    <div class="anl-footer">
+      <button class="btn btn-sm" onclick="anlSetTab('entrada')">← Volver a entrada</button>
+      <button class="btn btn-sm" onclick="cerrarAnalizador()">Cerrar</button>
+    </div>
+  </div>
+</div>
+
 <script>
 var SCRIPT_URL='https://script.google.com/macros/s/AKfycbw4fvlj5bnDW1BTCgvfg0cRbWLTBVa7HDKx9m5BZfwLLZ8twNT2xrFd9gACBB4m0rsd3Q/exec';
 var _todos=[], _sel=null;
@@ -1047,52 +1104,80 @@ function anlSetTab(tab) {
   });
 }
 
-// ── Parser del estado de cuenta BBVA (texto tab-separado o pegar directo) ──
+// ── Parser del estado de cuenta BBVA ──
 function anlParsearTexto(texto) {
   var lineas = texto.split('\n').map(function(l) { return l.trim(); }).filter(Boolean);
   var movimientos = [];
+
+  function parseMonto(s) {
+    if (!s) return 0;
+    s = s.toString().replace(/,/g,'').replace(/\$/g,'').trim();
+    var n = parseFloat(s);
+    return isNaN(n) ? 0 : Math.abs(n);
+  }
+
+  // Detectar si la línea tiene fecha DD/MM/YYYY al inicio
+  var reFecha = /^(\d{2}\/\d{2}\/\d{4})/;
+
   lineas.forEach(function(linea) {
-    // Separar por tabs o múltiples espacios
-    var cols = linea.split(/\t/).map(function(c) { return c.trim(); });
-    // Si no hay tabs, intentar con 2+ espacios
-    if (cols.length < 3) cols = linea.split(/  +/).map(function(c) { return c.trim(); }).filter(Boolean);
+    if (!reFecha.test(linea)) return;
 
-    // Detectar fecha en primera columna: DD/MM/YYYY
-    if (!cols[0] || !/^\d{2}\/\d{2}\/\d{4}$/.test(cols[0])) return;
+    var cols;
+    // Intentar split por tab primero
+    if (linea.indexOf('\t') >= 0) {
+      cols = linea.split('\t').map(function(c){ return c.trim(); });
+    } else {
+      // Sin tabs: split por 2+ espacios
+      cols = linea.split(/  +/).map(function(c){ return c.trim(); }).filter(function(c,i){ return i===0||c!==''; });
+    }
 
-    var fecha = cols[0];
-    var desc  = cols[1] || '';
+    // Filtrar columnas vacías pero conservar posiciones clave
+    // Formato esperado: FECHA | DESCRIPCIÓN | CARGO | ABONO | SALDO
+    // CARGO y ABONO pueden venir vacíos (solo uno tiene valor)
+    var fecha = cols[0] || '';
+    var desc  = '';
     var cargo = 0, abono = 0;
 
-    // Intentar leer CARGO y ABONO desde cols 2,3 (o 3,4 si viene con col extra)
-    // Limpiar comas de miles
-    function parseMonto(s) {
-      if (!s) return 0;
-      var n = parseFloat(s.replace(/,/g,''));
-      return isNaN(n) ? 0 : n;
-    }
-
-    if (cols.length >= 4) {
+    if (cols.length >= 5) {
+      // Formato completo con tabs: FECHA DESC CARGO ABONO SALDO
+      desc  = cols[1] || '';
       cargo = parseMonto(cols[2]);
       abono = parseMonto(cols[3]);
-    } else if (cols.length === 3) {
-      // Puede ser cargo o abono solo
+      // Si CARGO tiene valor negativo en la desc (algunos bancos lo ponen así)
+      if (cargo === 0 && abono === 0 && cols[2]) {
+        var raw = parseFloat((cols[2]||'').replace(/,/g,''));
+        if (raw < 0) cargo = Math.abs(raw);
+        else abono = raw;
+      }
+    } else if (cols.length === 4) {
+      desc  = cols[1] || '';
+      // Podría ser FECHA DESC CARGO_O_ABONO SALDO
       var m = parseMonto(cols[2]);
-      if (m < 0) cargo = Math.abs(m);
-      else abono = m;
+      // Detectar si es cargo por palabra clave en descripción
+      var descUp = (cols[1]||'').toUpperCase();
+      var esCargo = descUp.includes('PAGO CUENTA') && descUp.includes('BNET') === false
+                 || descUp.includes('RETIRO')
+                 || descUp.includes('SPEI ENVIADO')
+                 || descUp.includes('TEF ENVIADO')
+                 || descUp.includes('TRASPASO');
+      // También verificar si el monto original tenía signo negativo
+      var rawStr = (cols[2]||'').replace(/,/g,'').trim();
+      if (rawStr.startsWith('-')) esCargo = true;
+      if (esCargo) cargo = m; else abono = m;
+    } else if (cols.length === 3) {
+      desc  = cols[1] || '';
+      var m2 = parseMonto(cols[2]);
+      var rawStr2 = (cols[2]||'').replace(/,/g,'').trim();
+      if (rawStr2.startsWith('-')) cargo = m2; else abono = m2;
+    } else {
+      return; // línea con muy pocas columnas, ignorar
     }
 
-    // Solo nos interesan abonos (ingresos) — cargo puede ser 0 o negativo
-    // Ignorar líneas donde todo es 0
     if (abono === 0 && cargo === 0) return;
 
-    movimientos.push({
-      fecha: fecha,
-      desc:  desc,
-      cargo: cargo,
-      abono: abono
-    });
+    movimientos.push({ fecha: fecha, desc: desc, cargo: cargo, abono: abono });
   });
+
   return movimientos;
 }
 
@@ -1419,69 +1504,5 @@ document.getElementById('anl-overlay').addEventListener('click', function(e) {
   if (e.target === this) cerrarAnalizador();
 });
 </script>
-
-<!-- ══ MODAL ANALIZADOR BANCARIO ══ -->
-<div class="anl-overlay" id="anl-overlay">
-  <div class="anl-modal">
-    <div class="anl-header">
-      <div>
-        <h2>🏦 Conciliador Bancario</h2>
-        <p>Compara el estado de cuenta con cotizaciones del repositorio</p>
-      </div>
-      <button class="btn-x" onclick="cerrarAnalizador()" style="color:white;font-size:24px">×</button>
-    </div>
-
-    <div class="anl-tabs">
-      <div class="anl-tab activo" data-tab="entrada" onclick="anlSetTab('entrada')">📋 Estado de cuenta</div>
-      <div class="anl-tab" data-tab="resultados" onclick="anlSetTab('resultados')">📊 Resultados</div>
-    </div>
-
-    <!-- SECCIÓN: ENTRADA -->
-    <div class="anl-body" id="anl-sec-entrada">
-      <div id="anl-drop" class="anl-drop">
-        <div class="anl-drop-icon">📂</div>
-        <p>Arrastra tu archivo Excel o CSV aquí</p>
-        <small>O haz clic para seleccionar · .xlsx · .csv</small>
-      </div>
-      <input type="file" id="anl-file-input" accept=".xlsx,.xls,.csv,.txt" style="display:none">
-
-      <div style="text-align:center;color:#9ca3af;font-size:12px;margin:10px 0">— o pega el texto directamente —</div>
-
-      <textarea id="anl-texto" class="anl-textarea"
-        placeholder="Pega aquí el contenido del estado de cuenta (separado por tabs o espacios):&#10;&#10;24/06/2026	SPEI RECIBIDO BANAMEX	 	2,962.92	87,688.44&#10;23/06/2026	SPEI RECIBIDO SANTANDER / V148	 	2,313.00	66,231.32&#10;..."></textarea>
-      <div class="anl-hint">
-        💡 Columnas esperadas: <strong>FECHA · DESCRIPCIÓN · CARGO · ABONO · SALDO</strong><br>
-        Los cargos (salidas) se ignoran automáticamente. Solo se analizan los abonos (entradas).<br>
-        <span id="anl-hint-registros" style="color:#2d6a2d;font-weight:600"></span>
-      </div>
-      <div style="margin-top:12px">
-        <button id="anl-btn-analizar" class="anl-btn-analizar">🔍 Analizar</button>
-      </div>
-    </div>
-
-    <!-- SECCIÓN: RESULTADOS -->
-    <div class="anl-body" id="anl-sec-resultados" style="display:none;padding-top:12px">
-      <div class="anl-resumen">
-        <div class="anl-kpi"><div class="anl-kpi-val" id="anl-kpi-match" style="color:#166534">—</div><div class="anl-kpi-lbl">✅ Emparejados</div></div>
-        <div class="anl-kpi"><div class="anl-kpi-val" id="anl-kpi-posible" style="color:#92400e">—</div><div class="anl-kpi-lbl">⚠️ Posibles</div></div>
-        <div class="anl-kpi"><div class="anl-kpi-val" id="anl-kpi-sinreg" style="color:#6b7280">—</div><div class="anl-kpi-lbl">❓ Sin registro</div></div>
-        <div class="anl-kpi"><div class="anl-kpi-val" id="anl-kpi-sinpago" style="color:#b91c1c">—</div><div class="anl-kpi-lbl">⏳ Cot. sin pago</div></div>
-      </div>
-
-      <div style="display:flex;gap:6px;margin-bottom:12px;border-bottom:2px solid #e5e7eb;padding-bottom:0">
-        <div class="anl-tab anl-subtab activo" data-sub="match"   onclick="anlRenderTab('match')"   style="font-size:11px;padding:7px 14px">✅ Emparejados</div>
-        <div class="anl-tab anl-subtab"        data-sub="posible" onclick="anlRenderTab('posible')" style="font-size:11px;padding:7px 14px">⚠️ Posibles</div>
-        <div class="anl-tab anl-subtab"        data-sub="sinreg"  onclick="anlRenderTab('sinreg')"  style="font-size:11px;padding:7px 14px">❓ Sin registro</div>
-        <div class="anl-tab anl-subtab"        data-sub="sinpago" onclick="anlRenderTab('sinpago')" style="font-size:11px;padding:7px 14px">⏳ Cot. pendientes</div>
-      </div>
-      <div id="anl-resultado-body"></div>
-    </div>
-
-    <div class="anl-footer">
-      <button class="btn btn-sm" onclick="anlSetTab('entrada')">← Volver a entrada</button>
-      <button class="btn btn-sm" onclick="cerrarAnalizador()">Cerrar</button>
-    </div>
-  </div>
-</div>
 </body>
 </html>
