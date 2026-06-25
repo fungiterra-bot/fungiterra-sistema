@@ -534,7 +534,7 @@ td.gris{color:#6b7280;font-size:12px}
       </div>
       <input type="file" id="anl-file-input" accept=".xlsx,.xls,.csv,.txt" style="display:none">
       <div style="text-align:center;color:#9ca3af;font-size:12px;margin:10px 0">— o pega el texto directamente —</div>
-      <textarea id="anl-texto" class="anl-textarea"
+      <textarea id="anl-texto" class="anl-textarea" oninput="_anlMovimientos=null;document.getElementById('anl-drop').querySelector('p').textContent='Arrastra tu archivo Excel o CSV aquí'"
         placeholder="Pega aquí el contenido del estado de cuenta (separado por tabs):&#10;&#10;24/06/2026	SPEI RECIBIDO BANAMEX		2,962.92	87,688.44&#10;23/06/2026	SPEI RECIBIDO SANTANDER / V148		2,313.00	66,231.32&#10;..."></textarea>
       <div class="anl-hint">
         💡 Columnas esperadas: <strong>FECHA · DESCRIPCIÓN · CARGO · ABONO · SALDO</strong><br>
@@ -1445,27 +1445,36 @@ function anlSeleccionarCot(id) {
   seleccionar(id);
 }
 
+var _anlMovimientos = null; // movimientos cargados desde archivo
+
 // ── Evento principal: botón Analizar ──
 document.getElementById('anl-btn-analizar').addEventListener('click', async function() {
-  var texto = document.getElementById('anl-texto').value.trim();
-  if (!texto) { toast('⚠️ Pega el texto del estado de cuenta', false); return; }
   if (!_todos || !_todos.length) { toast('⚠️ Carga el repositorio primero (↺)', false); return; }
+
+  var movimientos = null;
+
+  // Prioridad: archivo ya cargado
+  if (_anlMovimientos && _anlMovimientos.length) {
+    movimientos = _anlMovimientos;
+  } else {
+    // Intentar con texto pegado
+    var texto = document.getElementById('anl-texto').value.trim();
+    if (!texto) { toast('⚠️ Sube un archivo o pega el texto del estado de cuenta', false); return; }
+    movimientos = anlParsearTexto(texto);
+    if (!movimientos.length) {
+      toast('⚠️ No se detectaron movimientos. Verifica el formato.', false);
+      return;
+    }
+  }
 
   this.disabled = true;
   this.textContent = 'Analizando...';
-
   try {
-    var movimientos = anlParsearTexto(texto);
-    if (!movimientos.length) {
-      toast('⚠️ No se detectaron movimientos. Verifica el formato.', false);
-      this.disabled = false; this.textContent = '🔍 Analizar'; return;
-    }
     var res = anlConciliar(movimientos);
     anlRenderizar(res);
   } catch(e) {
     toast('⚠️ Error al analizar: ' + e.message, false);
   }
-
   this.disabled = false;
   this.textContent = '🔍 Analizar';
 });
@@ -1489,12 +1498,17 @@ async function anlCargarArchivo(file) {
   try {
     var movs = await anlParsearArchivo(file);
     if (!movs.length) { toast('⚠️ No se detectaron movimientos en el archivo', false); return; }
-    toast('📂 ' + movs.length + ' movimientos cargados');
-    document.getElementById('anl-texto').value = ''; // Limpiar textarea
+    _anlMovimientos = movs;
+    document.getElementById('anl-texto').value = '';
     document.getElementById('anl-drop').querySelector('p').textContent = '✅ ' + file.name + ' — ' + movs.length + ' movimientos';
-    if (!_todos || !_todos.length) { toast('⚠️ Carga el repositorio primero (↺)', false); return; }
-    var res = anlConciliar(movs);
-    anlRenderizar(res);
+    toast('📂 ' + movs.length + ' movimientos cargados — presiona Analizar');
+    if (_todos && _todos.length) {
+      // Analizar directo si el repositorio ya está cargado
+      var res = anlConciliar(movs);
+      anlRenderizar(res);
+    } else {
+      toast('⚠️ Carga el repositorio primero (↺)', false);
+    }
   } catch(e) {
     toast('⚠️ Error al leer archivo: ' + e.message, false);
   }
