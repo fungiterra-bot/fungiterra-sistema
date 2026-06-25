@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Repositorio v29 — Fungiterra</title>
 <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=DM+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 :root{--azul:#1a3a5c;--verde:#2d6a2d;--gris:#f0f4f8;--border:#dde3e8;--text:#1a1a2e;--mono:'DM Mono',monospace;--sans:'DM Sans',sans-serif;}
@@ -1400,13 +1401,6 @@ document.getElementById('anl-file-input').addEventListener('change', async funct
 });
 
 async function anlCargarArchivo(file) {
-  // Cargar SheetJS dinámicamente si no está
-  if (!window.XLSX) {
-    var s = document.createElement('script');
-    s.src = 'https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js';
-    document.head.appendChild(s);
-    await new Promise(function(resolve) { s.onload = resolve; });
-  }
   try {
     var movs = await anlParsearArchivo(file);
     if (!movs.length) { toast('⚠️ No se detectaron movimientos en el archivo', false); return; }
