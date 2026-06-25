@@ -216,6 +216,7 @@ td.gris{color:#6b7280;font-size:12px}
     <div class="card" style="padding:12px 16px">
       <div class="filtros">
         <input id="bus" placeholder="🔍 ID o cliente..." oninput="filtrar()" style="flex:1;min-width:130px">
+        <input id="f-m" type="number" placeholder="💲 Monto" oninput="filtrar()" style="width:100px" step="0.01" min="0">
         <select id="f-e" onchange="filtrar()">
           <option value="">Todos</option>
           <option value="Generada">⏳ Generadas</option>
@@ -669,12 +670,14 @@ function cargar(){
 
 function filtrar(){
   var q=(document.getElementById('bus').value||'').toLowerCase();
+  var fm=parseFloat(document.getElementById('f-m').value||'');
   var fe=document.getElementById('f-e').value;
   var fs=document.getElementById('f-s').value;
   var fp=document.getElementById('f-p').value;
   var lista=_todos.filter(function(c){
-    return (!q||(c.id||'').toLowerCase().includes(q)||(c.cliente||'').toLowerCase().includes(q))
-      &&(!fe||c.estado===fe)&&(!fs||c.socio===fs)
+    var okQ = !q||(c.id||'').toLowerCase().includes(q)||(c.cliente||'').toLowerCase().includes(q);
+    var okM = isNaN(fm)||Math.abs(Number(c.total||0)-fm)<=2;
+    return okQ&&okM&&(!fe||c.estado===fe)&&(!fs||c.socio===fs)
       &&_enPeriodo(c.fechaEstado||c.fecha, fp);
   });
   var tb=document.getElementById('tb');
@@ -1182,34 +1185,8 @@ function anlParsearTexto(texto) {
 }
 
 // ── Parser de Excel/CSV via SheetJS ──
-async function anlParsearArchivo(file) {
-  return new Promise(function(resolve, reject) {
-    var ext = (file.name || '').split('.').pop().toLowerCase();
-    var reader = new FileReader();
 
-    if (ext === 'csv' || ext === 'txt') {
-      reader.onload = function(e) { resolve(anlParsearTexto(e.target.result)); };
-      reader.onerror = reject;
-      reader.readAsText(file, 'UTF-8');
-    } else {
-      // Excel: usar SheetJS
-      reader.onload = function(e) {
-        try {
-          var XLSX = window.XLSX;
-          if (!XLSX) { reject(new Error('SheetJS no disponible')); return; }
-          var wb = XLSX.read(new Uint8Array(e.target.result), { type: 'array' });
-          var ws = wb.Sheets[wb.SheetNames[0]];
-          var rows = XLSX.utils.sheet_to_json(ws, { header: 1, raw: false });
-          // Convertir a texto tab-separado para reutilizar el parser
-          var txt = rows.map(function(r) { return r.join('\t'); }).join('\n');
-          resolve(anlParsearTexto(txt));
-        } catch(err) { reject(err); }
-      };
-      reader.onerror = reject;
-      reader.readAsArrayBuffer(file);
-    }
-  });
-}
+
 
 // ── Motor de conciliación ──
 function anlConciliar(movimientos) {
@@ -1445,36 +1422,36 @@ function anlSeleccionarCot(id) {
   seleccionar(id);
 }
 
-var _anlMovimientos = null; // movimientos cargados desde archivo
+var _anlMovimientos = null;
 
-// ── Evento principal: botón Analizar ──
-document.getElementById('anl-btn-analizar').addEventListener('click', async function() {
-  if (!_todos || !_todos.length) { alert('DEBUG: _todos vacío, repositorio no cargado'); return; }
+document.getElementById('anl-btn-analizar').addEventListener('click', function() {
+  if (!_todos || !_todos.length) { toast('⚠️ Carga el repositorio primero (↺)', false); return; }
 
   var movimientos = null;
 
   if (_anlMovimientos && _anlMovimientos.length) {
     movimientos = _anlMovimientos;
-    alert('DEBUG: usando archivo, ' + movimientos.length + ' movimientos');
   } else {
     var texto = document.getElementById('anl-texto').value.trim();
-    if (!texto) { alert('DEBUG: ni archivo ni texto'); return; }
+    if (!texto) { toast('⚠️ Sube un archivo o pega el texto del estado de cuenta', false); return; }
     movimientos = anlParsearTexto(texto);
-    alert('DEBUG: texto parseado, ' + movimientos.length + ' movimientos');
-    if (!movimientos.length) return;
+    if (!movimientos.length) { toast('⚠️ No se detectaron movimientos. Verifica el formato.', false); return; }
   }
 
-  this.disabled = true;
-  this.textContent = 'Analizando...';
-  try {
-    var res = anlConciliar(movimientos);
-    alert('DEBUG: conciliado OK - emp:' + res.emparejados.length + ' pos:' + res.posibles.length + ' sinreg:' + res.sinRegistro.length + ' sinpago:' + res.pedidosSinPago.length);
-    anlRenderizar(res);
-  } catch(e) {
-    alert('DEBUG ERROR: ' + e.message + '\n' + e.stack);
-  }
-  this.disabled = false;
-  this.textContent = '🔍 Analizar';
+  var btn = this;
+  btn.disabled = true;
+  btn.textContent = 'Analizando...';
+  setTimeout(function() {
+    try {
+      var res = anlConciliar(movimientos);
+      anlRenderizar(res);
+    } catch(e) {
+      toast('⚠️ Error: ' + e.message, false);
+      console.error(e);
+    }
+    btn.disabled = false;
+    btn.textContent = '🔍 Analizar';
+  }, 50);
 });
 
 // ── Drag & drop y subida de archivo Excel/CSV ──
@@ -1482,33 +1459,55 @@ var anlDropEl = document.getElementById('anl-drop');
 anlDropEl.addEventListener('click', function() { document.getElementById('anl-file-input').click(); });
 anlDropEl.addEventListener('dragover', function(e) { e.preventDefault(); this.classList.add('drag'); });
 anlDropEl.addEventListener('dragleave', function() { this.classList.remove('drag'); });
-anlDropEl.addEventListener('drop', async function(e) {
+anlDropEl.addEventListener('drop', function(e) {
   e.preventDefault(); this.classList.remove('drag');
   var file = e.dataTransfer.files[0];
-  if (file) await anlCargarArchivo(file);
+  if (file) anlCargarArchivo(file);
 });
-document.getElementById('anl-file-input').addEventListener('change', async function() {
-  if (this.files[0]) await anlCargarArchivo(this.files[0]);
+document.getElementById('anl-file-input').addEventListener('change', function() {
+  if (this.files[0]) anlCargarArchivo(this.files[0]);
   this.value = '';
 });
 
-async function anlCargarArchivo(file) {
-  try {
-    var movs = await anlParsearArchivo(file);
+function anlCargarArchivo(file) {
+  var ext = (file.name || '').split('.').pop().toLowerCase();
+  var reader = new FileReader();
+
+  function procesarMovimientos(movs) {
     if (!movs.length) { toast('⚠️ No se detectaron movimientos en el archivo', false); return; }
     _anlMovimientos = movs;
     document.getElementById('anl-texto').value = '';
     document.getElementById('anl-drop').querySelector('p').textContent = '✅ ' + file.name + ' — ' + movs.length + ' movimientos';
-    toast('📂 ' + movs.length + ' movimientos cargados — presiona Analizar');
+    toast('📂 ' + movs.length + ' movimientos — presiona Analizar');
     if (_todos && _todos.length) {
-      // Analizar directo si el repositorio ya está cargado
-      var res = anlConciliar(movs);
-      anlRenderizar(res);
+      setTimeout(function() {
+        try {
+          var res = anlConciliar(movs);
+          anlRenderizar(res);
+        } catch(e) { toast('⚠️ Error: ' + e.message, false); console.error(e); }
+      }, 50);
     } else {
       toast('⚠️ Carga el repositorio primero (↺)', false);
     }
-  } catch(e) {
-    toast('⚠️ Error al leer archivo: ' + e.message, false);
+  }
+
+  if (ext === 'csv' || ext === 'txt') {
+    reader.onload = function(e) { procesarMovimientos(anlParsearTexto(e.target.result)); };
+    reader.onerror = function() { toast('⚠️ Error leyendo archivo', false); };
+    reader.readAsText(file, 'UTF-8');
+  } else {
+    // Excel via SheetJS (ya cargado en <head>)
+    reader.onload = function(e) {
+      try {
+        var wb = XLSX.read(new Uint8Array(e.target.result), { type: 'array' });
+        var ws = wb.Sheets[wb.SheetNames[0]];
+        var rows = XLSX.utils.sheet_to_json(ws, { header: 1, raw: false });
+        var txt = rows.map(function(r) { return r.join('\t'); }).join('\n');
+        procesarMovimientos(anlParsearTexto(txt));
+      } catch(e) { toast('⚠️ Error leyendo Excel: ' + e.message, false); console.error(e); }
+    };
+    reader.onerror = function() { toast('⚠️ Error leyendo archivo', false); };
+    reader.readAsArrayBuffer(file);
   }
 }
 
