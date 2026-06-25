@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Repositorio v33 — Fungiterra</title>
+<title>Repositorio v29 — Fungiterra</title>
 <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=DM+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
@@ -137,6 +137,53 @@ td.gris{color:#6b7280;font-size:12px}
 .btn-abono{background:#d97706;color:white;border-color:#d97706}
 .btn-abono:hover{background:#b45309}
 
+/* MODAL ANALIZADOR BANCARIO */
+.anl-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:1200;align-items:flex-start;justify-content:center;padding-top:24px}
+.anl-overlay.activo{display:flex}
+.anl-modal{background:white;border-radius:14px;width:860px;max-width:97vw;max-height:92vh;overflow:hidden;display:flex;flex-direction:column;box-shadow:0 12px 48px rgba(0,0,0,.28)}
+.anl-header{display:flex;align-items:center;justify-content:space-between;padding:16px 22px 14px;border-bottom:2px solid #f0f4f8;background:linear-gradient(135deg,#1a3a5c,#2d6a2d);flex-shrink:0}
+.anl-header h2{font-size:15px;font-weight:700;color:white;margin:0}
+.anl-header p{font-size:11px;color:rgba(255,255,255,.7);margin:2px 0 0}
+.anl-tabs{display:flex;gap:0;border-bottom:2px solid #e5e7eb;flex-shrink:0;background:white}
+.anl-tab{padding:10px 20px;font-size:12px;font-weight:600;color:#6b7280;cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-2px;transition:all .15s}
+.anl-tab.activo{color:#1a3a5c;border-bottom-color:#1a3a5c}
+.anl-body{padding:18px 22px;overflow-y:auto;flex:1}
+.anl-drop{border:2px dashed #d1d5db;border-radius:10px;padding:28px;text-align:center;cursor:pointer;transition:all .2s;margin-bottom:14px}
+.anl-drop:hover,.anl-drop.drag{border-color:#1a3a5c;background:#f0f7ff}
+.anl-drop-icon{font-size:28px;margin-bottom:8px}
+.anl-drop p{font-size:13px;color:#6b7280;margin:0}
+.anl-drop small{font-size:11px;color:#9ca3af}
+.anl-textarea{width:100%;min-height:130px;padding:10px 12px;border:1.5px solid #d1d5db;border-radius:8px;font-family:'DM Mono',monospace;font-size:11.5px;line-height:1.6;resize:vertical;outline:none;color:#1a1a2e}
+.anl-textarea:focus{border-color:#1a3a5c}
+.anl-hint{font-size:11px;color:#9ca3af;margin-top:5px;line-height:1.5}
+.anl-btn-analizar{background:#1a3a5c;color:white;border:none;border-radius:8px;padding:9px 22px;font-size:13px;font-weight:600;cursor:pointer;font-family:var(--sans);margin-top:10px}
+.anl-btn-analizar:hover{background:#14304f}
+.anl-btn-analizar:disabled{background:#9ca3af;cursor:not-allowed}
+.anl-resumen{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:16px}
+.anl-kpi{background:#f8fafc;border-radius:9px;padding:12px 14px;border:1.5px solid #e5e7eb;text-align:center}
+.anl-kpi-val{font-size:20px;font-weight:700;margin-bottom:2px}
+.anl-kpi-lbl{font-size:10px;color:#6b7280;text-transform:uppercase;letter-spacing:.5px}
+.anl-filas{display:flex;flex-direction:column;gap:6px}
+.anl-fila{border-radius:9px;padding:11px 14px;border:1.5px solid;display:grid;grid-template-columns:90px 1fr auto 120px;align-items:center;gap:10px;font-size:12px}
+.anl-fila.match{background:#f0fdf4;border-color:#86efac}
+.anl-fila.posible{background:#fffbeb;border-color:#fde047}
+.anl-fila.sin-registro{background:#f9fafb;border-color:#e5e7eb}
+.anl-fila.pedido-sin-pago{background:#fef2f2;border-color:#fca5a5}
+.anl-fecha{font-family:'DM Mono',monospace;font-size:11px;color:#6b7280}
+.anl-desc{font-size:12px;color:#374151;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.anl-monto{font-weight:700;font-size:13px;text-align:right;white-space:nowrap}
+.anl-monto.verde{color:#166534}
+.anl-etiqueta{font-size:11px;font-weight:600;text-align:right}
+.anl-etiqueta.match{color:#166534}
+.anl-etiqueta.posible{color:#92400e}
+.anl-etiqueta.sin-reg{color:#6b7280}
+.anl-etiqueta.pendiente{color:#b91c1c}
+.anl-link{color:#1a3a5c;text-decoration:underline;cursor:pointer;font-size:11px}
+.anl-seccion-titulo{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;color:#9ca3af;margin:16px 0 8px}
+.anl-btn-pequeno{padding:4px 10px;border-radius:6px;border:1.5px solid;font-size:11px;font-weight:600;cursor:pointer;font-family:var(--sans);white-space:nowrap}
+.anl-empty{text-align:center;padding:24px;color:#9ca3af;font-size:13px}
+.anl-footer{padding:12px 22px;border-top:1px solid #f0f4f8;flex-shrink:0;display:flex;justify-content:flex-end;gap:10px;background:white}
+
 #toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);padding:10px 20px;border-radius:20px;font-size:13px;font-weight:600;box-shadow:0 4px 14px rgba(0,0,0,.2);z-index:9999;opacity:0;transition:opacity .3s;pointer-events:none;color:white}
 @media(max-width:720px){
   .layout{flex-direction:column}
@@ -148,11 +195,11 @@ td.gris{color:#6b7280;font-size:12px}
 </head>
 <body>
 <header>
-  <div><h1>🍄 Repositorio Fungiterra</h1><div class="header-sub">Cotizaciones · Estados · Pagos · v33</div></div>
+  <div><h1>🍄 Repositorio Fungiterra</h1><div class="header-sub">Cotizaciones · Estados · Pagos · v29</div></div>
   <div style="display:flex;gap:8px;align-items:center">
+    <button onclick="abrirAnalizador()" style="background:rgba(255,255,255,.15);border:1.5px solid rgba(255,255,255,.4);color:white;border-radius:7px;padding:6px 14px;cursor:pointer;font-size:12px;font-weight:600;font-family:var(--sans)">🏦 Conciliar</button>
     <button onclick="abrirReglas()" style="background:rgba(255,255,255,.15);border:1.5px solid rgba(255,255,255,.4);color:white;border-radius:7px;padding:6px 14px;cursor:pointer;font-size:12px;font-weight:600;font-family:var(--sans)">⚙️ Reglas</button>
     <a href="https://fungiterra-bot.github.io/fungiterra-sistema/cotizadorD.html" class="header-link">← Cotizador</a>
-    <a href="https://fungiterra-bot.github.io/fungiterra-sistema/Panel/admin_index.html" target="_blank" class="header-link" style="background:rgba(255,255,255,.2);font-weight:600">🍄 Panel Admin</a>
   </div>
 </header>
 
@@ -634,19 +681,16 @@ function mostrarDetalle(c){
 
   var btns='';
   if(est==='Generada'){
-    btns='<button class="btn btn-fungiterra btn-sm" onclick="enviarAFungiterra(\''+c.id+'\')" style="background:#834b3e;color:white;border-color:#834b3e">🍄 Enviar a Fungiterra</button>'+
-         '<button class="btn btn-amarillo btn-sm" onclick="abrirAbono(\''+c.id+'\')">💵 Registrar abono</button>'+
+    btns='<button class="btn btn-amarillo btn-sm" onclick="abrirAbono(\''+c.id+'\')">💵 Registrar abono</button>'+
          '<button class="btn btn-v btn-sm" onclick="cambiarEstado(\''+c.id+'\',\'Pagada\')">✅ Pagada completa</button>'+
          '<button class="btn btn-a btn-sm" onclick="editarCotizacion(\''+c.id+'\')">✏️ Editar</button>'+
          '<button class="btn btn-sm btn-r" onclick="cambiarEstado(\''+c.id+'\',\'Cancelada\')">Cancelar</button>';
   } else if(est==='Pago parcial'){
-    btns='<button class="btn btn-fungiterra btn-sm" onclick="enviarAFungiterra(\''+c.id+'\')" style="background:#834b3e;color:white;border-color:#834b3e">🍄 Enviar a Fungiterra</button>'+
-         '<button class="btn btn-amarillo btn-sm" onclick="abrirAbono(\''+c.id+'\')">💵 Agregar abono</button>'+
+    btns='<button class="btn btn-amarillo btn-sm" onclick="abrirAbono(\''+c.id+'\')">💵 Agregar abono</button>'+
          '<button class="btn btn-v btn-sm" onclick="cambiarEstado(\''+c.id+'\',\'Pagada\')">✅ Marcar pagada completa</button>'+
          '<button class="btn btn-sm btn-r" onclick="abrirCpago(\''+c.id+'\')">↩️ Cancelar pagos</button>';
   } else if(est==='Pagada'){
-    btns='<button class="btn btn-fungiterra btn-sm" onclick="enviarAFungiterra(\''+c.id+'\')" style="background:#834b3e;color:white;border-color:#834b3e">🍄 Enviar a Fungiterra</button>'+
-         '<button class="btn btn-a btn-sm" onclick="facturar(\''+c.id+'\')">🧾 Facturar</button>'+
+    btns='<button class="btn btn-a btn-sm" onclick="facturar(\''+c.id+'\')">🧾 Facturar</button>'+
          '<button class="btn btn-sm btn-r" onclick="abrirCpago(\''+c.id+'\')">↩️ Cancelar pago</button>';
   } else if(est==='Cancelada'){
     btns='<button class="btn btn-sm" onclick="cambiarEstado(\''+c.id+'\',\'Generada\')">↺ Reactivar</button>';
@@ -680,67 +724,6 @@ function mostrarDetalle(c){
     abonosHTML+
     (notasTexto?'<hr class="sep"><div class="ct">Notas</div><div style="font-size:12px;color:#374151">'+notasTexto+'</div>':'')+
     '<div class="acciones">'+btns+'</div>';
-}
-
-
-function enviarAFungiterra(id){
-  var c=_todos.find(function(x){return x.id===id;});
-  if(!c)return;
-  if(!confirm('¿Enviar '+id+' a Fungiterra?\n\nNota: si ya fue enviado antes se creará un duplicado.'))return;
-  toast('Enviando a Fungiterra...');
-  
-  // Parsear productos del texto
-  var productos = [];
-  var prodTexto = c.productos || '';
-  var partes = prodTexto.split('|').map(function(p){return p.trim();});
-  for(var i=0;i<partes.length;i++){
-    var p = partes[i];
-    if(!p || p.indexOf('Total') === 0 || p.indexOf('Envío') === 0) continue;
-    var cantidad = 1;
-    var desc = p;
-    var subtotal = 0;
-    var precioUnit = 0;
-    var montoMatch = p.match(/\$([0-9,.]+)$/);
-    if(montoMatch){ subtotal = parseFloat(montoMatch[1].replace(',','')); desc = p.replace(/\$[0-9,.]+$/,'').trim(); }
-    var cantMatch = desc.match(/^(\d+(?:\.\d+)?)x\s*/);
-    if(cantMatch){ cantidad = parseFloat(cantMatch[1]); desc = desc.replace(/^\d+(?:\.\d+)?x\s*/,'').trim(); precioUnit = cantidad>0 ? subtotal/cantidad : subtotal; }
-    // Detectar área por nombre del producto
-    var area = 'sin_area';
-    var nd = desc.toLowerCase();
-    if(nd.indexOf('fb ')===0 || nd.indexOf('fungibol')>=0 || nd.indexOf('fb mod')>=0) area='fungibolsa';
-    else if(nd.indexOf('micelio')>=0 || nd.indexOf('mushbag')>=0 || nd.indexOf('cepa')>=0) area='laboratorio';
-    else if(nd.indexOf('deshidrat')>=0 || nd.indexOf('fresco')>=0 || nd.indexOf('fungisopa')>=0 || nd.indexOf('seta ')>=0) area='transformacion';
-    productos.push({nombre:desc, area:area, cantidad:cantidad, precio_unit:precioUnit, subtotal:subtotal});
-  }
-
-  var payload = {
-    cliente_nombre: c.cliente || '—',
-    cliente_email:  c.correo  || (c.id+'@fungiterra.mx'),
-    cliente_telefono: c.telefono || '',
-    id_repositorio: c.id,
-    socio: c.socio || '',
-    total: Number(c.total) || 0,
-    tipo:  c.tipo  || 'Mixto',
-    estado_actual: 'recibido',
-    notas_admin: c.notas || '',
-    productos: productos
-  };
-
-  fetch('https://fungiterra-api-production.up.railway.app/pedidos', {
-    method:'POST',
-    headers:{'Content-Type':'application/json'},
-    body: JSON.stringify(payload)
-  })
-  .then(function(r){return r.json();})
-  .then(function(data){
-    if(data.token){
-      toast('✅ '+id+' enviado a Fungiterra');
-    } else {
-      toast('⚠️ '+(data.error||'Error al enviar'),false);
-    }
-  }).catch(function(e){
-    toast('⚠️ Sin conexión con Fungiterra',false);
-  });
 }
 
 function cerrar(){
@@ -1028,6 +1011,483 @@ document.getElementById('reglas-overlay').addEventListener('click', function(e) 
 });
 
 window.getFungiterraReglas = cargarReglas;
+
+// ══════════════════════════════════════════════════════════════
+// ANALIZADOR BANCARIO / CONCILIADOR
+// ══════════════════════════════════════════════════════════════
+
+var _anlTab = 'entrada';
+var _anlResultados = null;
+
+function abrirAnalizador() {
+  document.getElementById('anl-overlay').classList.add('activo');
+  anlSetTab('entrada');
+  // Si ya hay datos cargados en _todos, mencionarlo
+  if (_todos && _todos.length > 0) {
+    document.getElementById('anl-hint-registros').textContent =
+      _todos.length + ' cotizaciones cargadas del repositorio.';
+  } else {
+    document.getElementById('anl-hint-registros').textContent =
+      'Carga el repositorio primero (botón ↺).';
+  }
+}
+
+function cerrarAnalizador() {
+  document.getElementById('anl-overlay').classList.remove('activo');
+}
+
+function anlSetTab(tab) {
+  _anlTab = tab;
+  document.querySelectorAll('.anl-tab').forEach(function(t) {
+    t.classList.toggle('activo', t.dataset.tab === tab);
+  });
+  document.querySelectorAll('.anl-section').forEach(function(s) {
+    s.style.display = s.id === 'anl-sec-' + tab ? '' : 'none';
+  });
+}
+
+// ── Parser del estado de cuenta BBVA (texto tab-separado o pegar directo) ──
+function anlParsearTexto(texto) {
+  var lineas = texto.split('\n').map(function(l) { return l.trim(); }).filter(Boolean);
+  var movimientos = [];
+  lineas.forEach(function(linea) {
+    // Separar por tabs o múltiples espacios
+    var cols = linea.split(/\t/).map(function(c) { return c.trim(); });
+    // Si no hay tabs, intentar con 2+ espacios
+    if (cols.length < 3) cols = linea.split(/  +/).map(function(c) { return c.trim(); }).filter(Boolean);
+
+    // Detectar fecha en primera columna: DD/MM/YYYY
+    if (!cols[0] || !/^\d{2}\/\d{2}\/\d{4}$/.test(cols[0])) return;
+
+    var fecha = cols[0];
+    var desc  = cols[1] || '';
+    var cargo = 0, abono = 0;
+
+    // Intentar leer CARGO y ABONO desde cols 2,3 (o 3,4 si viene con col extra)
+    // Limpiar comas de miles
+    function parseMonto(s) {
+      if (!s) return 0;
+      var n = parseFloat(s.replace(/,/g,''));
+      return isNaN(n) ? 0 : n;
+    }
+
+    if (cols.length >= 4) {
+      cargo = parseMonto(cols[2]);
+      abono = parseMonto(cols[3]);
+    } else if (cols.length === 3) {
+      // Puede ser cargo o abono solo
+      var m = parseMonto(cols[2]);
+      if (m < 0) cargo = Math.abs(m);
+      else abono = m;
+    }
+
+    // Solo nos interesan abonos (ingresos) — cargo puede ser 0 o negativo
+    // Ignorar líneas donde todo es 0
+    if (abono === 0 && cargo === 0) return;
+
+    movimientos.push({
+      fecha: fecha,
+      desc:  desc,
+      cargo: cargo,
+      abono: abono
+    });
+  });
+  return movimientos;
+}
+
+// ── Parser de Excel/CSV via SheetJS ──
+async function anlParsearArchivo(file) {
+  return new Promise(function(resolve, reject) {
+    var ext = (file.name || '').split('.').pop().toLowerCase();
+    var reader = new FileReader();
+
+    if (ext === 'csv' || ext === 'txt') {
+      reader.onload = function(e) { resolve(anlParsearTexto(e.target.result)); };
+      reader.onerror = reject;
+      reader.readAsText(file, 'UTF-8');
+    } else {
+      // Excel: usar SheetJS
+      reader.onload = function(e) {
+        try {
+          var XLSX = window.XLSX;
+          if (!XLSX) { reject(new Error('SheetJS no disponible')); return; }
+          var wb = XLSX.read(new Uint8Array(e.target.result), { type: 'array' });
+          var ws = wb.Sheets[wb.SheetNames[0]];
+          var rows = XLSX.utils.sheet_to_json(ws, { header: 1, raw: false });
+          // Convertir a texto tab-separado para reutilizar el parser
+          var txt = rows.map(function(r) { return r.join('\t'); }).join('\n');
+          resolve(anlParsearTexto(txt));
+        } catch(err) { reject(err); }
+      };
+      reader.onerror = reject;
+      reader.readAsArrayBuffer(file);
+    }
+  });
+}
+
+// ── Motor de conciliación ──
+function anlConciliar(movimientos) {
+  var pendientes = (_todos || []).filter(function(c) {
+    return c.estado === 'Generada' || c.estado === 'Pago parcial';
+  });
+
+  var TOLERANCIA = 2.00; // diferencia máxima de pesos para match por monto
+  var resultados = {
+    emparejados:    [],  // abono bancario ↔ cotización clara
+    posibles:       [],  // abono con match dudoso (monto cercano o keyword parcial)
+    sinRegistro:    [],  // abonos que no se pudieron emparejar
+    pedidosSinPago: []   // cotizaciones pendientes sin ningún abono bancario visible
+  };
+
+  // Normalizar texto para búsqueda
+  function norm(s) {
+    return (s || '').toLowerCase()
+      .normalize('NFD').replace(/[\u0300-\u036f]/g,'')
+      .replace(/[^a-z0-9 ]/g,' ')
+      .replace(/\s+/g,' ').trim();
+  }
+
+  // Extraer IDs/tokens de la descripción bancaria (ej: V115, V129, V148, etc.)
+  function extraerIds(desc) {
+    var matches = [];
+    // Patrón: V + número (cotizaciones del repositorio)
+    var m1 = desc.match(/[Vv]\s*(\d+)/g);
+    if (m1) matches = matches.concat(m1.map(function(x){ return x.replace(/\s/,'').toUpperCase(); }));
+    // También capturar números solos de 3-5 dígitos que podrían ser IDs
+    var m2 = desc.match(/\b(\d{3,5})\b/g);
+    if (m2) matches = matches.concat(m2);
+    return matches;
+  }
+
+  var usados = {}; // mapa de cotizacion.id ya emparejados (para no duplicar)
+
+  movimientos.forEach(function(mov) {
+    if (mov.abono <= 0) return; // ignorar cargos
+    var descNorm = norm(mov.desc);
+    var idsEnDesc = extraerIds(mov.desc);
+    var mejor = null;
+    var mejorScore = 0;
+
+    pendientes.forEach(function(cot) {
+      if (usados[cot.id]) return;
+      var total = Number(cot.total) || 0;
+      var score = 0;
+      var razon = '';
+
+      // 1. Match por monto exacto (±tolerancia)
+      var diffMonto = Math.abs(mov.abono - total);
+      if (diffMonto <= TOLERANCIA) { score += 60; razon = 'monto exacto'; }
+      else if (diffMonto / total <= 0.05) { score += 30; razon = 'monto ~5%'; }
+
+      // 2. Match por ID en la descripción
+      var idNorm = norm(cot.id);
+      if (idsEnDesc.some(function(x){ return norm(x) === idNorm || norm(x).includes(idNorm.replace('v','')); })) {
+        score += 50; razon = razon ? razon + ' + ID' : 'ID en descripción';
+      }
+
+      // 3. Match por nombre de cliente en descripción
+      var clienteNorm = norm(cot.cliente || '');
+      var palabrasCliente = clienteNorm.split(' ').filter(function(p){ return p.length > 3; });
+      palabrasCliente.forEach(function(p) {
+        if (descNorm.includes(p)) { score += 20; razon = razon ? razon + ' + nombre' : 'nombre cliente'; }
+      });
+
+      if (score > mejorScore) {
+        mejorScore = score;
+        mejor = { cot: cot, score: score, razon: razon };
+      }
+    });
+
+    if (mejor && mejor.score >= 60) {
+      usados[mejor.cot.id] = true;
+      resultados.emparejados.push({ mov: mov, cot: mejor.cot, razon: mejor.razon, score: mejor.score });
+    } else if (mejor && mejor.score >= 20) {
+      resultados.posibles.push({ mov: mov, cot: mejor.cot, razon: mejor.razon, score: mejor.score });
+    } else {
+      resultados.sinRegistro.push({ mov: mov });
+    }
+  });
+
+  // Pedidos pendientes sin match bancario
+  pendientes.forEach(function(cot) {
+    if (!usados[cot.id]) {
+      resultados.pedidosSinPago.push({ cot: cot });
+    }
+  });
+
+  return resultados;
+}
+
+// ── Renderizar resultados ──
+function anlRenderizar(res) {
+  _anlResultados = res;
+
+  var totalAbonos = res.emparejados.reduce(function(s,r){ return s+r.mov.abono; },0)
+                  + res.posibles.reduce(function(s,r){ return s+r.mov.abono; },0)
+                  + res.sinRegistro.reduce(function(s,r){ return s+r.mov.abono; },0);
+
+  document.getElementById('anl-kpi-match').textContent   = res.emparejados.length;
+  document.getElementById('anl-kpi-posible').textContent = res.posibles.length;
+  document.getElementById('anl-kpi-sinreg').textContent  = res.sinRegistro.length;
+  document.getElementById('anl-kpi-sinpago').textContent = res.pedidosSinPago.length;
+
+  anlSetTab('resultados');
+  anlRenderTab('match');
+}
+
+function anlRenderTab(sub) {
+  document.querySelectorAll('.anl-subtab').forEach(function(t) {
+    t.classList.toggle('activo', t.dataset.sub === sub);
+  });
+
+  var html = '';
+  var res  = _anlResultados;
+
+  function filaMovimiento(item, tipo) {
+    var mov = item.mov;
+    var cot = item.cot;
+    var monto = mov.abono > 0 ? mov.abono : mov.cargo;
+    var esAbono = mov.abono > 0;
+
+    var etiqHTML = '';
+    var clsFila  = '';
+
+    if (tipo === 'match') {
+      clsFila  = 'match';
+      etiqHTML = '<div><div class="anl-etiqueta match">✅ ' + (cot ? cot.id : '') + '</div>'
+               + (item.razon ? '<div style="font-size:10px;color:#6b7280;margin-top:2px">' + item.razon + '</div>' : '')
+               + (cot ? '<button class="anl-btn-pequeno" style="background:#dcfce7;color:#166534;border-color:#86efac;margin-top:4px" onclick="anlMarcarPagada(\'' + cot.id + '\')">✅ Marcar pagada</button>' : '')
+               + '</div>';
+    } else if (tipo === 'posible') {
+      clsFila  = 'posible';
+      etiqHTML = '<div><div class="anl-etiqueta posible">⚠️ Posible: ' + (cot ? cot.id : '') + '</div>'
+               + (item.razon ? '<div style="font-size:10px;color:#6b7280;margin-top:2px">' + item.razon + '</div>' : '')
+               + (cot ? '<button class="anl-btn-pequeno" style="background:#fef3c7;color:#92400e;border-color:#fde047;margin-top:4px" onclick="anlSeleccionarCot(\'' + cot.id + '\')">Ver cotización</button>' : '')
+               + '</div>';
+    } else {
+      clsFila  = 'sin-registro';
+      etiqHTML = '<div class="anl-etiqueta sin-reg">❓ Sin registro</div>';
+    }
+
+    return '<div class="anl-fila ' + clsFila + '">'
+      + '<div class="anl-fecha">' + mov.fecha + '</div>'
+      + '<div class="anl-desc" title="' + (mov.desc||'').replace(/"/g,'') + '">' + (mov.desc || '') + '</div>'
+      + '<div class="anl-monto ' + (esAbono ? 'verde' : '') + '">'
+        + (esAbono ? '+' : '-') + fmx(monto)
+      + '</div>'
+      + etiqHTML
+      + '</div>';
+  }
+
+  if (sub === 'match') {
+    if (!res.emparejados.length) {
+      html = '<div class="anl-empty">No se encontraron pagos emparejados con certeza.</div>';
+    } else {
+      html = '<div class="anl-seccion-titulo">Abonos bancarios con cotización identificada (' + res.emparejados.length + ')</div>'
+           + '<div class="anl-filas">' + res.emparejados.map(function(r){ return filaMovimiento(r,'match'); }).join('') + '</div>';
+    }
+  } else if (sub === 'posible') {
+    if (!res.posibles.length) {
+      html = '<div class="anl-empty">No hay matches dudosos.</div>';
+    } else {
+      html = '<div class="anl-seccion-titulo">Abonos con posible coincidencia — revisar manualmente (' + res.posibles.length + ')</div>'
+           + '<div class="anl-filas">' + res.posibles.map(function(r){ return filaMovimiento(r,'posible'); }).join('') + '</div>';
+    }
+  } else if (sub === 'sinreg') {
+    if (!res.sinRegistro.length) {
+      html = '<div class="anl-empty">Todos los abonos tienen registro. 🎉</div>';
+    } else {
+      html = '<div class="anl-seccion-titulo">Ingresos bancarios sin cotización correspondiente (' + res.sinRegistro.length + ')</div>'
+           + '<div class="anl-filas">' + res.sinRegistro.map(function(r){ return filaMovimiento(r,'sinreg'); }).join('') + '</div>';
+    }
+  } else if (sub === 'sinpago') {
+    if (!res.pedidosSinPago.length) {
+      html = '<div class="anl-empty">Todas las cotizaciones pendientes tienen pago visible. ✅</div>';
+    } else {
+      html = '<div class="anl-seccion-titulo">Cotizaciones Generadas/Parciales sin abono bancario detectado (' + res.pedidosSinPago.length + ')</div>'
+           + '<div class="anl-filas">'
+           + res.pedidosSinPago.map(function(r) {
+               var cot = r.cot;
+               var parsed = parsearAbonos(cot.notas);
+               var yaAbonado = parsed.totalAbonado;
+               return '<div class="anl-fila pedido-sin-pago">'
+                 + '<div class="anl-fecha">' + formatFecha(cot.fecha) + '</div>'
+                 + '<div><div style="font-weight:600;font-size:12px">' + (cot.cliente||'—') + '</div>'
+                 + '<div style="font-size:11px;color:#9ca3af">' + (cot.socio||'') + '</div></div>'
+                 + '<div class="anl-monto" style="color:#b91c1c">' + fmx(cot.total)
+                 + (yaAbonado>0?'<div style="font-size:10px;color:#d97706">ya abonado '+fmx(yaAbonado)+'</div>':'')
+                 + '</div>'
+                 + '<div><div class="anl-etiqueta pendiente">⏳ ' + cot.id + '</div>'
+                 + '<button class="anl-btn-pequeno" style="background:white;color:#1a3a5c;border-color:#1a3a5c;margin-top:4px" onclick="anlSeleccionarCot(\'' + cot.id + '\')">Ver detalle</button>'
+                 + '</div>'
+                 + '</div>';
+             }).join('')
+           + '</div>';
+    }
+  }
+
+  document.getElementById('anl-resultado-body').innerHTML = html;
+}
+
+function anlMarcarPagada(id) {
+  if (!confirm('¿Marcar ' + id + ' como Pagada completa?')) return;
+  toast('Actualizando...');
+  fetch(SCRIPT_URL, { method:'POST', body: JSON.stringify({ accion:'actualizar_estado', id:id, estado:'Pagada' }) })
+  .then(function(r){ return r.json(); })
+  .then(function(data) {
+    if (data.ok) {
+      toast(id + ' → Pagada ✅');
+      cargar();
+      // Actualizar en _todos para que el re-render del modal funcione
+      var cot = _todos.find(function(c){ return c.id === id; });
+      if (cot) cot.estado = 'Pagada';
+      if (_anlResultados) {
+        // Mover de emparejados a "ya procesados"
+        _anlResultados.emparejados = _anlResultados.emparejados.filter(function(r){ return r.cot.id !== id; });
+        anlRenderTab('match');
+        // Actualizar KPIs
+        document.getElementById('anl-kpi-match').textContent = _anlResultados.emparejados.length;
+      }
+    } else {
+      toast('⚠️ ' + (data.error||'Error'), false);
+    }
+  }).catch(function(){ toast('⚠️ Sin conexión', false); });
+}
+
+function anlSeleccionarCot(id) {
+  cerrarAnalizador();
+  seleccionar(id);
+}
+
+// ── Evento principal: botón Analizar ──
+document.getElementById('anl-btn-analizar').addEventListener('click', async function() {
+  var texto = document.getElementById('anl-texto').value.trim();
+  if (!texto) { toast('⚠️ Pega el texto del estado de cuenta', false); return; }
+  if (!_todos || !_todos.length) { toast('⚠️ Carga el repositorio primero (↺)', false); return; }
+
+  this.disabled = true;
+  this.textContent = 'Analizando...';
+
+  try {
+    var movimientos = anlParsearTexto(texto);
+    if (!movimientos.length) {
+      toast('⚠️ No se detectaron movimientos. Verifica el formato.', false);
+      this.disabled = false; this.textContent = '🔍 Analizar'; return;
+    }
+    var res = anlConciliar(movimientos);
+    anlRenderizar(res);
+  } catch(e) {
+    toast('⚠️ Error al analizar: ' + e.message, false);
+  }
+
+  this.disabled = false;
+  this.textContent = '🔍 Analizar';
+});
+
+// ── Drag & drop y subida de archivo Excel/CSV ──
+var anlDropEl = document.getElementById('anl-drop');
+anlDropEl.addEventListener('click', function() { document.getElementById('anl-file-input').click(); });
+anlDropEl.addEventListener('dragover', function(e) { e.preventDefault(); this.classList.add('drag'); });
+anlDropEl.addEventListener('dragleave', function() { this.classList.remove('drag'); });
+anlDropEl.addEventListener('drop', async function(e) {
+  e.preventDefault(); this.classList.remove('drag');
+  var file = e.dataTransfer.files[0];
+  if (file) await anlCargarArchivo(file);
+});
+document.getElementById('anl-file-input').addEventListener('change', async function() {
+  if (this.files[0]) await anlCargarArchivo(this.files[0]);
+  this.value = '';
+});
+
+async function anlCargarArchivo(file) {
+  // Cargar SheetJS dinámicamente si no está
+  if (!window.XLSX) {
+    var s = document.createElement('script');
+    s.src = 'https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js';
+    document.head.appendChild(s);
+    await new Promise(function(resolve) { s.onload = resolve; });
+  }
+  try {
+    var movs = await anlParsearArchivo(file);
+    if (!movs.length) { toast('⚠️ No se detectaron movimientos en el archivo', false); return; }
+    toast('📂 ' + movs.length + ' movimientos cargados');
+    document.getElementById('anl-texto').value = ''; // Limpiar textarea
+    document.getElementById('anl-drop').querySelector('p').textContent = '✅ ' + file.name + ' — ' + movs.length + ' movimientos';
+    if (!_todos || !_todos.length) { toast('⚠️ Carga el repositorio primero (↺)', false); return; }
+    var res = anlConciliar(movs);
+    anlRenderizar(res);
+  } catch(e) {
+    toast('⚠️ Error al leer archivo: ' + e.message, false);
+  }
+}
+
+document.getElementById('anl-overlay').addEventListener('click', function(e) {
+  if (e.target === this) cerrarAnalizador();
+});
 </script>
+
+<!-- ══ MODAL ANALIZADOR BANCARIO ══ -->
+<div class="anl-overlay" id="anl-overlay">
+  <div class="anl-modal">
+    <div class="anl-header">
+      <div>
+        <h2>🏦 Conciliador Bancario</h2>
+        <p>Compara el estado de cuenta con cotizaciones del repositorio</p>
+      </div>
+      <button class="btn-x" onclick="cerrarAnalizador()" style="color:white;font-size:24px">×</button>
+    </div>
+
+    <div class="anl-tabs">
+      <div class="anl-tab activo" data-tab="entrada" onclick="anlSetTab('entrada')">📋 Estado de cuenta</div>
+      <div class="anl-tab" data-tab="resultados" onclick="anlSetTab('resultados')">📊 Resultados</div>
+    </div>
+
+    <!-- SECCIÓN: ENTRADA -->
+    <div class="anl-body" id="anl-sec-entrada">
+      <div id="anl-drop" class="anl-drop">
+        <div class="anl-drop-icon">📂</div>
+        <p>Arrastra tu archivo Excel o CSV aquí</p>
+        <small>O haz clic para seleccionar · .xlsx · .csv</small>
+      </div>
+      <input type="file" id="anl-file-input" accept=".xlsx,.xls,.csv,.txt" style="display:none">
+
+      <div style="text-align:center;color:#9ca3af;font-size:12px;margin:10px 0">— o pega el texto directamente —</div>
+
+      <textarea id="anl-texto" class="anl-textarea"
+        placeholder="Pega aquí el contenido del estado de cuenta (separado por tabs o espacios):&#10;&#10;24/06/2026	SPEI RECIBIDO BANAMEX	 	2,962.92	87,688.44&#10;23/06/2026	SPEI RECIBIDO SANTANDER / V148	 	2,313.00	66,231.32&#10;..."></textarea>
+      <div class="anl-hint">
+        💡 Columnas esperadas: <strong>FECHA · DESCRIPCIÓN · CARGO · ABONO · SALDO</strong><br>
+        Los cargos (salidas) se ignoran automáticamente. Solo se analizan los abonos (entradas).<br>
+        <span id="anl-hint-registros" style="color:#2d6a2d;font-weight:600"></span>
+      </div>
+      <div style="margin-top:12px">
+        <button id="anl-btn-analizar" class="anl-btn-analizar">🔍 Analizar</button>
+      </div>
+    </div>
+
+    <!-- SECCIÓN: RESULTADOS -->
+    <div class="anl-body" id="anl-sec-resultados" style="display:none;padding-top:12px">
+      <div class="anl-resumen">
+        <div class="anl-kpi"><div class="anl-kpi-val" id="anl-kpi-match" style="color:#166534">—</div><div class="anl-kpi-lbl">✅ Emparejados</div></div>
+        <div class="anl-kpi"><div class="anl-kpi-val" id="anl-kpi-posible" style="color:#92400e">—</div><div class="anl-kpi-lbl">⚠️ Posibles</div></div>
+        <div class="anl-kpi"><div class="anl-kpi-val" id="anl-kpi-sinreg" style="color:#6b7280">—</div><div class="anl-kpi-lbl">❓ Sin registro</div></div>
+        <div class="anl-kpi"><div class="anl-kpi-val" id="anl-kpi-sinpago" style="color:#b91c1c">—</div><div class="anl-kpi-lbl">⏳ Cot. sin pago</div></div>
+      </div>
+
+      <div style="display:flex;gap:6px;margin-bottom:12px;border-bottom:2px solid #e5e7eb;padding-bottom:0">
+        <div class="anl-tab anl-subtab activo" data-sub="match"   onclick="anlRenderTab('match')"   style="font-size:11px;padding:7px 14px">✅ Emparejados</div>
+        <div class="anl-tab anl-subtab"        data-sub="posible" onclick="anlRenderTab('posible')" style="font-size:11px;padding:7px 14px">⚠️ Posibles</div>
+        <div class="anl-tab anl-subtab"        data-sub="sinreg"  onclick="anlRenderTab('sinreg')"  style="font-size:11px;padding:7px 14px">❓ Sin registro</div>
+        <div class="anl-tab anl-subtab"        data-sub="sinpago" onclick="anlRenderTab('sinpago')" style="font-size:11px;padding:7px 14px">⏳ Cot. pendientes</div>
+      </div>
+      <div id="anl-resultado-body"></div>
+    </div>
+
+    <div class="anl-footer">
+      <button class="btn btn-sm" onclick="anlSetTab('entrada')">← Volver a entrada</button>
+      <button class="btn btn-sm" onclick="cerrarAnalizador()">Cerrar</button>
+    </div>
+  </div>
+</div>
 </body>
 </html>
