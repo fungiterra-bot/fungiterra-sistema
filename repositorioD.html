@@ -1449,31 +1449,29 @@ var _anlMovimientos = null; // movimientos cargados desde archivo
 
 // ── Evento principal: botón Analizar ──
 document.getElementById('anl-btn-analizar').addEventListener('click', async function() {
-  if (!_todos || !_todos.length) { toast('⚠️ Carga el repositorio primero (↺)', false); return; }
+  if (!_todos || !_todos.length) { alert('DEBUG: _todos vacío, repositorio no cargado'); return; }
 
   var movimientos = null;
 
-  // Prioridad: archivo ya cargado
   if (_anlMovimientos && _anlMovimientos.length) {
     movimientos = _anlMovimientos;
+    alert('DEBUG: usando archivo, ' + movimientos.length + ' movimientos');
   } else {
-    // Intentar con texto pegado
     var texto = document.getElementById('anl-texto').value.trim();
-    if (!texto) { toast('⚠️ Sube un archivo o pega el texto del estado de cuenta', false); return; }
+    if (!texto) { alert('DEBUG: ni archivo ni texto'); return; }
     movimientos = anlParsearTexto(texto);
-    if (!movimientos.length) {
-      toast('⚠️ No se detectaron movimientos. Verifica el formato.', false);
-      return;
-    }
+    alert('DEBUG: texto parseado, ' + movimientos.length + ' movimientos');
+    if (!movimientos.length) return;
   }
 
   this.disabled = true;
   this.textContent = 'Analizando...';
   try {
     var res = anlConciliar(movimientos);
+    alert('DEBUG: conciliado OK - emp:' + res.emparejados.length + ' pos:' + res.posibles.length + ' sinreg:' + res.sinRegistro.length + ' sinpago:' + res.pedidosSinPago.length);
     anlRenderizar(res);
   } catch(e) {
-    toast('⚠️ Error al analizar: ' + e.message, false);
+    alert('DEBUG ERROR: ' + e.message + '\n' + e.stack);
   }
   this.disabled = false;
   this.textContent = '🔍 Analizar';
