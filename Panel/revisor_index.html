@@ -314,10 +314,11 @@ tbody tr.row-visto-recibido:hover td{animation:none;background:rgba(1,119,191,.0
 .estado-sel-trigger:hover{opacity:.8}
 .badge-forzado{display:inline-block;font-size:11px;margin-left:4px;vertical-align:middle;cursor:pointer;opacity:.6;transition:opacity .15s}
 .badge-forzado:hover{opacity:1}
-.evidencia-icono{display:inline-block;font-size:13px;margin-left:5px;vertical-align:middle;cursor:pointer;opacity:.75;transition:opacity .15s}
-.evidencia-icono:hover{opacity:1}
-.evidencia-detalle{margin-top:12px}
-.evidencia-detalle-img{max-width:100%;border-radius:10px;border:1.5px solid var(--border);cursor:pointer;display:block}
+.evidencia-icono{display:inline-flex;align-items:center;gap:2px;font-size:11px;font-weight:600;margin-left:5px;vertical-align:middle;color:var(--text2);opacity:.85}
+.evidencia-detalle-grid{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
+.evidencia-detalle-item{display:block}
+.evidencia-detalle-thumb{width:64px;height:64px;object-fit:cover;border-radius:8px;border:1.5px solid var(--border);display:block}
+.evidencia-detalle-archivo{display:flex;align-items:center;justify-content:center;font-size:26px;background:var(--surface2)}
 .evidencia-detalle-nota{font-size:11px;color:var(--text3);margin-top:6px}
 .estado-sel-menu{display:none;position:absolute;top:100%;left:0;margin-top:4px;
   background:white;border:1px solid var(--border);border-radius:8px;
@@ -821,7 +822,7 @@ async function cargarPedidos(){
       total:p.total||0,
       estado:mapEstado(p.estado_actual),
       forzado:!!p.estado_forzado,
-      foto:p.foto_empaquetado_url||null,
+      fotos:p.fotos_empaquetado||[],
       areas:[],
       productos:[]
     }));
@@ -1250,7 +1251,7 @@ function filtrar(){
 }
 
 function renderFila(p){
-  return "<tr class=\""+rowClass(p)+" "+claseNuevo(p.id)+"\" onclick=\"marcarVisto('"+p.id+"');abrirDetalle('"+p.id+"')\"><td><span class=\"td-id\">"+p.id+"</span>"+badgeNuevo(p.id)+"</td><td><span class=\"td-socio\">"+p.socio+"</span></td><td><span class=\"td-cliente\">"+p.cliente+"</span></td><td><span class=\"td-fecha\">"+p.fecha+"</span></td><td><div class=\"areas-pills\">"+(p.areas||[]).map(a=>"<span class=\"area-pill "+(AREA_MAP[a]?.cls||"")+"\">"+(AREA_MAP[a]?.label||a)+"</span>").join("")+"</div></td><td>"+estadoSelectorRevisor(p)+badgeListoEmpacar(p)+(p.foto?"<span class=\"evidencia-icono\" title=\"Ver evidencia de empaquetado\" onclick=\"event.stopPropagation();window.open('"+p.foto+"','_blank')\">📷</span>":"")+"</td></tr>";
+  return "<tr class=\""+rowClass(p)+" "+claseNuevo(p.id)+"\" onclick=\"marcarVisto('"+p.id+"');abrirDetalle('"+p.id+"')\"><td><span class=\"td-id\">"+p.id+"</span>"+badgeNuevo(p.id)+"</td><td><span class=\"td-socio\">"+p.socio+"</span></td><td><span class=\"td-cliente\">"+p.cliente+"</span></td><td><span class=\"td-fecha\">"+p.fecha+"</span></td><td><div class=\"areas-pills\">"+(p.areas||[]).map(a=>"<span class=\"area-pill "+(AREA_MAP[a]?.cls||"")+"\">"+(AREA_MAP[a]?.label||a)+"</span>").join("")+"</div></td><td>"+estadoSelectorRevisor(p)+badgeListoEmpacar(p)+((p.fotos&&p.fotos.length)?"<span class=\"evidencia-icono\" title=\""+p.fotos.length+" evidencia(s) — clic para ver detalle\">📷 "+p.fotos.length+"</span>":"")+"</td></tr>";
 }
 
 function renderTabla(){
@@ -1331,8 +1332,14 @@ async function abrirDetalle(id){
     "<button class=\"pack-btn\" onclick=\"toast('🔧 Próximamente')\">✅ Lo empacamos nosotros</button>"+
     "<button class=\"pack-btn\" onclick=\"toast('🔧 Próximamente')\">🚚 Envío independiente</button>"+
     "</div>"+
-    (p.foto
-      ? "<div class=\"evidencia-detalle\"><a href=\""+p.foto+"\" target=\"_blank\" rel=\"noopener\"><img class=\"evidencia-detalle-img\" src=\""+p.foto+"\" alt=\"Evidencia de empaquetado\"></a><div class=\"evidencia-detalle-nota\">📷 Evidencia subida por el área</div></div>"
+    (p.fotos&&p.fotos.length
+      ? "<div class=\"evidencia-detalle-grid\">"+p.fotos.map(f=>{
+          const esImg=f.tipo&&f.tipo.indexOf("image/")===0;
+          const preview=esImg
+            ? "<img class=\"evidencia-detalle-thumb\" src=\""+f.url+"\" alt=\""+(f.nombre||"Evidencia")+"\">"
+            : "<div class=\"evidencia-detalle-thumb evidencia-detalle-archivo\">📄</div>";
+          return "<a href=\""+f.url+"\" target=\"_blank\" rel=\"noopener\" class=\"evidencia-detalle-item\">"+preview+"</a>";
+        }).join("")+"</div><div class=\"evidencia-detalle-nota\">📷 "+p.fotos.length+" evidencia(s) subida(s) por el área</div>"
       : "<div class=\"evidencia-detalle-nota\" style=\"margin-top:10px;color:var(--text3)\">Aún no se sube evidencia — se sube desde el panel del área al marcar Empaquetado.</div>")+
     "</div>"+
 
@@ -1405,7 +1412,7 @@ async function cambiarEstado(id,estado){
 
 function generarLink(id){
   const p=_todos.find(x=>x.id===id);if(!p)return;
-  const url=window.location.origin+"/fungiterra-sistema/cliente/"+p.token;
+  const url=window.location.origin+"/fungiterra-sistema/cliente.html?token="+p.token;
   navigator.clipboard.writeText(url).then(()=>toast("🔗 Link copiado al portapapeles")).catch(()=>toast("Link: "+p.token.substring(0,16)+"..."));
 }
 
