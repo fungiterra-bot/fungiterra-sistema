@@ -69,6 +69,10 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);min-height:1
 .estado-btn.s-prod{background:var(--azul-soft);border-color:var(--azul);color:var(--azul)}
 .estado-btn.s-listo{background:#1f7a3b;border-color:#1f7a3b;color:#fff}
 .estado-btn.s-empaq{background:#834b3e;border-color:#834b3e;color:#fff}
+.evidencia-row{display:flex;align-items:center;gap:10px;margin-top:10px;padding-top:10px;border-top:1px dashed var(--border)}
+.evidencia-btn{padding:7px 14px;border-radius:7px;font-size:12px;font-weight:600;border:1.5px dashed var(--border);background:var(--surface2);color:var(--text2);cursor:pointer;font-family:var(--sans);transition:all .15s}
+.evidencia-btn:hover{border-color:#834b3e;color:#834b3e}
+.evidencia-thumb{width:44px;height:44px;object-fit:cover;border-radius:8px;border:1.5px solid var(--border);cursor:pointer}
 .badge{display:inline-flex;align-items:center;padding:3px 9px;border-radius:20px;font-size:11px;font-weight:600;white-space:nowrap}
 .b-stock{background:#e6f4ec;color:#1f7a3b;border:1px solid #a8d8b8}
 .b-prod{background:var(--azul-soft);color:var(--azul);border:1px solid rgba(1,119,191,.25)}
@@ -592,7 +596,7 @@ function renderGrid(){
     }).join("");
 
     const cls=esNuevo(p)?"nuevo":(esVisto(p.token)?"":"visto-recibido");
-    return "<div class=\"pedido-card "+cls+"\"><div class=\"pedido-header\" onclick=\"tog("+i+")\"><div><div class=\"pedido-id\">"+(p.id_repositorio||p.token.substring(0,8))+"</div><div class=\"pedido-cliente\">"+(p.cliente_nombre||"—")+"</div><div class=\"pedido-meta\"><span class=\"meta-tag\">Socio "+(p.socio||"—")+"</span>"+otras+prioTag+hayStockBadge+"</div></div>"+badge(e)+"</div><div class=\"pedido-body\" id=\"b"+i+"\"><div>"+prods+"</div><div class=\"estado-btns\"><button class=\"estado-btn"+(e==="en_stock"?" s-stock":"")+"\" onclick=\"est("+i+",'en_stock')\">📦 En stock</button><button class=\"estado-btn"+(e==="en_produccion"?" s-prod":"")+"\" onclick=\"est("+i+",'en_produccion')\">🔨 En producción</button><button class=\"estado-btn"+(e==="listo"?" s-listo":"")+"\" onclick=\"est("+i+",'listo')\">✅ Listo</button><button class=\"estado-btn"+(e==="empaquetado"?" s-empaq":"")+"\" onclick=\"est("+i+",'empaquetado')\">🎁 Empaquetado</button></div></div></div>";
+    return "<div class=\"pedido-card "+cls+"\"><div class=\"pedido-header\" onclick=\"tog("+i+")\"><div><div class=\"pedido-id\">"+(p.id_repositorio||p.token.substring(0,8))+"</div><div class=\"pedido-cliente\">"+(p.cliente_nombre||"—")+"</div><div class=\"pedido-meta\"><span class=\"meta-tag\">Socio "+(p.socio||"—")+"</span>"+otras+prioTag+hayStockBadge+"</div></div>"+badge(e)+"</div><div class=\"pedido-body\" id=\"b"+i+"\"><div>"+prods+"</div><div class=\"estado-btns\"><button class=\"estado-btn"+(e==="en_stock"?" s-stock":"")+"\" onclick=\"est("+i+",'en_stock')\">📦 En stock</button><button class=\"estado-btn"+(e==="en_produccion"?" s-prod":"")+"\" onclick=\"est("+i+",'en_produccion')\">🔨 En producción</button><button class=\"estado-btn"+(e==="listo"?" s-listo":"")+"\" onclick=\"est("+i+",'listo')\">✅ Listo</button><button class=\"estado-btn"+(e==="empaquetado"?" s-empaq":"")+"\" onclick=\"est("+i+",'empaquetado')\">🎁 Empaquetado</button></div>"+evidenciaHtml(p,i)+"</div></div>";
   }).join("");
 }
 
@@ -627,6 +631,38 @@ async function est(i,estado){
     toast("✓ "+(p.id_repositorio||"")+" → "+estado);
     await cargar();
   }catch(e){toast("⚠️ Error al actualizar")}
+}
+
+// EVIDENCIA DE EMPAQUETADO — una sola foto por pedido, se puede reemplazar
+function evidenciaHtml(p,i){
+  const inputId="foto-input-"+i;
+  const inputTag="<input type=\"file\" id=\""+inputId+"\" accept=\"image/*\" capture=\"environment\" style=\"display:none\" onchange=\"event.stopPropagation();subirEvidencia("+i+",this)\">";
+  if(p.foto_empaquetado_url){
+    return "<div class=\"evidencia-row\" onclick=\"event.stopPropagation()\">"
+      +"<a href=\""+p.foto_empaquetado_url+"\" target=\"_blank\" rel=\"noopener\"><img class=\"evidencia-thumb\" src=\""+p.foto_empaquetado_url+"\" alt=\"Evidencia\"></a>"
+      +"<label class=\"evidencia-btn\" for=\""+inputId+"\">🔄 Reemplazar foto</label>"+inputTag
+      +"</div>";
+  }
+  return "<div class=\"evidencia-row\" onclick=\"event.stopPropagation()\">"
+    +"<label class=\"evidencia-btn\" for=\""+inputId+"\">📷 Subir evidencia</label>"+inputTag
+    +"</div>";
+}
+
+async function subirEvidencia(i,inputEl){
+  const p=_pedidos[i];if(!p)return;
+  const file=inputEl.files&&inputEl.files[0];
+  if(!file)return;
+  const fd=new FormData();
+  fd.append("foto",file);
+  try{
+    toast("⏳ Subiendo evidencia...");
+    const r=await fetch(API+"/pedidos/"+p.token+"/foto-empaquetado",{method:"POST",body:fd});
+    if(!r.ok)throw new Error("fallo subida");
+    const data=await r.json();
+    p.foto_empaquetado_url=data.foto_url;
+    toast("✓ Evidencia subida");
+    renderGrid();
+  }catch(e){toast("⚠️ Error al subir la foto")}
 }
 
 // Usar del inventario: descuenta stock + marca el producto como "listo"

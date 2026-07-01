@@ -273,7 +273,7 @@ th.sort-desc::after{content:" ▼";font-size:9px;opacity:.7}
   0%,100%{background:rgba(39,174,96,.08);box-shadow:inset 0 0 0 2px rgba(39,174,96,.15)}
   50%{background:rgba(39,174,96,.35);box-shadow:inset 0 0 0 2px rgba(39,174,96,.6)}
 }
-.badge-listo-empacar{display:inline-block;background:#27ae60;color:#fff;font-size:10px;font-weight:700;
+.badge-listo-empacar{display:inline-block;background:#0177bf;color:#fff;font-size:10px;font-weight:700;
   padding:3px 8px;border-radius:10px;margin-left:6px;vertical-align:middle;
   animation:pulso-badge 1.2s ease-in-out infinite}
 @keyframes pulso-badge{0%,100%{opacity:1}50%{opacity:.6}}
@@ -314,6 +314,11 @@ tbody tr.row-visto-recibido:hover td{animation:none;background:rgba(1,119,191,.0
 .estado-sel-trigger:hover{opacity:.8}
 .badge-forzado{display:inline-block;font-size:11px;margin-left:4px;vertical-align:middle;cursor:pointer;opacity:.6;transition:opacity .15s}
 .badge-forzado:hover{opacity:1}
+.evidencia-icono{display:inline-block;font-size:13px;margin-left:5px;vertical-align:middle;cursor:pointer;opacity:.75;transition:opacity .15s}
+.evidencia-icono:hover{opacity:1}
+.evidencia-detalle{margin-top:12px}
+.evidencia-detalle-img{max-width:100%;border-radius:10px;border:1.5px solid var(--border);cursor:pointer;display:block}
+.evidencia-detalle-nota{font-size:11px;color:var(--text3);margin-top:6px}
 .estado-sel-menu{display:none;position:absolute;top:100%;left:0;margin-top:4px;
   background:white;border:1px solid var(--border);border-radius:8px;
   box-shadow:0 6px 20px rgba(0,0,0,.15);z-index:50;min-width:160px;overflow:hidden}
@@ -618,7 +623,7 @@ let _filtrados=[];
 function sortBy(col){if(_sortCol===col){_sortDir*=-1;}else{_sortCol=col;_sortDir=1;}document.querySelectorAll("th.sortable").forEach(th=>{th.classList.remove("sort-asc","sort-desc");});const th=document.querySelector("th.sortable[onclick=\"sortBy('"+col+"')\"]");if(th)th.classList.add(_sortDir===1?"sort-asc":"sort-desc");filtrar();}
 
 function badgeListoEmpacar(p){
-  if(esListoEmpacar(p)) return " <span class=\"badge-listo-empacar\" title=\"Todos los productos están listos\">✨ Listo p/empacar</span>";
+  if(esListoEmpacar(p)) return " <span class=\"badge-listo-empacar\" title=\"Todo el pedido quedó empaquetado — solo falta generar la guía y marcarlo Enviado\">🚚 Listo para enviar</span>";
   return "";
 }
 
@@ -626,7 +631,9 @@ function productoCompletado(pr){
   return pr.estado==="listo"||pr.estado==="en_stock";
 }
 function esListoEmpacar(p){
-  return p.productos&&p.productos.length>0&&p.productos.every(productoCompletado);
+  // El estado ahora se mueve solo con lo que marcan las áreas: este aviso marca
+  // cuando el pedido completo llegó a "Empaquetado" y falta el paso manual de enviarlo.
+  return p.estado==="Empaquetado";
 }
 
 // CLASE DE FILA SEMÁFORO
@@ -1243,7 +1250,7 @@ function filtrar(){
 }
 
 function renderFila(p){
-  return "<tr class=\""+rowClass(p)+" "+claseNuevo(p.id)+"\" onclick=\"marcarVisto('"+p.id+"');abrirDetalle('"+p.id+"')\"><td><span class=\"td-id\">"+p.id+"</span>"+badgeNuevo(p.id)+"</td><td><span class=\"td-socio\">"+p.socio+"</span></td><td><span class=\"td-cliente\">"+p.cliente+"</span></td><td><span class=\"td-fecha\">"+p.fecha+"</span></td><td><div class=\"areas-pills\">"+(p.areas||[]).map(a=>"<span class=\"area-pill "+(AREA_MAP[a]?.cls||"")+"\">"+(AREA_MAP[a]?.label||a)+"</span>").join("")+"</div></td><td>"+estadoSelectorRevisor(p)+"</td></tr>";
+  return "<tr class=\""+rowClass(p)+" "+claseNuevo(p.id)+"\" onclick=\"marcarVisto('"+p.id+"');abrirDetalle('"+p.id+"')\"><td><span class=\"td-id\">"+p.id+"</span>"+badgeNuevo(p.id)+"</td><td><span class=\"td-socio\">"+p.socio+"</span></td><td><span class=\"td-cliente\">"+p.cliente+"</span></td><td><span class=\"td-fecha\">"+p.fecha+"</span></td><td><div class=\"areas-pills\">"+(p.areas||[]).map(a=>"<span class=\"area-pill "+(AREA_MAP[a]?.cls||"")+"\">"+(AREA_MAP[a]?.label||a)+"</span>").join("")+"</div></td><td>"+estadoSelectorRevisor(p)+badgeListoEmpacar(p)+(p.foto?"<span class=\"evidencia-icono\" title=\"Ver evidencia de empaquetado\" onclick=\"event.stopPropagation();window.open('"+p.foto+"','_blank')\">📷</span>":"")+"</td></tr>";
 }
 
 function renderTabla(){
@@ -1323,7 +1330,11 @@ async function abrirDetalle(id){
     "<button class=\"pack-btn\" onclick=\"toast('🔧 Próximamente')\">📦 Asignar a área</button>"+
     "<button class=\"pack-btn\" onclick=\"toast('🔧 Próximamente')\">✅ Lo empacamos nosotros</button>"+
     "<button class=\"pack-btn\" onclick=\"toast('🔧 Próximamente')\">🚚 Envío independiente</button>"+
-    "</div></div>"+
+    "</div>"+
+    (p.foto
+      ? "<div class=\"evidencia-detalle\"><a href=\""+p.foto+"\" target=\"_blank\" rel=\"noopener\"><img class=\"evidencia-detalle-img\" src=\""+p.foto+"\" alt=\"Evidencia de empaquetado\"></a><div class=\"evidencia-detalle-nota\">📷 Evidencia subida por el área</div></div>"
+      : "<div class=\"evidencia-detalle-nota\" style=\"margin-top:10px;color:var(--text3)\">Aún no se sube evidencia — se sube desde el panel del área al marcar Empaquetado.</div>")+
+    "</div>"+
 
     "<div class=\"d-section\"><div class=\"d-section-title\">Historial</div>"+
     renderHistorial(historial)+"</div>"+
