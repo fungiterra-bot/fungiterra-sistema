@@ -312,6 +312,8 @@ tbody tr.row-visto-recibido:hover td{animation:none;background:rgba(1,119,191,.0
 .estado-sel-wrap{position:relative;display:inline-block}
 .estado-sel-trigger{cursor:pointer;user-select:none}
 .estado-sel-trigger:hover{opacity:.8}
+.badge-forzado{display:inline-block;font-size:11px;margin-left:4px;vertical-align:middle;cursor:pointer;opacity:.6;transition:opacity .15s}
+.badge-forzado:hover{opacity:1}
 .estado-sel-menu{display:none;position:absolute;top:100%;left:0;margin-top:4px;
   background:white;border:1px solid var(--border);border-radius:8px;
   box-shadow:0 6px 20px rgba(0,0,0,.15);z-index:50;min-width:160px;overflow:hidden}
@@ -651,14 +653,24 @@ function esDelegado(id){return getDelegados().includes(id);}
 function estadoSelectorRevisor(p){
   const m={"Recibido":"b-recibido","En producción":"b-produccion","Empaquetado":"b-empaquetado","Enviado":"b-enviado","Entregado":"b-entregado","Cancelado":"b-cancelado"};
   const cls=m[p.estado]||"b-recibido";
+  const lock=p.forzado
+    ? "<span class=\"badge-forzado\" title=\"Forzado manualmente — ya no se mueve solo con lo que marquen las áreas. Clic para volver a automático\" onclick=\"event.stopPropagation();volverAutomatico('"+p.id+"','"+p.token+"')\">🔒</span>"
+    : "";
   if(!esDelegado(p.id)){
-    return "<span class=\"badge "+cls+"\">"+(p.estado||"—")+"</span>";
+    return "<span class=\"badge "+cls+"\">"+(p.estado||"—")+"</span>"+lock;
   }
   return "<div class=\"estado-sel-wrap\" onclick=\"event.stopPropagation();toggleEstadoMenuRev('"+p.id+"')\">"+
-    "<span class=\"badge "+cls+" estado-sel-trigger\">"+(p.estado||"—")+" 🔓▾</span>"+
+    "<span class=\"badge "+cls+" estado-sel-trigger\">"+(p.estado||"—")+" 🔓▾</span>"+lock+
     "<div class=\"estado-sel-menu\" id=\"eselr-"+p.id+"\">"+
     ESTADOS.map(e=>"<div class=\"estado-sel-opt"+(p.estado===e?" activo":"")+"\" onclick=\"event.stopPropagation();cambiarEstadoRapidoRev('"+p.id+"','"+e+"')\">"+(SEM_ICON[e]||"")+" "+e+"</div>").join("")+
     "</div></div>";
+}
+async function volverAutomatico(id,token){
+  try{
+    await fetch(API+"/pedidos/"+token+"/estado/auto",{method:"PATCH"});
+    toast("🔓 "+id+" vuelve a modo automático");
+    await cargarPedidos();
+  }catch(e){toast("⚠️ Error al liberar el estado")}
 }
 function toggleEstadoMenuRev(id){
   document.querySelectorAll(".estado-sel-menu.open").forEach(m=>{ if(m.id!=="eselr-"+id) m.classList.remove("open"); });
@@ -801,6 +813,8 @@ async function cargarPedidos(){
       tipo:p.tipo||"—",
       total:p.total||0,
       estado:mapEstado(p.estado_actual),
+      forzado:!!p.estado_forzado,
+      foto:p.foto_empaquetado_url||null,
       areas:[],
       productos:[]
     }));

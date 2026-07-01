@@ -68,10 +68,12 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);min-height:1
 .estado-btn.s-stock{background:#e6f4ec;border-color:var(--verde);color:var(--verde)}
 .estado-btn.s-prod{background:var(--azul-soft);border-color:var(--azul);color:var(--azul)}
 .estado-btn.s-listo{background:#1f7a3b;border-color:#1f7a3b;color:#fff}
+.estado-btn.s-empaq{background:#834b3e;border-color:#834b3e;color:#fff}
 .badge{display:inline-flex;align-items:center;padding:3px 9px;border-radius:20px;font-size:11px;font-weight:600;white-space:nowrap}
 .b-stock{background:#e6f4ec;color:#1f7a3b;border:1px solid #a8d8b8}
 .b-prod{background:var(--azul-soft);color:var(--azul);border:1px solid rgba(1,119,191,.25)}
 .b-listo{background:#1f7a3b;color:#fff}
+.b-empaq{background:#834b3e;color:#fff}
 .b-pend{background:var(--surface2);color:var(--text3);border:1px solid var(--border)}
 .empty-state{text-align:center;padding:60px 20px;color:var(--text3)}
 .empty-icon{font-size:40px;opacity:.2;margin-bottom:10px}
@@ -408,10 +410,6 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);min-height:1
       <button class="fab-close" onclick="cerrarFabricacion()">✕</button>
     </div>
     <div class="fab-body">
-      <div class="prod-subtabs" style="margin-bottom:12px">
-        <div class="prod-subtab active" id="fab-tab-activos" onclick="setSubTabFab('activos')">🔧 En producción</div>
-        <div class="prod-subtab" id="fab-tab-completados" onclick="setSubTabFab('completados')">✅ Completados</div>
-      </div>
       <div class="fab-filtros">
         <select id="fab-producto-filtro" onchange="renderFabricacion()">
           <option value="">Todos los productos</option>
@@ -495,7 +493,7 @@ async function cargar(){
     _pedidos=data.pedidos||[];
     document.getElementById("s-total").textContent=_pedidos.length;
     document.getElementById("s-prod").textContent=_pedidos.filter(p=>(p.productos||[]).some(pr=>pr.estado==="en_produccion")).length;
-    document.getElementById("s-listo").textContent=_pedidos.filter(p=>(p.productos||[]).length&&(p.productos||[]).every(pr=>pr.estado==="listo")).length;
+    document.getElementById("s-listo").textContent=_pedidos.filter(p=>(p.productos||[]).length&&(p.productos||[]).every(pr=>pr.estado==="listo"||pr.estado==="empaquetado")).length;
     await cargarInventarioSilencioso();
     renderGrid();
     document.getElementById("topbar-sub").textContent=_pedidos.length+" pedidos activos";
@@ -529,15 +527,17 @@ function setSubTabFB(tab){
 function estArea(p){
   const pr=p.productos||[];
   if(!pr.length)return"pendiente";
-  if(pr.every(x=>x.estado==="listo"))return"listo";
+  if(pr.every(x=>x.estado==="empaquetado"))return"empaquetado";
+  if(pr.every(x=>x.estado==="listo"||x.estado==="empaquetado"))return"listo";
   if(pr.some(x=>x.estado==="en_produccion"))return"en_produccion";
   if(pr.some(x=>x.estado==="en_stock"))return"en_stock";
   return"pendiente";
 }
+function estaTerminado(e){ return e==="listo"||e==="empaquetado"; }
 
 function badge(e){
-  const m={listo:"b-listo",en_produccion:"b-prod",en_stock:"b-stock",pendiente:"b-pend"};
-  const l={listo:"✅ Listo",en_produccion:"🔨 En producción",en_stock:"📦 En stock",pendiente:"⏳ Pendiente"};
+  const m={empaquetado:"b-empaq",listo:"b-listo",en_produccion:"b-prod",en_stock:"b-stock",pendiente:"b-pend"};
+  const l={empaquetado:"🎁 Empaquetado",listo:"✅ Listo",en_produccion:"🔨 En producción",en_stock:"📦 En stock",pendiente:"⏳ Pendiente"};
   return "<span class=\"badge "+m[e]+"\">"+l[e]+"</span>";
 }
 
@@ -548,7 +548,7 @@ function matchInventario(nombreProducto){
 
 function renderGrid(){
   const grid=document.getElementById("grid");
-  const lista=_pedidos.filter(p=>_subTabFB==="listos" ? estArea(p)==="listo" : estArea(p)!=="listo");
+  const lista=_pedidos.filter(p=>_subTabFB==="listos" ? estaTerminado(estArea(p)) : !estaTerminado(estArea(p)));
   if(!lista.length){
     const msg=_subTabFB==="listos"?"Sin pedidos listos todavía":"Sin pedidos activos";
     grid.innerHTML="<div class=\"empty-state\"><div class=\"empty-icon\">📭</div><div>"+msg+"</div></div>";
@@ -592,7 +592,7 @@ function renderGrid(){
     }).join("");
 
     const cls=esNuevo(p)?"nuevo":(esVisto(p.token)?"":"visto-recibido");
-    return "<div class=\"pedido-card "+cls+"\"><div class=\"pedido-header\" onclick=\"tog("+i+")\"><div><div class=\"pedido-id\">"+(p.id_repositorio||p.token.substring(0,8))+"</div><div class=\"pedido-cliente\">"+(p.cliente_nombre||"—")+"</div><div class=\"pedido-meta\"><span class=\"meta-tag\">Socio "+(p.socio||"—")+"</span>"+otras+prioTag+hayStockBadge+"</div></div>"+badge(e)+"</div><div class=\"pedido-body\" id=\"b"+i+"\"><div>"+prods+"</div><div class=\"estado-btns\"><button class=\"estado-btn"+(e==="en_stock"?" s-stock":"")+"\" onclick=\"est("+i+",'en_stock')\">📦 En stock</button><button class=\"estado-btn"+(e==="en_produccion"?" s-prod":"")+"\" onclick=\"est("+i+",'en_produccion')\">🔨 En producción</button><button class=\"estado-btn"+(e==="listo"?" s-listo":"")+"\" onclick=\"est("+i+",'listo')\">✅ Listo</button></div></div></div>";
+    return "<div class=\"pedido-card "+cls+"\"><div class=\"pedido-header\" onclick=\"tog("+i+")\"><div><div class=\"pedido-id\">"+(p.id_repositorio||p.token.substring(0,8))+"</div><div class=\"pedido-cliente\">"+(p.cliente_nombre||"—")+"</div><div class=\"pedido-meta\"><span class=\"meta-tag\">Socio "+(p.socio||"—")+"</span>"+otras+prioTag+hayStockBadge+"</div></div>"+badge(e)+"</div><div class=\"pedido-body\" id=\"b"+i+"\"><div>"+prods+"</div><div class=\"estado-btns\"><button class=\"estado-btn"+(e==="en_stock"?" s-stock":"")+"\" onclick=\"est("+i+",'en_stock')\">📦 En stock</button><button class=\"estado-btn"+(e==="en_produccion"?" s-prod":"")+"\" onclick=\"est("+i+",'en_produccion')\">🔨 En producción</button><button class=\"estado-btn"+(e==="listo"?" s-listo":"")+"\" onclick=\"est("+i+",'listo')\">✅ Listo</button><button class=\"estado-btn"+(e==="empaquetado"?" s-empaq":"")+"\" onclick=\"est("+i+",'empaquetado')\">🎁 Empaquetado</button></div></div></div>";
   }).join("");
 }
 
@@ -676,7 +676,7 @@ async function usarDelInventario(pedidoIdx,productoIdx,cantidadAUsar){
     const rEstado=await fetch(API+"/productos/"+pr.id+"/estado",{
       method:"PATCH",
       headers:{"Content-Type":"application/json"},
-      body:JSON.stringify({estado:nuevoEstado,...(!esCompleto&&{cantidad_fabricar:faltante})})
+      body:JSON.stringify({estado:nuevoEstado})
     });
     if(!rEstado.ok)throw new Error("No se pudo actualizar el estado");
 
@@ -742,19 +742,8 @@ function cerrarInventario(){
 
 // ── MODAL FABRICACIÓN ────────────────────────────────────────
 let _fabricacionCache=[];
-let _subTabFab="activos";
-
-function setSubTabFab(tab){
-  _subTabFab=tab;
-  document.getElementById("fab-tab-activos").classList.toggle("active",tab==="activos");
-  document.getElementById("fab-tab-completados").classList.toggle("active",tab==="completados");
-  renderFabricacion();
-}
 function abrirFabricacion(){
   document.getElementById("fab-overlay").classList.add("open");
-  _subTabFab="activos";
-  document.getElementById("fab-tab-activos").classList.add("active");
-  document.getElementById("fab-tab-completados").classList.remove("active");
   cargarFabricacion();
 }
 
@@ -796,21 +785,11 @@ function renderFabricacion(){
   const box=document.getElementById("fab-lista");
   const prodFiltro=document.getElementById("fab-producto-filtro").value;
   const pedFiltro=document.getElementById("fab-pedido-filtro").value;
-
-  // Estados activos = en producción; completados = todo lo demás
-  const estadosActivos=["recibido","en_produccion"];
-  let regs=_fabricacionCache.filter(f=>{
-    const pedido=_pedidos.find(p=>p.id_repositorio===f.pedido_referencia||String(p.id)===String(f.pedido_id));
-    const estado=pedido?pedido.estado_actual:"en_produccion";
-    return _subTabFab==="activos"?estadosActivos.includes(estado):!estadosActivos.includes(estado);
-  });
-
+  let regs=_fabricacionCache;
   if(prodFiltro) regs=regs.filter(f=>f.producto===prodFiltro);
   if(pedFiltro) regs=regs.filter(f=>f.pedido_referencia===pedFiltro);
   if(!regs.length){
-    box.innerHTML="<div class=\"fab-empty\">"
-      +(_subTabFab==="activos"?"Sin productos en producción actualmente":"Sin fabricaciones completadas aún")
-      +"</div>";
+    box.innerHTML="<div class=\"fab-empty\">Sin registros de fabricación para este filtro</div>";
     return;
   }
   box.innerHTML=regs.map(f=>{
