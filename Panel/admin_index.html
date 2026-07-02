@@ -613,17 +613,16 @@ th.sort-desc::after{content:" ▼";font-size:9px;opacity:.7}
       <div class="modal-titulo" style="margin-bottom:0">🚚 Seguimiento de envíos</div>
       <button class="modal-cerrar" onclick="cerrarSeguimiento()" style="background:none;border:none;font-size:18px;color:var(--text3);cursor:pointer">✕</button>
     </div>
-    <div class="modal-sub" style="font-size:12px;color:var(--text3);margin-bottom:14px">Pega la guía cuando generes el envío en Envia.com. El pedido pasa a "Enviado" automáticamente, y el estado se actualizará solo conforme la paquetería reporte avances.</div>
-    <div class="filters-bar" style="margin-bottom:12px">
+    <div class="modal-sub" style="font-size:12px;color:var(--text3);margin-bottom:14px">Solo pedidos enviados por paquetería. Pega la guía cuando generes el envío en Envia.com — el pedido pasa a "Enviado" automáticamente.</div>
+    <div class="prod-subtabs" style="margin-bottom:0">
+      <div class="prod-subtab active" id="seg-tab-activos" onclick="setSubTabSeg('activos')">🚚 Activos</div>
+      <div class="prod-subtab" id="seg-tab-historial" onclick="setSubTabSeg('historial')">✅ Historial</div>
+    </div>
+    <div style="margin:12px 0">
       <div class="search-wrap">
         <span class="search-icon">🔍</span>
         <input class="search-input" id="seg-busqueda" placeholder="Buscar por ID, cliente o guía..." oninput="renderSeguimiento()">
       </div>
-      <select class="filter-select" id="seg-filtro" onchange="renderSeguimiento()">
-        <option value="todos">Todos</option>
-        <option value="sin_guia">Sin guía registrada</option>
-        <option value="con_guia">Con guía registrada</option>
-      </select>
     </div>
     <div id="seguimiento-lista"><div class="spinner"></div></div>
   </div>
@@ -1285,11 +1284,21 @@ async function confirmarFusion(){
 
 // ── SEGUIMIENTO DE ENVÍOS ─────────────────────────────────────
 let _seguimiento=[];
+let _subTabSeg="activos";
+
+function setSubTabSeg(tab){
+  _subTabSeg=tab;
+  document.getElementById("seg-tab-activos").classList.toggle("active",tab==="activos");
+  document.getElementById("seg-tab-historial").classList.toggle("active",tab==="historial");
+  renderSeguimiento();
+}
 
 async function abrirSeguimiento(){
   document.getElementById("modal-seguimiento").classList.add("activo");
   document.getElementById("seg-busqueda").value="";
-  document.getElementById("seg-filtro").value="todos";
+  _subTabSeg="activos";
+  document.getElementById("seg-tab-activos").classList.add("active");
+  document.getElementById("seg-tab-historial").classList.remove("active");
   await cargarSeguimiento();
 }
 
@@ -1302,8 +1311,12 @@ async function cargarSeguimiento(){
   try{
     const r=await fetch(API+"/pedidos?limite=300");
     const data=await r.json();
-    // Solo nos interesan pedidos que ya están enviados, en camino, o entregados (no cancelados)
-    _seguimiento=data.pedidos.filter(p=>["enviado","entregado"].includes(p.estado_actual)||p.guia_numero);
+    // Solo pedidos que pasaron por paquetería (tienen guía o estado enviado/entregado con guía)
+    _seguimiento=data.pedidos.filter(p=>
+      p.estado_actual==="empaquetado"||
+      p.estado_actual==="enviado"||
+      (p.guia_numero&&p.estado_actual!=="cancelado")
+    );
     renderSeguimiento();
   }catch(e){
     document.getElementById("seguimiento-lista").innerHTML="<div class=\"empty-state\"><div class=\"empty-icon\">⚠️</div><div>Error cargando envíos</div></div>";
@@ -1322,36 +1335,47 @@ const ESTADO_ENVIO_LABEL={
 function renderSeguimiento(){
   const box=document.getElementById("seguimiento-lista");
   const busq=document.getElementById("seg-busqueda").value.trim().toLowerCase();
-  const filtro=document.getElementById("seg-filtro").value;
-  let lista=_seguimiento;
-  if(filtro==="sin_guia") lista=lista.filter(p=>!p.guia_numero);
-  if(filtro==="con_guia") lista=lista.filter(p=>!!p.guia_numero);
+
+  // Activos: empaquetado (pendiente de guía) o enviado (en tránsito)
+  // Historial: entregado con guía (enviados por paquetería que ya llegaron)
+  const esActivo=p=>p.estado_actual==="empaquetado"||p.estado_actual==="enviado";
+  const esHistorial=p=>p.estado_actual==="entregado"&&!!p.guia_numero;
+
+  let lista=_seguimiento.filter(_subTabSeg==="activos"?esActivo:esHistorial);
   if(busq) lista=lista.filter(p=>
     (p.id_repositorio||p.token.substring(0,8)).toLowerCase().includes(busq)||
     (p.cliente_nombre||"").toLowerCase().includes(busq)||
     (p.guia_numero||"").toLowerCase().includes(busq)
   );
+
   if(!lista.length){
-    box.innerHTML="<div class=\"empty-state\"><div class=\"empty-icon\">🚚</div><div>Sin pedidos para mostrar</div></div>";
+    const msg=_subTabSeg==="activos"
+      ?"Sin envíos activos — todos los pedidos enviados han sido entregados"
+      :"Sin historial de envíos por paquetería aún";
+    box.innerHTML="<div class=\"empty-state\"><div class=\"empty-icon\">🚚</div><div>"+msg+"</div></div>";
     return;
   }
+
   box.innerHTML=lista.map(p=>{
     const idCorto=p.id_repositorio||p.token.substring(0,8).toUpperCase();
     const estadoEnvioTexto=p.estado_envio?(ESTADO_ENVIO_LABEL[p.estado_envio]||p.estado_envio):null;
     const ultimaAct=p.ultima_actualizacion_envio?new Date(p.ultima_actualizacion_envio).toLocaleString("es-MX",{day:"2-digit",month:"short",hour:"2-digit",minute:"2-digit"}):null;
+    const esEntregado=p.estado_actual==="entregado";
     return "<div style=\"border:1px solid var(--border);border-radius:10px;padding:14px 16px;margin-bottom:10px\">"
       +"<div style=\"display:flex;justify-content:space-between;align-items:center;margin-bottom:8px\">"
       +"<div><strong style=\"font-size:13px\">"+idCorto+"</strong> <span style=\"color:var(--text3);font-size:12px\">· "+(p.cliente_nombre||"—")+"</span></div>"
       +badge(mapEstado(p.estado_actual))
       +"</div>"
       +(estadoEnvioTexto?"<div style=\"font-size:12px;color:var(--azul);margin-bottom:6px\">"+estadoEnvioTexto+(p.ultima_ubicacion_envio?" · "+p.ultima_ubicacion_envio:"")+(ultimaAct?" · "+ultimaAct:"")+"</div>":"")
-      +"<div style=\"display:flex;gap:8px;flex-wrap:wrap\">"
-      +"<input type=\"text\" placeholder=\"Número de guía\" value=\""+(p.guia_numero||"")+"\" id=\"seg-guia-"+p.id+"\" style=\"flex:1;min-width:140px;padding:7px 10px;border:1.5px solid var(--border);border-radius:7px;font-size:12px;font-family:var(--sans)\">"
-      +"<select id=\"seg-paq-"+p.id+"\" style=\"padding:7px 10px;border:1.5px solid var(--border);border-radius:7px;font-size:12px;font-family:var(--sans);background:var(--surface)\">"
-      +["Estafeta","DHL","FedEx","UPS","Redpack","Otra"].map(pq=>"<option"+(p.paqueteria===pq?" selected":"")+">"+pq+"</option>").join("")
-      +"</select>"
-      +"<button class=\"btn btn-primary btn-sm\" onclick=\"guardarGuia('"+p.token+"','"+p.id+"')\">"+(p.guia_numero?"Actualizar":"Guardar")+"</button>"
-      +"</div>"
+      +(esEntregado
+        ? "<div style=\"font-size:12px;color:var(--text3)\">"+(p.paqueteria?"<strong>"+p.paqueteria+"</strong> · ":"")+"Guía: <span style=\"font-family:monospace\">"+(p.guia_numero||"—")+"</span></div>"
+        : "<div style=\"display:flex;gap:8px;flex-wrap:wrap\">"
+          +"<input type=\"text\" placeholder=\"Número de guía\" value=\""+(p.guia_numero||"")+"\" id=\"seg-guia-"+p.id+"\" style=\"flex:1;min-width:140px;padding:7px 10px;border:1.5px solid var(--border);border-radius:7px;font-size:12px;font-family:var(--sans)\">"
+          +"<select id=\"seg-paq-"+p.id+"\" style=\"padding:7px 10px;border:1.5px solid var(--border);border-radius:7px;font-size:12px;font-family:var(--sans);background:var(--surface)\">"
+          +["Estafeta","DHL","FedEx","UPS","Redpack","Otra"].map(pq=>"<option"+(p.paqueteria===pq?" selected":"")+">"+pq+"</option>").join("")
+          +"</select>"
+          +"<button class=\"btn btn-primary btn-sm\" onclick=\"guardarGuia('"+p.token+"','"+p.id+"')\">"+(p.guia_numero?"Actualizar":"Guardar")+"</button>"
+          +"</div>")
       +"</div>";
   }).join("");
 }
@@ -1615,8 +1639,8 @@ async function cambiarEstado(id,estado){
 }
 
 function generarLink(id){
-  const p=_todos.find(x=>x.id===id);if(!p)return;
-  const url=window.location.origin+"/fungiterra-sistema/cliente.html?token="+p.token;
+  const p=_todos.find(x=>x.id==id);if(!p)return;
+  const url="https://fungiterra-bot.github.io/fungiterra-sistema/Panel/cliente.html?token="+p.token;
   navigator.clipboard.writeText(url).then(()=>toast("🔗 Link copiado al portapapeles")).catch(()=>toast("Link: "+p.token.substring(0,16)+"..."));
 }
 
