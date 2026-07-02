@@ -36,7 +36,7 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);min-height:1
 
 /* MAIN */
 .main{flex:1;display:flex;flex-direction:column;min-width:0;overflow:hidden}
-.topbar{padding:15px 28px;background:var(--azul);display:flex;align-items:center;justify-content:space-between;box-shadow:0 2px 8px rgba(40,151,75,.2)}
+.topbar{padding:15px 28px;background:var(--verde);display:flex;align-items:center;justify-content:space-between;box-shadow:0 2px 8px rgba(40,151,75,.2)}
 .topbar-left h1{font-size:17px;font-weight:700;color:#fff}
 .topbar-left p{font-size:12px;color:rgba(255,255,255,.7);margin-top:1px}
 .btn{padding:7px 14px;border-radius:7px;font-size:12px;font-weight:600;font-family:var(--sans);cursor:pointer;border:none;transition:all .15s}
@@ -199,6 +199,7 @@ tbody tr:hover{background:#f5f9f6}
 .sem-btn.s-empaquetado{background:var(--cafe-soft);border-color:var(--cafe);color:var(--cafe)}
 .sem-btn.s-enviado{background:#e8f4fb;border-color:var(--azul-dark);color:var(--azul-dark)}
 .sem-btn.s-entregado{background:#e6f4ec;border-color:var(--verde-dark);color:var(--verde-dark)}
+.sem-btn.s-cancelado{background:#fdecea;border-color:#c0392b;color:#c0392b}
 
 .area-block{background:var(--surface2);border:1.5px solid var(--border);border-radius:8px;padding:12px 14px;margin-bottom:8px;border-left:4px solid var(--azul)}
 .area-block.lab{border-left-color:var(--verde)}
@@ -236,13 +237,13 @@ tbody tr:hover{background:#f5f9f6}
 tbody tr.row-urgente    td{background:rgba(192,57,43,.08);border-bottom-color:rgba(192,57,43,.15)}
 tbody tr.row-urgente:hover td{background:rgba(192,57,43,.14)}
 
-tbody tr.row-recibido   td{background:rgba(130,160,180,.07)}
-tbody tr.row-recibido:hover td{background:rgba(130,160,180,.13)}
+tbody tr.row-recibido   td{background:rgba(130,160,180,.12)}
+tbody tr.row-recibido:hover td{background:rgba(130,160,180,.2)}
 
-tbody tr.row-produccion td{background:rgba(1,119,191,.07)}
-tbody tr.row-produccion:hover td{background:rgba(1,119,191,.13)}
+tbody tr.row-produccion td{background:rgba(1,119,191,.13)}
+tbody tr.row-produccion:hover td{background:rgba(1,119,191,.2)}
 
-tbody tr.row-listo      td{background:rgba(39,174,96,.08)}
+tbody tr.row-listo      td{background:rgba(39,174,96,.15)}
 tbody tr.row-listo:hover td{background:rgba(39,174,96,.14)}
 
 tbody tr.row-empaquetado td{background:rgba(131,75,62,.07)}
@@ -267,6 +268,16 @@ th.sort-asc::after{content:" ▲";font-size:9px;opacity:.7}
 th.sort-desc::after{content:" ▼";font-size:9px;opacity:.7}
 
 .btn-menu{display:none}
+/* ── PARPADEO LISTO PARA EMPACAR ─────────────────────────── */
+@keyframes pulso-listo{
+  0%,100%{background:rgba(39,174,96,.08);box-shadow:inset 0 0 0 2px rgba(39,174,96,.15)}
+  50%{background:rgba(39,174,96,.35);box-shadow:inset 0 0 0 2px rgba(39,174,96,.6)}
+}
+.badge-listo-empacar{display:inline-block;background:#0177bf;color:#fff;font-size:10px;font-weight:700;
+  padding:3px 8px;border-radius:10px;margin-left:6px;vertical-align:middle;
+  animation:pulso-badge 1.2s ease-in-out infinite}
+@keyframes pulso-badge{0%,100%{opacity:1}50%{opacity:.6}}
+
 /* ── ALERTAS NUEVO PEDIDO ────────────────────────────────── */
 @keyframes pulso-nuevo{
   0%,100%{background:rgba(1,119,191,.12)}
@@ -287,6 +298,35 @@ tbody tr.row-visto-recibido:hover td{animation:none;background:rgba(1,119,191,.0
 .notif-banner.activo{display:flex}
 .notif-banner button{background:rgba(255,255,255,.2);border:1px solid rgba(255,255,255,.4);
   color:#fff;border-radius:6px;padding:4px 12px;cursor:pointer;font-size:12px;font-family:var(--sans)}
+
+/* PROGRESO POR ÁREA EN DETALLE */
+.area-progreso-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:8px;margin-bottom:14px}
+.area-progreso{display:flex;align-items:center;gap:6px;padding:8px 10px;border-radius:8px;background:var(--surface2);border:1.5px solid var(--border);font-size:12px}
+.area-progreso.completo{background:#f0fbf4;border-color:#a8d8b8}
+.area-progreso-icon{font-size:13px}
+.area-progreso-label{font-weight:600;color:var(--text2);flex:1}
+.area-progreso-count{font-weight:700;color:var(--text3);font-size:11px}
+.area-progreso.completo .area-progreso-count{color:#1f7a3b}
+
+/* SELECTOR DE ESTADO EN TABLA (solo activo si delegado) */
+.estado-sel-wrap{position:relative;display:inline-block}
+.estado-sel-trigger{cursor:pointer;user-select:none}
+.estado-sel-trigger:hover{opacity:.8}
+.badge-forzado{display:inline-block;font-size:11px;margin-left:4px;vertical-align:middle;cursor:pointer;opacity:.6;transition:opacity .15s}
+.badge-forzado:hover{opacity:1}
+.evidencia-icono{display:inline-flex;align-items:center;gap:2px;font-size:11px;font-weight:600;margin-left:5px;vertical-align:middle;color:var(--text2);opacity:.85}
+.evidencia-detalle-grid{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
+.evidencia-detalle-item{display:block}
+.evidencia-detalle-thumb{width:64px;height:64px;object-fit:cover;border-radius:8px;border:1.5px solid var(--border);display:block}
+.evidencia-detalle-archivo{display:flex;align-items:center;justify-content:center;font-size:26px;background:var(--surface2)}
+.evidencia-detalle-nota{font-size:11px;color:var(--text3);margin-top:6px}
+.estado-sel-menu{display:none;position:absolute;top:100%;left:0;margin-top:4px;
+  background:white;border:1px solid var(--border);border-radius:8px;
+  box-shadow:0 6px 20px rgba(0,0,0,.15);z-index:50;min-width:160px;overflow:hidden}
+.estado-sel-menu.open{display:block}
+.estado-sel-opt{padding:8px 12px;font-size:12px;cursor:pointer;white-space:nowrap;color:var(--text2)}
+.estado-sel-opt:hover{background:var(--surface2)}
+.estado-sel-opt.activo{background:var(--azul-soft);color:var(--azul);font-weight:600}
 
 /* ── RESPONSIVE MÓVIL ─────────────────────────────────────── */
 @media (max-width: 768px){
@@ -372,14 +412,14 @@ tbody tr.row-visto-recibido:hover td{animation:none;background:rgba(1,119,191,.0
   <div class="nav">
     <div class="nav-section">Gestión</div>
     <div class="nav-item active" id="nav-pedidos" onclick="setVista('pedidos')"><span class="nav-icon">📋</span> Pedidos</div>
+    <div class="nav-item" id="nav-productos" onclick="setVista('productos')"><span class="nav-icon">🧺</span> A preparar</div>
 
     <div class="nav-section" style="margin-top:6px">Producción</div>
     <div class="nav-item" onclick="window.open('../Panel/fungibolsa.html')"><span class="nav-icon">📦</span> FungiBolsa</div>
     <div class="nav-item" onclick="toast('🔧 Próximamente')"><span class="nav-icon">🔬</span> Laboratorio</div>
     <div class="nav-item" onclick="toast('🔧 Próximamente')"><span class="nav-icon">⚙️</span> Transformación</div>
-    <div class="nav-section" style="margin-top:6px">Sistema</div>
-    <div class="nav-item" onclick="window.open('../repositorioD.html')"><span class="nav-icon">📊</span> Repositorio</div>
-    <div class="nav-item" onclick="window.open('../cotizadorD.html')"><span class="nav-icon">💰</span> Cotizador</div>
+    <div class="nav-item" onclick="toast('🔧 Próximamente')"><span class="nav-icon">🧰</span> Insumos</div>
+    <div class="nav-item" onclick="toast('🔧 Próximamente')"><span class="nav-icon">🍄</span> Piopis</div>
   </div>
   <div class="sidebar-footer">
     <div class="user-chip">
@@ -417,7 +457,7 @@ tbody tr.row-visto-recibido:hover td{animation:none;background:rgba(1,119,191,.0
         <select class="filter-select" id="f-estado" onchange="filtrar()">
           <option value="">Todos los estados</option>
           <option>Recibido</option><option>En producción</option><option>Listo</option>
-          <option>Empaquetado</option><option>Enviado</option><option>Entregado</option>
+          <option>Empaquetado</option><option>Enviado</option><option>Entregado</option><option>Cancelado</option>
         </select>
         <select class="filter-select" id="f-socio" onchange="filtrar()">
           <option value="">Todos los socios</option>
@@ -474,6 +514,26 @@ tbody tr.row-visto-recibido:hover td{animation:none;background:rgba(1,119,191,.0
 
     <!-- VISTA PRODUCTOS A PREPARAR -->
     <div class="vista" id="vista-productos">
+      <div class="prod-subtabs">
+        <div class="prod-subtab active" id="pst-pendientes" onclick="setSubTabProductos('pendientes')">📋 Pendientes</div>
+        <div class="prod-subtab" id="pst-listos" onclick="setSubTabProductos('listos')">📦 Listos</div>
+        <div class="prod-subtab" id="pst-finalizado" onclick="setSubTabProductos('finalizado')">✅ Finalizado</div>
+      </div>
+      <div class="prod-filtro-tiempo" id="prod-filtro-tiempo" style="display:none">
+        <select class="filter-select" id="pf-fecha-rapida" onchange="aplicarFechaRapidaProductos()">
+          <option value="">📅 Todo el tiempo</option>
+          <option value="hoy">Hoy</option>
+          <option value="semana">Esta semana</option>
+          <option value="mes">Este mes</option>
+          <option value="mesant">Mes anterior</option>
+          <option value="custom">Intervalo...</option>
+        </select>
+        <div id="pf-fecha-custom" style="display:none;gap:6px;align-items:center">
+          <input type="date" class="filter-select" id="pf-fecha-desde" onchange="renderProductosVista()" style="padding:7px 8px;font-size:12px">
+          <span style="color:#7a96ad;font-size:12px">→</span>
+          <input type="date" class="filter-select" id="pf-fecha-hasta" onchange="renderProductosVista()" style="padding:7px 8px;font-size:12px">
+        </div>
+      </div>
       <div id="productos-content"><div class="spinner"></div></div>
     </div>
 
@@ -537,9 +597,9 @@ let _clientes=[];
 let _vistaActual="pedidos";
 
 const AREA_MAP={fungibolsa:{label:"FungiBolsa",cls:"area-fb",blk:""},laboratorio:{label:"Laboratorio",cls:"area-lab",blk:"lab"},transformacion:{label:"Transformación",cls:"area-tf",blk:"tf"},insumos:{label:"Insumos",cls:"area-ins",blk:"ins"},piopis:{label:"Piopis",cls:"area-pip",blk:"pip"}};
-const ESTADOS=["Recibido","En producción","Listo","Empaquetado","Enviado","Entregado"];
-const SEM_CLS={"Recibido":"s-recibido","En producción":"s-produccion","Listo":"s-listo","Empaquetado":"s-empaquetado","Enviado":"s-enviado","Entregado":"s-entregado"};
-const SEM_ICON={"Recibido":"🟡","En producción":"🔵","Listo":"🟢","Empaquetado":"📦","Enviado":"🚚","Entregado":"✅"};
+const ESTADOS=["Recibido","En producción","Empaquetado","Enviado","Entregado","Cancelado"];
+const SEM_CLS={"Recibido":"s-recibido","En producción":"s-produccion","Empaquetado":"s-empaquetado","Enviado":"s-enviado","Entregado":"s-entregado","Cancelado":"s-cancelado"};
+const SEM_ICON={"Recibido":"🟡","En producción":"🔵","Empaquetado":"📦","Enviado":"🚚","Entregado":"✅","Cancelado":"❌"};
 
 // PRIORIDAD
 const PRIORIDAD_KEY="ft_prioridad_v1";
@@ -563,12 +623,23 @@ const POR_PAGINA=10;
 let _filtrados=[];
 function sortBy(col){if(_sortCol===col){_sortDir*=-1;}else{_sortCol=col;_sortDir=1;}document.querySelectorAll("th.sortable").forEach(th=>{th.classList.remove("sort-asc","sort-desc");});const th=document.querySelector("th.sortable[onclick=\"sortBy('"+col+"')\"]");if(th)th.classList.add(_sortDir===1?"sort-asc":"sort-desc");filtrar();}
 
+function badgeListoEmpacar(p){
+  if(esListoEmpacar(p)) return " <span class=\"badge-listo-empacar\" title=\"Todo el pedido quedó empaquetado — solo falta generar la guía y marcarlo Enviado\">🚚 Listo para enviar</span>";
+  return "";
+}
+
+function productoCompletado(pr){
+  return pr.estado==="listo"||pr.estado==="en_stock";
+}
+function esListoEmpacar(p){
+  // El estado ahora se mueve solo con lo que marcan las áreas: este aviso marca
+  // cuando el pedido completo llegó a "Empaquetado" y falta el paso manual de enviarlo.
+  return p.estado==="Empaquetado";
+}
+
 // CLASE DE FILA SEMÁFORO
 function rowClass(p){
-  const prio=getPrioridadVal(p.id);
-  if(prio==="urgente") return "row-urgente";
-  if(prio==="sinprisa") return "row-sinprisa";
-  // Semáforo por estado
+  // Único sistema de color: el estado del pedido.
   switch(p.estado){
     case "Recibido":      return "row-recibido";
     case "En producción": return "row-produccion";
@@ -581,6 +652,62 @@ function rowClass(p){
   }
 }
 
+// DELEGACIÓN (leído desde lo que marca el Admin)
+const DELEGADOS_KEY="ft_delegados_v1";
+function getDelegados(){try{return JSON.parse(localStorage.getItem(DELEGADOS_KEY)||"[]")}catch(e){return[]}}
+function esDelegado(id){return getDelegados().includes(id);}
+
+// Selector de estado — solo activo si el pedido está delegado
+function estadoSelectorRevisor(p){
+  const m={"Recibido":"b-recibido","En producción":"b-produccion","Empaquetado":"b-empaquetado","Enviado":"b-enviado","Entregado":"b-entregado","Cancelado":"b-cancelado"};
+  const cls=m[p.estado]||"b-recibido";
+  const lock=p.forzado
+    ? "<span class=\"badge-forzado\" title=\"Forzado manualmente — ya no se mueve solo con lo que marquen las áreas. Clic para volver a automático\" onclick=\"event.stopPropagation();volverAutomatico('"+p.id+"','"+p.token+"')\">🔒</span>"
+    : "";
+  if(!esDelegado(p.id)){
+    return "<span class=\"badge "+cls+"\">"+(p.estado||"—")+"</span>"+lock;
+  }
+  return "<div class=\"estado-sel-wrap\" onclick=\"event.stopPropagation();toggleEstadoMenuRev('"+p.id+"')\">"+
+    "<span class=\"badge "+cls+" estado-sel-trigger\">"+(p.estado||"—")+" 🔓▾</span>"+lock+
+    "<div class=\"estado-sel-menu\" id=\"eselr-"+p.id+"\">"+
+    ESTADOS.map(e=>"<div class=\"estado-sel-opt"+(p.estado===e?" activo":"")+"\" onclick=\"event.stopPropagation();cambiarEstadoRapidoRev('"+p.id+"','"+e+"')\">"+(SEM_ICON[e]||"")+" "+e+"</div>").join("")+
+    "</div></div>";
+}
+async function volverAutomatico(id,token){
+  try{
+    await fetch(API+"/pedidos/"+token+"/estado/auto",{method:"PATCH"});
+    toast("🔓 "+id+" vuelve a modo automático");
+    await cargarPedidos();
+  }catch(e){toast("⚠️ Error al liberar el estado")}
+}
+function toggleEstadoMenuRev(id){
+  document.querySelectorAll(".estado-sel-menu.open").forEach(m=>{ if(m.id!=="eselr-"+id) m.classList.remove("open"); });
+  document.getElementById("eselr-"+id)?.classList.toggle("open");
+}
+async function cambiarEstadoRapidoRev(id,estado){
+  const p=_todos.find(x=>x.id===id);if(!p)return;
+  document.getElementById("eselr-"+id)?.classList.remove("open");
+  let motivo="Cambio por Revisor (delegado)";
+  if(estado==="Cancelado"){
+    const r=prompt("⚠️ Vas a cancelar el pedido "+id+". Escribe el motivo de la cancelación:");
+    if(r===null) return;
+    motivo="Cancelado por Revisor: "+(r.trim()||"sin motivo especificado");
+  }
+  try{
+    await fetch(API+"/pedidos/"+p.token+"/estado",{
+      method:"PATCH",
+      headers:{"Content-Type":"application/json"},
+      body:JSON.stringify({estado_nuevo:estadoApi(estado),motivo:motivo})
+    });
+    p.estado=estado;
+    filtrar();
+    toast(estado==="Cancelado"?"✖ "+id+" cancelado":"✓ "+id+" → "+estado);
+  }catch(e){toast("⚠️ Error al cambiar estado")}
+}
+document.addEventListener("click",()=>{
+  document.querySelectorAll(".estado-sel-menu.open").forEach(m=>m.classList.remove("open"));
+});
+
 function badge(e){
   const m={"Recibido":"b-recibido","En producción":"b-produccion","Listo":"b-listo","Empaquetado":"b-empaquetado","Enviado":"b-enviado","Entregado":"b-entregado","Cancelado":"b-cancelado"};
   return "<span class=\"badge "+(m[e]||"b-recibido")+"\">"+( e||"—")+"</span>";
@@ -592,7 +719,7 @@ function mapEstado(e){
 }
 
 function estadoApi(e){
-  const m={"Recibido":"recibido","En producción":"en_produccion","Listo":"listo","Empaquetado":"empaquetado","Enviado":"enviado","Entregado":"entregado"};
+  const m={"Recibido":"recibido","En producción":"en_produccion","Listo":"listo","Empaquetado":"empaquetado","Enviado":"enviado","Entregado":"entregado","Cancelado":"cancelado"};
   return m[e]||e.toLowerCase();
 }
 
@@ -658,6 +785,27 @@ function descartarNotif(){
   filtrar(); // re-render sin parpadeo
 }
 
+// POLLING — verificar nuevos pedidos cada 30 seg
+let _pollingTimer=null;
+function iniciarPolling(){
+  if(_pollingTimer) clearInterval(_pollingTimer);
+  _pollingTimer=setInterval(async()=>{
+    try{
+      const r=await fetch(API+"/pedidos?limite=200");
+      const data=await r.json();
+      const nuevosCount=data.pedidos.filter(p=>{
+        const fechaRaw=p.creado_en?new Date(p.creado_en).toISOString().slice(0,10):"";
+        const id=p.id_repositorio||p.token.substring(0,8).toUpperCase();
+        return !esVisto(id)&&new Date(p.creado_en||0)>getUltimaVisita();
+      }).length;
+      if(nuevosCount>0){
+        document.title="("+nuevosCount+") Fungiterra — Panel Revisor";
+        document.getElementById("topbar-sub").textContent="🔔 "+nuevosCount+" pedido"+(nuevosCount>1?"s nuevos":" nuevo")+" — clic en Actualizar";
+      }
+    }catch(e){}
+  },30000);
+}
+
 async function cargarPedidos(){
   document.getElementById("tabla-body").innerHTML="<tr><td colspan=\"8\"><div class=\"spinner\"></div></td></tr>";
   try{
@@ -673,6 +821,8 @@ async function cargarPedidos(){
       tipo:p.tipo||"—",
       total:p.total||0,
       estado:mapEstado(p.estado_actual),
+      forzado:!!p.estado_forzado,
+      fotos:p.fotos_empaquetado||[],
       areas:[],
       productos:[]
     }));
@@ -684,6 +834,7 @@ async function cargarPedidos(){
     document.getElementById("topbar-sub").textContent=_todos.length+" pedidos — actualizado ahora";
     verificarNuevos();
     registrarVisita();
+    iniciarPolling();
   }catch(e){
     document.getElementById("tabla-body").innerHTML="<tr><td colspan=\"8\"><div class=\"empty-state\"><div class=\"empty-icon\">⚠️</div><div class=\"empty-text\">Error conectando con la API</div></div></td></tr>";
   }
@@ -705,7 +856,6 @@ async function precargarAreas(){
   for(let i=0;i<_todos.length;i+=LOTE){
     const lote=_todos.slice(i,i+LOTE);
     await Promise.all(lote.map(async p=>{
-      if(p.areas.length>0)return; // ya tiene áreas
       try{
         const rp=await fetch(API+"/pedidos/"+p.token+"/productos");
         const dp=await rp.json();
@@ -757,23 +907,50 @@ function detectarArea(nombre){
 }
 
 // ── PRODUCTOS A PREPARAR ──────────────────────────────────────
+let _subTabProductos="pendientes";
+let _todosLosProductos=[]; // cache completo, sin filtrar
+
+function setSubTabProductos(tab){
+  _subTabProductos=tab;
+  document.querySelectorAll(".prod-subtab").forEach(el=>el.classList.remove("active"));
+  document.getElementById("pst-"+tab).classList.add("active");
+  document.getElementById("prod-filtro-tiempo").style.display=(tab==="finalizado")?"flex":"none";
+  renderProductosVista();
+}
+
+function aplicarFechaRapidaProductos(){
+  const v=document.getElementById("pf-fecha-rapida").value;
+  const custom=document.getElementById("pf-fecha-custom");
+  if(v==="custom"){custom.style.display="flex";}
+  else{
+    custom.style.display="none";
+    const hoy=new Date();
+    const fmt=d=>d.toISOString().slice(0,10);
+    let desde="",hasta="";
+    if(v==="hoy"){desde=fmt(hoy);hasta=fmt(hoy);}
+    else if(v==="semana"){const lun=new Date(hoy);lun.setDate(hoy.getDate()-hoy.getDay()+1);desde=fmt(lun);hasta=fmt(hoy);}
+    else if(v==="mes"){desde=fmt(new Date(hoy.getFullYear(),hoy.getMonth(),1));hasta=fmt(hoy);}
+    else if(v==="mesant"){desde=fmt(new Date(hoy.getFullYear(),hoy.getMonth()-1,1));hasta=fmt(new Date(hoy.getFullYear(),hoy.getMonth(),0));}
+    document.getElementById("pf-fecha-desde").value=desde;
+    document.getElementById("pf-fecha-hasta").value=hasta;
+  }
+  renderProductosVista();
+}
+
 async function cargarProductos(){
   document.getElementById("productos-content").innerHTML="<div class=\"spinner\"></div>";
   await cargarReglas();
   try{
-    // Traer todos los pedidos activos con productos
-    const r=await fetch(API+"/pedidos?limite=200");
+    // Traer TODOS los pedidos (sin filtrar por estado) para poder mostrar las 3 categorías
+    const r=await fetch(API+"/pedidos?limite=300");
     const data=await r.json();
-    const pedidosActivos=data.pedidos.filter(p=>!["entregado","cancelado"].includes(p.estado_actual));
 
-    // Para cada pedido activo traer sus productos
     const todos=[];
-    await Promise.all(pedidosActivos.map(async p=>{
+    await Promise.all(data.pedidos.map(async p=>{
       try{
         const rp=await fetch(API+"/pedidos/"+p.token+"/productos");
         const dp=await rp.json();
         (dp.productos||[]).forEach(prod=>{
-          // Detectar área si viene como sin_area
           let area=prod.area;
           if(!area||area==="sin_area"){
             area=detectarArea(prod.nombre_producto)||"sin_area";
@@ -787,35 +964,62 @@ async function cargarProductos(){
             pedido_id:p.id_repositorio||p.token.substring(0,8).toUpperCase(),
             pedido_token:p.token,
             pedido_estado:p.estado_actual,
+            pedido_fecha:p.creado_en?new Date(p.creado_en).toISOString().slice(0,10):"",
             cliente:p.cliente_nombre
           });
         });
       }catch(e){}
     }));
 
-    renderProductos(todos);
+    _todosLosProductos=todos;
+    renderProductosVista();
   }catch(e){
     document.getElementById("productos-content").innerHTML="<div class=\"empty-state\"><div class=\"empty-icon\">⚠️</div><div>Error cargando productos</div></div>";
   }
 }
 
+function renderProductosVista(){
+  let lista=_todosLosProductos;
+
+  if(_subTabProductos==="pendientes"){
+    lista=lista.filter(p=>!["entregado","cancelado"].includes(p.pedido_estado) && !productoCompletado(p));
+  }
+  else if(_subTabProductos==="listos"){
+    lista=lista.filter(p=>!["entregado","cancelado"].includes(p.pedido_estado) && productoCompletado(p));
+  }
+  else if(_subTabProductos==="finalizado"){
+    lista=lista.filter(p=>p.pedido_estado==="entregado");
+    const desde=document.getElementById("pf-fecha-desde")?.value;
+    const hasta=document.getElementById("pf-fecha-hasta")?.value;
+    if(desde) lista=lista.filter(p=>p.pedido_fecha>=desde);
+    if(hasta) lista=lista.filter(p=>p.pedido_fecha<=hasta);
+  }
+
+  renderProductos(lista);
+}
+
 function renderProductos(todos){
   const cont=document.getElementById("productos-content");
+  const mensajesVacios={
+    pendientes:{icon:"🎉",text:"No hay productos pendientes"},
+    listos:{icon:"📦",text:"No hay productos listos esperando empaque"},
+    finalizado:{icon:"🗂️",text:"Sin pedidos finalizados en este rango"}
+  };
   if(!todos.length){
-    cont.innerHTML="<div class=\"empty-state\"><div class=\"empty-icon\">🎉</div><div class=\"empty-text\">No hay productos pendientes</div></div>";
+    const m=mensajesVacios[_subTabProductos]||mensajesVacios.pendientes;
+    cont.innerHTML="<div class=\"empty-state\"><div class=\"empty-icon\">"+m.icon+"</div><div class=\"empty-text\">"+m.text+"</div></div>";
     return;
   }
 
-  // Agrupar por área
   const grupos={};
   todos.forEach(p=>{
     if(!grupos[p.area]) grupos[p.area]=[];
     grupos[p.area].push(p);
   });
 
-  // Orden de áreas: sin_area primero (necesitan atención), luego el resto
   const orden=["sin_area","fungibolsa","laboratorio","transformacion","insumos","piopis"];
   const areasOrdenadas=[...orden.filter(a=>grupos[a]),...Object.keys(grupos).filter(a=>!orden.includes(a))];
+  const permiteAsignar=_subTabProductos==="pendientes";
 
   let html="";
   areasOrdenadas.forEach(area=>{
@@ -825,18 +1029,19 @@ function renderProductos(todos){
     html+="<div class=\"area-bloque\">";
     html+="<div class=\"area-bloque-header\" style=\"border-left:4px solid "+cfg.color+";\">";
     html+="<span class=\"area-bloque-icon\">"+cfg.icon+"</span>";
-    html+="<span class=\"area-bloque-titulo\">"+cfg.label+(esSinArea?" — requieren asignación":"")+"</span>";
+    html+="<span class=\"area-bloque-titulo\">"+cfg.label+(esSinArea&&permiteAsignar?" — requieren asignación":"")+"</span>";
     html+="<span class=\"area-bloque-count\" style=\"background:"+cfg.color+"20;color:"+cfg.color+"\">"+prods.length+" producto"+(prods.length!==1?"s":"")+"</span>";
     html+="</div><div class=\"area-bloque-body\">";
     prods.forEach(p=>{
-      html+="<div class=\"prod-row"+(esSinArea?" prod-sin-area":"")+"\">"+
+      html+="<div class=\"prod-row"+(esSinArea&&permiteAsignar?" prod-sin-area":"")+"\">"+
         "<div><div class=\"prod-nombre\">"+p.nombre+"</div><div class=\"prod-pedido\">"+p.pedido_id+" · "+p.cliente+"</div></div>"+
         "<span class=\"prod-cant\">×"+p.cantidad+"</span>"+
         badge(mapEstado(p.pedido_estado))+
-        (esSinArea
-          ?"<button class=\"btn-asignar\" data-nombre=\""+p.nombre.replace(/"/g,'&quot;')+"\" data-id=\""+p.id+"\" onclick=\"abrirModalAreaBtn(this)\" style=\"color:#f59e0b;border-color:#f59e0b\">⚡ Asignar</button>"
-          :"<button class=\"btn-asignar\" data-nombre=\""+p.nombre.replace(/"/g,'&quot;')+"\" data-id=\""+p.id+"\" onclick=\"abrirModalAreaBtn(this)\">✏️</button>"
-        )+
+        (permiteAsignar
+          ?(esSinArea
+            ?"<button class=\"btn-asignar\" data-nombre=\""+p.nombre.replace(/"/g,'&quot;')+"\" data-id=\""+p.id+"\" onclick=\"abrirModalAreaBtn(this)\" style=\"color:#f59e0b;border-color:#f59e0b\">⚡ Asignar</button>"
+            :"<button class=\"btn-asignar\" data-nombre=\""+p.nombre.replace(/"/g,'&quot;')+"\" data-id=\""+p.id+"\" onclick=\"abrirModalAreaBtn(this)\">✏️</button>")
+          :"")+
         "</div>";
     });
     html+="</div></div>";
@@ -877,31 +1082,37 @@ function selArea(area, btn){
 async function confirmarArea(){
   if(!_modalProd||!_modalAreaSel) return;
   const aprender=document.getElementById("modal-aprender").checked;
+  const btn=document.getElementById("modal-confirmar");
+  btn.disabled=true;
+  btn.textContent="Guardando...";
   try{
-    // Actualizar área del producto en la DB
-    await fetch(API+"/productos/"+_modalProd.prodId+"/estado",{
+    // 1. Actualizar área del producto en la DB
+    const r=await fetch(API+"/productos/"+_modalProd.prodId+"/area",{
       method:"PATCH",
       headers:{"Content-Type":"application/json"},
-      body:JSON.stringify({estado:"pendiente"})
+      body:JSON.stringify({area:_modalAreaSel})
     });
-    // Actualizar área via endpoint directo en pedido_productos
-    // (usamos el endpoint de estado pero también necesitamos uno de área — lo manejamos via reglas)
+    if(!r.ok) throw new Error("Error al actualizar área");
+
+    // 2. Guardar regla de aprendizaje si está marcado
     if(aprender){
-      // Guardar regla permanente
       await fetch(API+"/producto-areas",{
         method:"POST",
         headers:{"Content-Type":"application/json"},
         body:JSON.stringify({producto:_modalProd.nombre,area:_modalAreaSel})
       });
       _reglas[_modalProd.nombre.toLowerCase()]=_modalAreaSel;
-      toast("✅ Guardado: "+_modalProd.nombre+" → "+AREAS_CONFIG[_modalAreaSel]?.label);
+      toast("✅ "+_modalProd.nombre+" → "+( AREAS_CONFIG[_modalAreaSel]?.label||_modalAreaSel)+" (aprendido)");
     } else {
-      toast("✅ Asignado temporalmente");
+      toast("✅ Área asignada: "+_modalProd.nombre);
     }
     cerrarModalArea();
-    cargarProductos(); // recargar
+    cargarProductos();
   }catch(e){
-    toast("❌ Error al guardar");
+    toast("❌ Error: "+e.message);
+  } finally {
+    btn.disabled=false;
+    btn.textContent="Confirmar";
   }
 }
 
@@ -1040,7 +1251,7 @@ function filtrar(){
 }
 
 function renderFila(p){
-  return "<tr class=\""+rowClass(p)+" "+claseNuevo(p.id)+"\" onclick=\"marcarVisto('"+p.id+"');abrirDetalle('"+p.id+"')\"><td><span class=\"td-id\">"+p.id+"</span>"+badgeNuevo(p.id)+"</td><td><span class=\"td-socio\">"+p.socio+"</span></td><td><span class=\"td-cliente\">"+p.cliente+"</span></td><td><span class=\"td-fecha\">"+p.fecha+"</span></td><td><div class=\"areas-pills\">"+(p.areas||[]).map(a=>"<span class=\"area-pill \"+(AREA_MAP[a]?.cls||\"\")+\"\">"+(AREA_MAP[a]?.label||a)+"</span>").join("")+"</div></td><td>"+badge(p.estado)+"</td></tr>";
+  return "<tr class=\""+rowClass(p)+" "+claseNuevo(p.id)+"\" onclick=\"marcarVisto('"+p.id+"');abrirDetalle('"+p.id+"')\"><td><span class=\"td-id\">"+p.id+"</span>"+badgeNuevo(p.id)+"</td><td><span class=\"td-socio\">"+p.socio+"</span></td><td><span class=\"td-cliente\">"+p.cliente+"</span></td><td><span class=\"td-fecha\">"+p.fecha+"</span></td><td><div class=\"areas-pills\">"+(p.areas||[]).map(a=>"<span class=\"area-pill "+(AREA_MAP[a]?.cls||"")+"\">"+(AREA_MAP[a]?.label||a)+"</span>").join("")+"</div></td><td>"+estadoSelectorRevisor(p)+badgeListoEmpacar(p)+((p.fotos&&p.fotos.length)?"<span class=\"evidencia-icono\" title=\""+p.fotos.length+" evidencia(s) — clic para ver detalle\">📷 "+p.fotos.length+"</span>":"")+"</td></tr>";
 }
 
 function renderTabla(){
@@ -1107,8 +1318,8 @@ async function abrirDetalle(id){
     "<div class=\"d-monto\">"+fmx(p.total)+"</div></div>"+
 
     "<div class=\"d-section\"><div class=\"d-section-title\">Estado del pedido</div>"+
-    "<div style=\"margin-bottom:10px\">"+badge(p.estado)+"</div>"+
-    "<div class=\"semaforo\">"+
+    "<div style=\"margin-bottom:10px\">"+badge(p.estado)+(esDelegado(p.id)?" <span class=\"badge-delegado\" style=\"display:inline-block;background:#8b5cf6;color:#fff;font-size:9px;font-weight:700;padding:2px 6px;border-radius:10px;vertical-align:middle\">🔓 Delegado</span>":" <span style=\"font-size:11px;color:var(--text3)\">🔒 Solo lectura — no delegado</span>")+"</div>"+
+    "<div class=\"semaforo\" style=\""+(esDelegado(p.id)?"":"opacity:.45;pointer-events:none")+"\">"+
     ESTADOS.map(e=>"<button class=\"sem-btn"+(p.estado===e?" "+(SEM_CLS[e]||""):"")+"\" onclick=\"cambiarEstado('"+p.id+"','"+e+"')\">"+(SEM_ICON[e]||"")+" "+e+"</button>").join("")+
     "</div></div>"+
 
@@ -1120,7 +1331,17 @@ async function abrirDetalle(id){
     "<button class=\"pack-btn\" onclick=\"toast('🔧 Próximamente')\">📦 Asignar a área</button>"+
     "<button class=\"pack-btn\" onclick=\"toast('🔧 Próximamente')\">✅ Lo empacamos nosotros</button>"+
     "<button class=\"pack-btn\" onclick=\"toast('🔧 Próximamente')\">🚚 Envío independiente</button>"+
-    "</div></div>"+
+    "</div>"+
+    (p.fotos&&p.fotos.length
+      ? "<div class=\"evidencia-detalle-grid\">"+p.fotos.map(f=>{
+          const esImg=f.tipo&&f.tipo.indexOf("image/")===0;
+          const preview=esImg
+            ? "<img class=\"evidencia-detalle-thumb\" src=\""+f.url+"\" alt=\""+(f.nombre||"Evidencia")+"\">"
+            : "<div class=\"evidencia-detalle-thumb evidencia-detalle-archivo\">📄</div>";
+          return "<a href=\""+f.url+"\" target=\"_blank\" rel=\"noopener\" class=\"evidencia-detalle-item\">"+preview+"</a>";
+        }).join("")+"</div><div class=\"evidencia-detalle-nota\">📷 "+p.fotos.length+" evidencia(s) subida(s) por el área</div>"
+      : "<div class=\"evidencia-detalle-nota\" style=\"margin-top:10px;color:var(--text3)\">Aún no se sube evidencia — se sube desde el panel del área al marcar Empaquetado.</div>")+
+    "</div>"+
 
     "<div class=\"d-section\"><div class=\"d-section-title\">Historial</div>"+
     renderHistorial(historial)+"</div>"+
@@ -1137,11 +1358,26 @@ function renderAreas(productos){
   if(!filtrados.length) return "<span style=\"color:var(--text3);font-size:12px\">Sin productos registrados</span>";
   const areas={};
   filtrados.forEach(p=>{const a=p.area||"sin_area";if(!areas[a])areas[a]=[];areas[a].push(p);});
-  return Object.entries(areas).map(([area,prods])=>{
+
+  const resumen=Object.entries(areas).map(([area,prods])=>{
     const info=AREA_MAP[area]||{label:area,blk:""};
-    const items=prods.map(p=>"<div class=\"prod-row\"><span>"+p.cantidad+"x "+p.nombre_producto+"</span><span style=\"color:var(--text3)\">"+fmx(p.subtotal)+"</span></div>").join("");
+    const completados=prods.filter(productoCompletado).length;
+    const total=prods.length;
+    const listo=completados===total;
+    return "<div class=\"area-progreso "+(listo?"completo":"")+"\">"+
+      "<span class=\"area-progreso-icon\">"+(listo?"✅":"⏳")+"</span>"+
+      "<span class=\"area-progreso-label\">"+(info.label||area)+"</span>"+
+      "<span class=\"area-progreso-count\">"+completados+"/"+total+"</span>"+
+      "</div>";
+  }).join("");
+
+  const detalle=Object.entries(areas).map(([area,prods])=>{
+    const info=AREA_MAP[area]||{label:area,blk:""};
+    const items=prods.map(p=>"<div class=\"prod-row\"><span>"+p.cantidad+"x "+p.nombre_producto+" <em style=\"color:var(--text3);font-style:normal;font-size:10px\">("+(p.estado||"pendiente")+")</em></span><span style=\"color:var(--text3)\">"+fmx(p.subtotal)+"</span></div>").join("");
     return "<div class=\"area-block "+(info.blk||"")+"\"><div class=\"area-block-top\"><span class=\"area-block-name\">"+(info.label||area)+"</span></div>"+items+"</div>";
   }).join("");
+
+  return "<div class=\"area-progreso-grid\">"+resumen+"</div>"+detalle;
 }
 
 function renderHistorial(historial){
@@ -1150,23 +1386,33 @@ function renderHistorial(historial){
 }
 
 async function cambiarEstado(id,estado){
+  if(!esDelegado(id)){
+    toast("🔒 Este pedido no está delegado — no puedes cambiar su estado");
+    return;
+  }
   const p=_todos.find(x=>x.id===id);if(!p)return;
+  let motivo="Cambio por Revisor (delegado)";
+  if(estado==="Cancelado"){
+    const r=prompt("⚠️ Vas a cancelar el pedido "+id+". Escribe el motivo de la cancelación:");
+    if(r===null) return;
+    motivo="Cancelado por Revisor: "+(r.trim()||"sin motivo especificado");
+  }
   try{
     await fetch(API+"/pedidos/"+p.token+"/estado",{
       method:"PATCH",
       headers:{"Content-Type":"application/json"},
-      body:JSON.stringify({estado_nuevo:estadoApi(estado),motivo:"Cambio desde Panel Admin"})
+      body:JSON.stringify({estado_nuevo:estadoApi(estado),motivo:motivo})
     });
     p.estado=estado;
     filtrar();
     abrirDetalle(id);
-    toast("✓ "+id+" → "+estado);
+    toast(estado==="Cancelado"?"✖ "+id+" cancelado":"✓ "+id+" → "+estado);
   }catch(e){toast("⚠️ Error al cambiar estado")}
 }
 
 function generarLink(id){
   const p=_todos.find(x=>x.id===id);if(!p)return;
-  const url=window.location.origin+"/fungiterra-sistema/cliente/"+p.token;
+  const url="https://fungiterra-bot.github.io/fungiterra-sistema/Panel/cliente.html?token="+p.token;
   navigator.clipboard.writeText(url).then(()=>toast("🔗 Link copiado al portapapeles")).catch(()=>toast("Link: "+p.token.substring(0,16)+"..."));
 }
 
@@ -1181,7 +1427,9 @@ function setVista(v){
   document.querySelectorAll(".nav-item").forEach(el=>el.classList.remove("active"));
   document.getElementById("vista-"+v).classList.add("active");
   document.getElementById("nav-"+v).classList.add("active");
-  document.getElementById("topbar-titulo").textContent="Pedidos";
+  const titulos={pedidos:"Pedidos",productos:"A preparar"};
+  document.getElementById("topbar-titulo").textContent=titulos[v]||v;
+  if(v==="productos") cargarProductos();
 }
 
 function recargar(){

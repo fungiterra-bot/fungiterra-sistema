@@ -68,11 +68,25 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);min-height:1
 .estado-btn.s-stock{background:#e6f4ec;border-color:var(--verde);color:var(--verde)}
 .estado-btn.s-prod{background:var(--azul-soft);border-color:var(--azul);color:var(--azul)}
 .estado-btn.s-listo{background:#1f7a3b;border-color:#1f7a3b;color:#fff}
+.estado-btn.s-empaq{background:#834b3e;border-color:#834b3e;color:#fff}
+.evidencia-row{margin-top:10px;padding-top:10px;border-top:1px dashed var(--border)}
+.evidencia-grid{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:8px}
+.evidencia-item{position:relative;width:52px;height:52px}
+.evidencia-thumb{width:52px;height:52px;object-fit:cover;border-radius:8px;border:1.5px solid var(--border);display:block;cursor:pointer}
+.evidencia-archivo{display:flex;align-items:center;justify-content:center;font-size:22px;background:var(--surface2)}
+.evidencia-x{position:absolute;top:-6px;right:-6px;width:18px;height:18px;border-radius:50%;background:#c0392b;color:#fff;font-size:11px;line-height:18px;text-align:center;cursor:pointer;box-shadow:0 1px 3px rgba(0,0,0,.3)}
+.evidencia-zona{display:flex;align-items:center;gap:8px;flex-wrap:wrap;padding:10px;border:1.5px dashed var(--border);border-radius:8px;background:var(--surface2);transition:all .15s}
+.evidencia-zona.drag{border-color:#834b3e;background:#f7efed}
+.evidencia-btn{padding:7px 12px;border-radius:7px;font-size:12px;font-weight:600;border:1.5px solid var(--border);background:var(--surface);color:var(--text2);cursor:pointer;font-family:var(--sans);transition:all .15s}
+.evidencia-btn:hover{border-color:#834b3e;color:#834b3e}
+.evidencia-drop-hint{font-size:10px;font-weight:400;color:var(--text3)}
+.evidencia-max{font-size:11px;color:var(--text3);padding:6px 0}
 .badge{display:inline-flex;align-items:center;padding:3px 9px;border-radius:20px;font-size:11px;font-weight:600;white-space:nowrap}
 .b-stock{background:#e6f4ec;color:#1f7a3b;border:1px solid #a8d8b8}
 .b-prod{background:var(--azul-soft);color:var(--azul);border:1px solid rgba(1,119,191,.25)}
 .b-listo{background:#1f7a3b;color:#fff}
 .b-pend{background:var(--surface2);color:var(--text3);border:1px solid var(--border)}
+.b-empaq{background:#834b3e;color:#fff}
 .empty-state{text-align:center;padding:60px 20px;color:var(--text3)}
 .empty-icon{font-size:40px;opacity:.2;margin-bottom:10px}
 .spinner{width:22px;height:22px;border:2px solid var(--border);border-top-color:var(--azul);border-radius:50%;animation:spin .7s linear infinite;margin:60px auto;display:block}
@@ -213,6 +227,26 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);min-height:1
 .inv-hist-row-cant.pos{color:#1f7a3b}
 .inv-hist-row-cant.neg{color:#c0392b}
 
+/* MODAL FABRICACIÓN */
+.fab-overlay{display:none;position:fixed;inset:0;background:rgba(26,35,50,.5);z-index:300;align-items:flex-start;justify-content:center;padding:24px 16px;overflow-y:auto}
+.fab-overlay.open{display:flex}
+.fab-modal{background:var(--surface);border-radius:14px;width:100%;max-width:640px;margin-top:20px;box-shadow:0 12px 40px rgba(26,35,50,.25)}
+.fab-head{padding:16px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;background:var(--surface);border-radius:14px 14px 0 0}
+.fab-head h2{font-size:16px;font-weight:700;color:var(--azul)}
+.fab-close{background:none;border:none;font-size:20px;color:var(--text3);cursor:pointer;line-height:1;padding:4px}
+.fab-close:hover{color:var(--text)}
+.fab-body{padding:20px}
+.fab-filtros{display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap}
+.fab-filtros select{flex:1;min-width:140px;padding:8px 10px;border:1.5px solid var(--border);border-radius:7px;font-size:12px;font-family:var(--sans);background:var(--surface2);color:var(--text)}
+.fab-filtros input[type=date]{flex:1;min-width:140px;padding:7px 10px;border:1.5px solid var(--border);border-radius:7px;font-size:12px;font-family:var(--sans);background:var(--surface2);color:var(--text)}
+.fab-row{display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid var(--surface2);font-size:12px}
+.fab-row:last-child{border-bottom:none}
+.fab-row-left{display:flex;flex-direction:column;gap:2px}
+.fab-row-prod{font-weight:600;color:var(--text);font-size:13px}
+.fab-row-meta{color:var(--text3);font-size:11px}
+.fab-row-cant{font-weight:700;font-size:13px;color:var(--azul);white-space:nowrap}
+.fab-empty{text-align:center;padding:30px 10px;color:var(--text3);font-size:12px}
+
 
 </style>
 </head>
@@ -228,8 +262,9 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);min-height:1
   </div>
   <div class="topbar-right">
     <button class="btn btn-white" onclick="abrirInventario()">📋 Inventario</button>
+    <button class="btn btn-white" onclick="abrirFabricacion()">🏭 Fabricación</button>
     <button class="btn btn-white" onclick="cargar()">↺ Actualizar</button>
-    <button class="btn btn-white" onclick="window.open('../../Panel/admin_index.html')">🍄 Admin</button>
+    <button class="btn btn-white" onclick="window.open('https://fungiterra-bot.github.io/fungiterra-sistema/Panel/admin_index.html')">🍄 Admin</button>
   </div>
 </div>
 <div class="notif-banner" id="notif-banner"><span id="notif-texto">🔔 Hay pedidos nuevos</span><button onclick="descartarNotif()">Ver ahora</button></div>
@@ -380,6 +415,34 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);min-height:1
   </div>
 </div>
 
+<div class="fab-overlay" id="fab-overlay" onclick="if(event.target===this)cerrarFabricacion()">
+  <div class="fab-modal">
+    <div class="fab-head">
+      <h2>🏭 Fabricación — FungiBolsa</h2>
+      <button class="fab-close" onclick="cerrarFabricacion()">✕</button>
+    </div>
+    <div class="fab-body">
+      <div class="prod-subtabs" style="margin-bottom:12px">
+        <div class="prod-subtab active" id="fab-tab-activos" onclick="setSubTabFab('activos')">🔧 En producción</div>
+        <div class="prod-subtab" id="fab-tab-completados" onclick="setSubTabFab('completados')">✅ Completados</div>
+      </div>
+      <div class="fab-filtros">
+        <select id="fab-producto-filtro" onchange="renderFabricacion()">
+          <option value="">Todos los productos</option>
+        </select>
+        <select id="fab-pedido-filtro" onchange="renderFabricacion()">
+          <option value="">Todos los pedidos</option>
+        </select>
+      </div>
+      <div class="fab-filtros">
+        <input type="date" id="fab-desde" onchange="cargarFabricacion()">
+        <input type="date" id="fab-hasta" onchange="cargarFabricacion()">
+      </div>
+      <div id="fab-lista"><div class="spinner"></div></div>
+    </div>
+  </div>
+</div>
+
 <div class="toast" id="toast"></div>
 <script>
 const API="https://fungiterra-api-production.up.railway.app";
@@ -446,7 +509,7 @@ async function cargar(){
     _pedidos=data.pedidos||[];
     document.getElementById("s-total").textContent=_pedidos.length;
     document.getElementById("s-prod").textContent=_pedidos.filter(p=>(p.productos||[]).some(pr=>pr.estado==="en_produccion")).length;
-    document.getElementById("s-listo").textContent=_pedidos.filter(p=>(p.productos||[]).length&&(p.productos||[]).every(pr=>pr.estado==="listo")).length;
+    document.getElementById("s-listo").textContent=_pedidos.filter(p=>(p.productos||[]).length&&(p.productos||[]).every(pr=>pr.estado==="listo"||pr.estado==="empaquetado")).length;
     await cargarInventarioSilencioso();
     renderGrid();
     document.getElementById("topbar-sub").textContent=_pedidos.length+" pedidos activos";
@@ -480,15 +543,17 @@ function setSubTabFB(tab){
 function estArea(p){
   const pr=p.productos||[];
   if(!pr.length)return"pendiente";
-  if(pr.every(x=>x.estado==="listo"))return"listo";
+  if(pr.every(x=>x.estado==="empaquetado"))return"empaquetado";
+  if(pr.every(x=>x.estado==="listo"||x.estado==="empaquetado"))return"listo";
   if(pr.some(x=>x.estado==="en_produccion"))return"en_produccion";
   if(pr.some(x=>x.estado==="en_stock"))return"en_stock";
   return"pendiente";
 }
+function estaTerminado(e){ return e==="listo"||e==="empaquetado"; }
 
 function badge(e){
-  const m={listo:"b-listo",en_produccion:"b-prod",en_stock:"b-stock",pendiente:"b-pend"};
-  const l={listo:"✅ Listo",en_produccion:"🔨 En producción",en_stock:"📦 En stock",pendiente:"⏳ Pendiente"};
+  const m={empaquetado:"b-empaq",listo:"b-listo",en_produccion:"b-prod",en_stock:"b-stock",pendiente:"b-pend"};
+  const l={empaquetado:"🎁 Empaquetado",listo:"✅ Listo",en_produccion:"🔨 En producción",en_stock:"📦 En stock",pendiente:"⏳ Pendiente"};
   return "<span class=\"badge "+m[e]+"\">"+l[e]+"</span>";
 }
 
@@ -499,7 +564,7 @@ function matchInventario(nombreProducto){
 
 function renderGrid(){
   const grid=document.getElementById("grid");
-  const lista=_pedidos.filter(p=>_subTabFB==="listos" ? estArea(p)==="listo" : estArea(p)!=="listo");
+  const lista=_pedidos.filter(p=>_subTabFB==="listos" ? estaTerminado(estArea(p)) : !estaTerminado(estArea(p)));
   if(!lista.length){
     const msg=_subTabFB==="listos"?"Sin pedidos listos todavía":"Sin pedidos activos";
     grid.innerHTML="<div class=\"empty-state\"><div class=\"empty-icon\">📭</div><div>"+msg+"</div></div>";
@@ -543,7 +608,7 @@ function renderGrid(){
     }).join("");
 
     const cls=esNuevo(p)?"nuevo":(esVisto(p.token)?"":"visto-recibido");
-    return "<div class=\"pedido-card "+cls+"\"><div class=\"pedido-header\" onclick=\"tog("+i+")\"><div><div class=\"pedido-id\">"+(p.id_repositorio||p.token.substring(0,8))+"</div><div class=\"pedido-cliente\">"+(p.cliente_nombre||"—")+"</div><div class=\"pedido-meta\"><span class=\"meta-tag\">Socio "+(p.socio||"—")+"</span>"+otras+prioTag+hayStockBadge+"</div></div>"+badge(e)+"</div><div class=\"pedido-body\" id=\"b"+i+"\"><div>"+prods+"</div><div class=\"estado-btns\"><button class=\"estado-btn"+(e==="en_stock"?" s-stock":"")+"\" onclick=\"est("+i+",'en_stock')\">📦 En stock</button><button class=\"estado-btn"+(e==="en_produccion"?" s-prod":"")+"\" onclick=\"est("+i+",'en_produccion')\">🔨 En producción</button><button class=\"estado-btn"+(e==="listo"?" s-listo":"")+"\" onclick=\"est("+i+",'listo')\">✅ Listo</button></div></div></div>";
+    return "<div class=\"pedido-card "+cls+"\"><div class=\"pedido-header\" onclick=\"tog("+i+")\"><div><div class=\"pedido-id\">"+(p.id_repositorio||p.token.substring(0,8))+"</div><div class=\"pedido-cliente\">"+(p.cliente_nombre||"—")+"</div><div class=\"pedido-meta\"><span class=\"meta-tag\">Socio "+(p.socio||"—")+"</span>"+otras+prioTag+hayStockBadge+"</div></div>"+badge(e)+"</div><div class=\"pedido-body\" id=\"b"+i+"\"><div>"+prods+"</div><div class=\"estado-btns\"><button class=\"estado-btn"+(e==="en_stock"?" s-stock":"")+"\" onclick=\"est("+i+",'en_stock')\">📦 En stock</button><button class=\"estado-btn"+(e==="en_produccion"?" s-prod":"")+"\" onclick=\"est("+i+",'en_produccion')\">🔨 En producción</button><button class=\"estado-btn"+(e==="listo"?" s-listo":"")+"\" onclick=\"est("+i+",'listo')\">✅ Listo</button><button class=\"estado-btn"+(e==="empaquetado"?" s-empaq":"")+"\" onclick=\"est("+i+",'empaquetado')\">🎁 Empaquetado</button></div>"+evidenciaHtml(p,i)+"</div></div>";
   }).join("");
 }
 
@@ -578,6 +643,78 @@ async function est(i,estado){
     toast("✓ "+(p.id_repositorio||"")+" → "+estado);
     await cargar();
   }catch(e){toast("⚠️ Error al actualizar")}
+}
+
+// EVIDENCIA DE EMPAQUETADO — hasta 4 archivos por pedido (foto o PDF), se pueden quitar individualmente
+function evidenciaHtml(p,i){
+  const fotos=p.fotos_empaquetado||[];
+  const camId="foto-cam-"+i;
+  const fileId="foto-file-"+i;
+  const camInput="<input type=\"file\" id=\""+camId+"\" accept=\"image/*\" capture=\"environment\" style=\"display:none\" onchange=\"event.stopPropagation();subirEvidencia("+i+",this)\">";
+  const fileInput="<input type=\"file\" id=\""+fileId+"\" accept=\"image/*,application/pdf\" style=\"display:none\" onchange=\"event.stopPropagation();subirEvidencia("+i+",this)\">";
+
+  const miniaturas=fotos.map(f=>{
+    const esImg=f.tipo&&f.tipo.indexOf("image/")===0;
+    const preview=esImg
+      ? "<img class=\"evidencia-thumb\" src=\""+f.url+"\" alt=\"Evidencia\">"
+      : "<div class=\"evidencia-thumb evidencia-archivo\">📄</div>";
+    return "<div class=\"evidencia-item\">"
+      +"<a href=\""+f.url+"\" target=\"_blank\" rel=\"noopener\">"+preview+"</a>"
+      +"<span class=\"evidencia-x\" title=\"Quitar evidencia\" onclick=\"event.stopPropagation();borrarEvidencia("+i+",'"+f.url+"')\">✕</span>"
+      +"</div>";
+  }).join("");
+
+  const zona=fotos.length<4
+    ? "<div class=\"evidencia-zona\" "
+      +"ondragover=\"event.preventDefault();event.stopPropagation();this.classList.add('drag')\" "
+      +"ondragleave=\"event.stopPropagation();this.classList.remove('drag')\" "
+      +"ondrop=\"event.preventDefault();event.stopPropagation();this.classList.remove('drag');soltarEvidencia("+i+",event)\">"
+      +"<button type=\"button\" class=\"evidencia-btn\" onclick=\"event.stopPropagation();document.getElementById('"+camId+"').click()\">📷 Tomar foto</button>"+camInput
+      +"<button type=\"button\" class=\"evidencia-btn\" onclick=\"event.stopPropagation();document.getElementById('"+fileId+"').click()\">📁 Elegir archivo</button>"+fileInput
+      +"<span class=\"evidencia-drop-hint\">o arrastra un archivo aquí</span>"
+      +"</div>"
+    : "<div class=\"evidencia-max\">Máximo 4 evidencias — quita una para agregar otra</div>";
+
+  return "<div class=\"evidencia-row\" onclick=\"event.stopPropagation()\">"
+    +(miniaturas?"<div class=\"evidencia-grid\">"+miniaturas+"</div>":"")
+    +zona
+    +"</div>";
+}
+
+async function subirArchivoEvidencia(i,file){
+  const p=_pedidos[i];if(!p||!file)return;
+  const fd=new FormData();
+  fd.append("foto",file);
+  try{
+    toast("⏳ Subiendo evidencia...");
+    const r=await fetch(API+"/pedidos/"+p.token+"/fotos-empaquetado",{method:"POST",body:fd});
+    const data=await r.json();
+    if(!r.ok)throw new Error(data.error||"Error al subir");
+    p.fotos_empaquetado=data.fotos;
+    toast("✓ Evidencia subida");
+    renderGrid();
+  }catch(e){toast("⚠️ "+(e.message||"Error al subir la evidencia"))}
+}
+function subirEvidencia(i,inputEl){
+  const file=inputEl.files&&inputEl.files[0];
+  subirArchivoEvidencia(i,file);
+  inputEl.value="";
+}
+function soltarEvidencia(i,ev){
+  const file=ev.dataTransfer&&ev.dataTransfer.files&&ev.dataTransfer.files[0];
+  subirArchivoEvidencia(i,file);
+}
+async function borrarEvidencia(i,url){
+  const p=_pedidos[i];if(!p)return;
+  if(!confirm("¿Quitar esta evidencia?"))return;
+  try{
+    const r=await fetch(API+"/pedidos/"+p.token+"/fotos-empaquetado",{method:"DELETE",headers:{"Content-Type":"application/json"},body:JSON.stringify({url})});
+    const data=await r.json();
+    if(!r.ok)throw new Error(data.error||"Error al borrar");
+    p.fotos_empaquetado=data.fotos;
+    toast("✓ Evidencia eliminada");
+    renderGrid();
+  }catch(e){toast("⚠️ Error al borrar la evidencia")}
 }
 
 // Usar del inventario: descuenta stock + marca el producto como "listo"
@@ -627,7 +764,7 @@ async function usarDelInventario(pedidoIdx,productoIdx,cantidadAUsar){
     const rEstado=await fetch(API+"/productos/"+pr.id+"/estado",{
       method:"PATCH",
       headers:{"Content-Type":"application/json"},
-      body:JSON.stringify({estado:nuevoEstado})
+      body:JSON.stringify({estado:nuevoEstado,...(!esCompleto&&{cantidad_fabricar:faltante})})
     });
     if(!rEstado.ok)throw new Error("No se pudo actualizar el estado");
 
@@ -689,6 +826,89 @@ function abrirInventario(){
 
 function cerrarInventario(){
   document.getElementById("inv-overlay").classList.remove("open");
+}
+
+// ── MODAL FABRICACIÓN ────────────────────────────────────────
+let _fabricacionCache=[];
+let _subTabFab="activos";
+
+function setSubTabFab(tab){
+  _subTabFab=tab;
+  document.getElementById("fab-tab-activos").classList.toggle("active",tab==="activos");
+  document.getElementById("fab-tab-completados").classList.toggle("active",tab==="completados");
+  renderFabricacion();
+}
+function abrirFabricacion(){
+  document.getElementById("fab-overlay").classList.add("open");
+  _subTabFab="activos";
+  document.getElementById("fab-tab-activos").classList.add("active");
+  document.getElementById("fab-tab-completados").classList.remove("active");
+  cargarFabricacion();
+}
+
+function cerrarFabricacion(){
+  document.getElementById("fab-overlay").classList.remove("open");
+}
+
+async function cargarFabricacion(){
+  const box=document.getElementById("fab-lista");
+  box.innerHTML="<div class=\"spinner\"></div>";
+  try{
+    const desde=document.getElementById("fab-desde").value;
+    const hasta=document.getElementById("fab-hasta").value;
+    let url=API+"/fabricacion/"+AREA;
+    const qs=[];
+    if(desde) qs.push("desde="+desde);
+    if(hasta) qs.push("hasta="+hasta);
+    if(qs.length) url+="?"+qs.join("&");
+    const r=await fetch(url);
+    const data=await r.json();
+    _fabricacionCache=data.fabricacion||[];
+    const selProd=document.getElementById("fab-producto-filtro");
+    const valProd=selProd.value;
+    const productos=[...new Set(_fabricacionCache.map(f=>f.producto))].sort();
+    selProd.innerHTML="<option value=\"\">Todos los productos</option>"+productos.map(p=>"<option value=\""+p+"\">"+p+"</option>").join("");
+    selProd.value=productos.includes(valProd)?valProd:"";
+    const selPed=document.getElementById("fab-pedido-filtro");
+    const valPed=selPed.value;
+    const pedidos=[...new Set(_fabricacionCache.map(f=>f.pedido_referencia).filter(Boolean))].sort();
+    selPed.innerHTML="<option value=\"\">Todos los pedidos</option>"+pedidos.map(p=>"<option value=\""+p+"\">"+p+"</option>").join("");
+    selPed.value=pedidos.includes(valPed)?valPed:"";
+    renderFabricacion();
+  }catch(e){
+    box.innerHTML="<div class=\"fab-empty\">⚠️ Error cargando fabricación</div>";
+  }
+}
+
+function renderFabricacion(){
+  const box=document.getElementById("fab-lista");
+  const prodFiltro=document.getElementById("fab-producto-filtro").value;
+  const pedFiltro=document.getElementById("fab-pedido-filtro").value;
+
+  // Estados activos = en producción; completados = todo lo demás
+  const estadosActivos=["recibido","en_produccion"];
+  let regs=_fabricacionCache.filter(f=>{
+    const pedido=_pedidos.find(p=>p.id_repositorio===f.pedido_referencia||String(p.id)===String(f.pedido_id));
+    const estado=pedido?pedido.estado_actual:"en_produccion";
+    return _subTabFab==="activos"?estadosActivos.includes(estado):!estadosActivos.includes(estado);
+  });
+
+  if(prodFiltro) regs=regs.filter(f=>f.producto===prodFiltro);
+  if(pedFiltro) regs=regs.filter(f=>f.pedido_referencia===pedFiltro);
+  if(!regs.length){
+    box.innerHTML="<div class=\"fab-empty\">"
+      +(_subTabFab==="activos"?"Sin productos en producción actualmente":"Sin fabricaciones completadas aún")
+      +"</div>";
+    return;
+  }
+  box.innerHTML=regs.map(f=>{
+    const fecha=f.creado_en?new Date(f.creado_en).toLocaleDateString("es-MX",{day:"2-digit",month:"short",year:"2-digit",hour:"2-digit",minute:"2-digit"}):"—";
+    return "<div class=\"inv-hist-row\">"
+      +"<div class=\"inv-hist-row-left\"><span class=\"inv-hist-row-prod\">"+f.producto+"</span>"
+      +"<span class=\"inv-hist-row-meta\">"+(f.pedido_referencia?"Pedido "+f.pedido_referencia+" · ":"")+fecha+"</span></div>"
+      +"<span class=\"inv-hist-row-cant pos\">+"+f.cantidad+"</span>"
+      +"</div>";
+  }).join("");
 }
 
 function resetFormularioInventario(){

@@ -207,6 +207,7 @@ tbody tr:hover{background:#f5f9f6}
 .sem-btn.s-empaquetado{background:var(--cafe-soft);border-color:var(--cafe);color:var(--cafe)}
 .sem-btn.s-enviado{background:#e8f4fb;border-color:var(--azul-dark);color:var(--azul-dark)}
 .sem-btn.s-entregado{background:#e6f4ec;border-color:var(--verde-dark);color:var(--verde-dark)}
+.sem-btn.s-cancelado{background:#fdecea;border-color:#c0392b;color:#c0392b}
 
 .area-block{background:var(--surface2);border:1.5px solid var(--border);border-radius:8px;padding:12px 14px;margin-bottom:8px;border-left:4px solid var(--azul)}
 .area-block.lab{border-left-color:var(--verde)}
@@ -292,6 +293,14 @@ tbody tr.row-sinprisa:hover td{background:#f5f9f6}
 .estado-sel-wrap{position:relative;display:inline-block}
 .estado-sel-trigger{cursor:pointer;user-select:none}
 .estado-sel-trigger:hover{opacity:.8}
+.badge-forzado{display:inline-block;font-size:11px;margin-left:4px;vertical-align:middle;cursor:pointer;opacity:.6;transition:opacity .15s}
+.badge-forzado:hover{opacity:1}
+.evidencia-icono{display:inline-flex;align-items:center;gap:2px;font-size:11px;font-weight:600;margin-left:5px;vertical-align:middle;color:var(--text2);opacity:.85}
+.evidencia-detalle-grid{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
+.evidencia-detalle-item{display:block}
+.evidencia-detalle-thumb{width:64px;height:64px;object-fit:cover;border-radius:8px;border:1.5px solid var(--border);display:block}
+.evidencia-detalle-archivo{display:flex;align-items:center;justify-content:center;font-size:26px;background:var(--surface2)}
+.evidencia-detalle-nota{font-size:11px;color:var(--text3);margin-top:6px}
 .estado-sel-menu{display:none;position:absolute;top:100%;left:0;margin-top:4px;
   background:white;border:1px solid var(--border);border-radius:8px;
   box-shadow:0 6px 20px rgba(0,0,0,.15);z-index:50;min-width:160px;overflow:hidden}
@@ -384,7 +393,7 @@ th.sort-desc::after{content:" ▼";font-size:9px;opacity:.7}
   0%,100%{background:rgba(39,174,96,.15);box-shadow:inset 0 0 0 3px rgba(39,174,96,.3)}
   50%{background:rgba(39,174,96,.5);box-shadow:inset 0 0 0 3px rgba(39,174,96,.9)}
 }
-.badge-listo-empacar{display:inline-block;background:#27ae60;color:#fff;font-size:10px;font-weight:700;
+.badge-listo-empacar{display:inline-block;background:#0177bf;color:#fff;font-size:10px;font-weight:700;
   padding:3px 8px;border-radius:10px;margin-left:6px;vertical-align:middle;
   animation:pulso-badge 1.2s ease-in-out infinite}
 @keyframes pulso-badge{0%,100%{opacity:1}50%{opacity:.6}}
@@ -424,7 +433,10 @@ th.sort-desc::after{content:" ▼";font-size:9px;opacity:.7}
 <div class="main">
   <div class="topbar">
     <div style="display:flex;align-items:center;gap:0"><button class="btn-menu" id="btn-menu" onclick="toggleMenu()">☰</button><div class="topbar-left"><h1 id="topbar-titulo">Pedidos</h1><p id="topbar-sub">Cargando...</p></div></div>
-    <button class="btn btn-white" onclick="recargar()">↺ Actualizar</button>
+    <div style="display:flex;gap:8px">
+      <button class="btn btn-white" onclick="abrirSeguimiento()">🚚 Seguimiento de envíos</button>
+      <button class="btn btn-white" onclick="recargar()">↺ Actualizar</button>
+    </div>
   </div>
 
   <div class="content">
@@ -445,7 +457,7 @@ th.sort-desc::after{content:" ▼";font-size:9px;opacity:.7}
         <select class="filter-select" id="f-estado" onchange="filtrar()">
           <option value="">Todos los estados</option>
           <option>Recibido</option><option>En producción</option><option>Listo</option>
-          <option>Empaquetado</option><option>Enviado</option><option>Entregado</option>
+          <option>Empaquetado</option><option>Enviado</option><option>Entregado</option><option>Cancelado</option>
         </select>
         <select class="filter-select" id="f-socio" onchange="filtrar()">
           <option value="">Todos los socios</option>
@@ -582,16 +594,51 @@ th.sort-desc::after{content:" ▼";font-size:9px;opacity:.7}
   </div>
 </div>
 
+<div class="modal-overlay" id="modal-fusion">
+  <div class="modal-box" style="width:420px">
+    <div class="modal-titulo">Fusionar clientes</div>
+    <div class="modal-sub" style="font-size:12px;color:var(--text3);margin-bottom:14px">Vas a fusionar <strong id="fusion-principal-nombre">—</strong> con otro registro. Todos los pedidos del duplicado se moverán a este cliente, y el duplicado se eliminará. Esta acción no se puede deshacer.</div>
+    <input class="search-input" id="fusion-busqueda" placeholder="Buscar cliente duplicado por nombre, email o teléfono..." oninput="renderFusionCandidatos()" style="width:100%;margin-bottom:10px;box-sizing:border-box">
+    <div id="fusion-candidatos" style="max-height:240px;overflow-y:auto;margin-bottom:16px"></div>
+    <div style="display:flex;gap:8px;justify-content:flex-end">
+      <button class="btn btn-ghost" onclick="cerrarModalFusion()">Cancelar</button>
+      <button class="btn btn-primary" id="fusion-confirmar" onclick="confirmarFusion()" disabled>Fusionar</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="modal-seguimiento" onclick="if(event.target===this)cerrarSeguimiento()">
+  <div class="modal-box" style="width:600px;max-width:94vw;max-height:84vh;overflow-y:auto">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+      <div class="modal-titulo" style="margin-bottom:0">🚚 Seguimiento de envíos</div>
+      <button class="modal-cerrar" onclick="cerrarSeguimiento()" style="background:none;border:none;font-size:18px;color:var(--text3);cursor:pointer">✕</button>
+    </div>
+    <div class="modal-sub" style="font-size:12px;color:var(--text3);margin-bottom:14px">Solo pedidos enviados por paquetería. Pega la guía cuando generes el envío en Envia.com — el pedido pasa a "Enviado" automáticamente.</div>
+    <div class="prod-subtabs" style="margin-bottom:0">
+      <div class="prod-subtab active" id="seg-tab-activos" onclick="setSubTabSeg('activos')">🚚 Activos</div>
+      <div class="prod-subtab" id="seg-tab-historial" onclick="setSubTabSeg('historial')">✅ Historial</div>
+    </div>
+    <div style="margin:12px 0">
+      <div class="search-wrap">
+        <span class="search-icon">🔍</span>
+        <input class="search-input" id="seg-busqueda" placeholder="Buscar por ID, cliente o guía..." oninput="renderSeguimiento()">
+      </div>
+    </div>
+    <div id="seguimiento-lista"><div class="spinner"></div></div>
+  </div>
+</div>
+
 <script>
+
 const API="https://fungiterra-api-production.up.railway.app";
 let _todos=[];
 let _clientes=[];
 let _vistaActual="pedidos";
 
 const AREA_MAP={fungibolsa:{label:"FungiBolsa",cls:"area-fb",blk:""},laboratorio:{label:"Laboratorio",cls:"area-lab",blk:"lab"},transformacion:{label:"Transformación",cls:"area-tf",blk:"tf"},insumos:{label:"Insumos",cls:"area-ins",blk:"ins"},piopis:{label:"Piopis",cls:"area-pip",blk:"pip"}};
-const ESTADOS=["Recibido","En producción","Empaquetado","Enviado","Entregado"];
-const SEM_CLS={"Recibido":"s-recibido","En producción":"s-produccion","Empaquetado":"s-empaquetado","Enviado":"s-enviado","Entregado":"s-entregado"};
-const SEM_ICON={"Recibido":"🟡","En producción":"🔵","Empaquetado":"📦","Enviado":"🚚","Entregado":"✅"};
+const ESTADOS=["Recibido","En producción","Empaquetado","Enviado","Entregado","Cancelado"];
+const SEM_CLS={"Recibido":"s-recibido","En producción":"s-produccion","Empaquetado":"s-empaquetado","Enviado":"s-enviado","Entregado":"s-entregado","Cancelado":"s-cancelado"};
+const SEM_ICON={"Recibido":"🟡","En producción":"🔵","Empaquetado":"📦","Enviado":"🚚","Entregado":"✅","Cancelado":"❌"};
 
 // PRIORIDAD
 const PRIORIDAD_KEY="ft_prioridad_v1";
@@ -664,11 +711,22 @@ function rowClass(p){
 function estadoSelector(p){
   const m={"Recibido":"b-recibido","En producción":"b-produccion","Empaquetado":"b-empaquetado","Enviado":"b-enviado","Entregado":"b-entregado","Cancelado":"b-cancelado"};
   const cls=m[p.estado]||"b-recibido";
+  const lock=p.forzado
+    ? "<span class=\"badge-forzado\" title=\"Forzado manualmente — ya no se mueve solo con lo que marquen las áreas. Clic para volver a automático\" onclick=\"event.stopPropagation();volverAutomatico('"+p.id+"','"+p.token+"')\">🔒</span>"
+    : "";
   return "<div class=\"estado-sel-wrap\" onclick=\"event.stopPropagation();toggleEstadoMenu('"+p.id+"')\">"+
-    "<span class=\"badge "+cls+" estado-sel-trigger\">"+(p.estado||"—")+" ▾</span>"+
+    "<span class=\"badge "+cls+" estado-sel-trigger\">"+(p.estado||"—")+" ▾</span>"+lock+
     "<div class=\"estado-sel-menu\" id=\"esel-"+p.id+"\">"+
     ESTADOS.map(e=>"<div class=\"estado-sel-opt"+(p.estado===e?" activo":"")+"\" onclick=\"event.stopPropagation();cambiarEstadoRapido('"+p.id+"','"+e+"')\">"+(SEM_ICON[e]||"")+" "+e+"</div>").join("")+
     "</div></div>";
+}
+
+async function volverAutomatico(id,token){
+  try{
+    await fetch(API+"/pedidos/"+token+"/estado/auto",{method:"PATCH"});
+    toast("🔓 "+id+" vuelve a modo automático");
+    await cargarPedidos();
+  }catch(e){toast("⚠️ Error al liberar el estado")}
 }
 
 function toggleEstadoMenu(id){
@@ -681,15 +739,21 @@ function toggleEstadoMenu(id){
 async function cambiarEstadoRapido(id,estado){
   const p=_todos.find(x=>x.id===id);if(!p)return;
   document.getElementById("esel-"+id)?.classList.remove("open");
+  let motivo="Cambio rápido desde tabla";
+  if(estado==="Cancelado"){
+    const r=prompt("⚠️ Vas a cancelar el pedido "+id+". Escribe el motivo de la cancelación:");
+    if(r===null) return; // canceló la acción
+    motivo="Cancelado: "+(r.trim()||"sin motivo especificado");
+  }
   try{
     await fetch(API+"/pedidos/"+p.token+"/estado",{
       method:"PATCH",
       headers:{"Content-Type":"application/json"},
-      body:JSON.stringify({estado_nuevo:estadoApi(estado),motivo:"Cambio rápido desde tabla"})
+      body:JSON.stringify({estado_nuevo:estadoApi(estado),motivo:motivo})
     });
     p.estado=estado;
     filtrar();
-    toast("✓ "+id+" → "+estado);
+    toast(estado==="Cancelado"?"✖ "+id+" cancelado":"✓ "+id+" → "+estado);
   }catch(e){toast("⚠️ Error al cambiar estado")}
 }
 
@@ -709,7 +773,7 @@ function mapEstado(e){
 }
 
 function estadoApi(e){
-  const m={"Recibido":"recibido","En producción":"en_produccion","Listo":"listo","Empaquetado":"empaquetado","Enviado":"enviado","Entregado":"entregado"};
+  const m={"Recibido":"recibido","En producción":"en_produccion","Listo":"listo","Empaquetado":"empaquetado","Enviado":"enviado","Entregado":"entregado","Cancelado":"cancelado"};
   return m[e]||e.toLowerCase();
 }
 
@@ -727,7 +791,7 @@ function esNuevoAdmin(p){
   return new Date(p.fechaRaw||0)>getAdminUltima();
 }
 function badgeListoEmpacar(p){
-  if(esListoEmpacar(p)) return " <span class=\"badge-listo-empacar\" title=\"Todos los productos están listos\">✨ Listo p/empacar</span>";
+  if(esListoEmpacar(p)) return " <span class=\"badge-listo-empacar\" title=\"Todo el pedido quedó empaquetado — solo falta generar la guía y marcarlo Enviado\">🚚 Listo para enviar</span>";
   return "";
 }
 
@@ -736,9 +800,10 @@ function productoCompletado(pr){
   return pr.estado==="listo"||pr.estado==="en_stock";
 }
 function esListoEmpacar(p){
-  // Solo aplica si el PEDIDO sigue esperando empacarse (no si ya se empacó/envió/entregó)
-  if(!["Recibido","En producción"].includes(p.estado)) return false;
-  return p.productos&&p.productos.length>0&&p.productos.every(productoCompletado);
+  // El estado ahora se mueve solo con lo que marcan las áreas, así que este aviso
+  // ya no detecta "productos listos" (eso ahora es el estado "Listo" en sí mismo) —
+  // detecta cuando el pedido completo llegó a "Empaquetado" y falta el paso manual: enviar.
+  return p.estado==="Empaquetado";
 }
 
 // POLLING — verificar nuevos pedidos cada 30 seg
@@ -777,6 +842,8 @@ async function cargarPedidos(){
       tipo:p.tipo||"—",
       total:p.total||0,
       estado:mapEstado(p.estado_actual),
+      forzado:!!p.estado_forzado,
+      fotos:p.fotos_empaquetado||[],
       areas:[],
       productos:[]
     }));
@@ -937,13 +1004,12 @@ function renderProductosVista(){
   let lista=_todosLosProductos;
 
   if(_subTabProductos==="pendientes"){
-    // Productos cuyo pedido sigue activo (no entregado/cancelado) Y el producto mismo no está completado
+    // Producto NO completado, pedido sigue activo
     lista=lista.filter(p=>!["entregado","cancelado"].includes(p.pedido_estado) && !productoCompletado(p));
   }
   else if(_subTabProductos==="listos"){
-    // Producto completado, pero el PEDIDO sigue esperando ser empacado/enviado
-    // (recibido o en_produccion = aún no se ha movido a empaquetado/enviado/entregado)
-    lista=lista.filter(p=>["recibido","en_produccion"].includes(p.pedido_estado) && productoCompletado(p));
+    // Producto completado, pedido en cualquier etapa antes de Entregado/Cancelado
+    lista=lista.filter(p=>!["entregado","cancelado"].includes(p.pedido_estado) && productoCompletado(p));
   }
   else if(_subTabProductos==="finalizado"){
     // Pedido ya entregado — aplica filtro de tiempo
@@ -1080,36 +1146,42 @@ async function confirmarArea(){
 // Cerrar modal al click fuera
 document.addEventListener("click",e=>{
   if(e.target.id==="modal-area") cerrarModalArea();
+  if(e.target.id==="modal-fusion") cerrarModalFusion();
 });
 
 async function cargarClientes(){
   document.getElementById("clientes-grid").innerHTML="<div class=\"spinner\"></div>";
   try{
-    const r=await fetch(API+"/pedidos");
-    const data=await r.json();
-    // Agrupar por cliente sin duplicados, con historial completo
-    const mapa={};
-    data.pedidos.forEach(p=>{
-      const k=(p.cliente_nombre||"—").trim().toLowerCase();
-      const nombre=p.cliente_nombre||"—";
-      if(!mapa[k]){
-        mapa[k]={
-          nombre:nombre,
-          email:p.cliente_email||"—",
-          telefono:p.cliente_telefono||"—",
-          pedidos:[],
-          total:0
-        };
-      }
-      mapa[k].pedidos.push({
+    const [rc,rp]=await Promise.all([
+      fetch(API+"/clientes"),
+      fetch(API+"/pedidos")
+    ]);
+    const dc=await rc.json();
+    const dp=await rp.json();
+
+    // Historial de pedidos por cliente_id real
+    const historialPorId={};
+    dp.pedidos.forEach(p=>{
+      const cid=p.cliente_id;
+      if(!cid) return;
+      if(!historialPorId[cid]) historialPorId[cid]=[];
+      historialPorId[cid].push({
         id:p.id_repositorio||p.token.substring(0,8).toUpperCase(),
         estado:mapEstado(p.estado_actual),
         fecha:p.creado_en?new Date(p.creado_en).toLocaleDateString("es-MX"):"—",
         total:Number(p.total||0)
       });
-      mapa[k].total+=Number(p.total||0);
     });
-    _clientes=Object.values(mapa).sort((a,b)=>b.pedidos.length-a.pedidos.length);
+
+    _clientes=(dc.clientes||[]).map(c=>({
+      id:c.id,
+      nombre:c.nombre,
+      email:c.email||"—",
+      telefono:c.telefono||"—",
+      pedidos:historialPorId[c.id]||[],
+      total:Number(c.total_historico||0)
+    })).sort((a,b)=>b.pedidos.length-a.pedidos.length);
+
     renderClientes();
   }catch(e){
     document.getElementById("clientes-grid").innerHTML="<div class=\"empty-state\"><div class=\"empty-icon\">⚠️</div><div>Error cargando clientes</div></div>";
@@ -1121,18 +1193,210 @@ function renderClientes(){
   const g=document.getElementById("clientes-grid");
   let lista=_clientes;
   if(busq) lista=lista.filter(c=>c.nombre.toLowerCase().includes(busq)||c.email.toLowerCase().includes(busq)||c.telefono.includes(busq));
+  document.getElementById("cli-count").textContent=lista.length+" cliente"+(lista.length!==1?"s":"")+" único"+(lista.length!==1?"s":"");
   if(!lista.length){g.innerHTML="<div class=\"empty-state\"><div class=\"empty-icon\">👤</div><div>Sin clientes</div></div>";return;}
   g.innerHTML=lista.map(c=>{
-    const ultimoPed=c.pedidos[c.pedidos.length-1];
     const historial=c.pedidos.slice().reverse().slice(0,4).map(p=>"<div class=\"cli-ped-row\"><span class=\"cli-ped-id\">"+p.id+"</span><span class=\"cli-ped-fecha\">"+p.fecha+"</span>"+badge(p.estado)+"</div>").join("");
     return "<div class=\"cliente-card\">"
-      +"<div class=\"cliente-header\"><div class=\"cliente-avatar\">"+c.nombre.charAt(0).toUpperCase()+"</div><div><div class=\"cliente-nombre\">"+c.nombre+"</div><div class=\"cliente-sub\">"+(c.email!=="—"?"📧 "+c.email:"")+"</div></div><span class=\"cliente-pedidos\">"+c.pedidos.length+" pedidos</span></div>"
-      +(c.email!=="—"&&c.telefono!=="—"?"<div class=\"cliente-info\">📱 "+c.telefono+"</div>":"")
+      +"<div class=\"cliente-header\"><div class=\"cliente-avatar\">"+c.nombre.charAt(0).toUpperCase()+"</div><div style=\"flex:1\"><div class=\"cliente-nombre\">"+c.nombre+"</div><div class=\"cliente-sub\">ID #"+c.id+(c.email!=="—"?" · 📧 "+c.email:"")+"</div></div><span class=\"cliente-pedidos\">"+c.pedidos.length+" pedidos</span></div>"
+      +(c.telefono!=="—"?"<div class=\"cliente-info\">📱 "+c.telefono+"</div>":"")
       +"<div class=\"cliente-total\">Total histórico: "+fmx(c.total)+"</div>"
       +"<div class=\"cli-historial\">"+historial+"</div>"
       +(c.pedidos.length>4?"<div class=\"cli-mas\">+ "+(c.pedidos.length-4)+" pedidos más</div>":"")
+      +"<button class=\"btn-asignar\" style=\"margin-top:10px;width:100%\" onclick=\"abrirModalFusion("+c.id+")\">🔗 Fusionar con otro cliente</button>"
       +"</div>";
   }).join("");
+}
+
+// ── MODAL FUSIÓN DE CLIENTES ─────────────────────────────────
+let _fusionPrincipal=null;
+let _fusionSeleccionado=null;
+
+function abrirModalFusion(clienteId){
+  _fusionPrincipal=_clientes.find(c=>c.id===clienteId);
+  if(!_fusionPrincipal) return;
+  _fusionSeleccionado=null;
+  document.getElementById("fusion-principal-nombre").textContent=_fusionPrincipal.nombre+" (ID #"+_fusionPrincipal.id+")";
+  document.getElementById("fusion-busqueda").value="";
+  document.getElementById("fusion-confirmar").disabled=true;
+  renderFusionCandidatos();
+  document.getElementById("modal-fusion").classList.add("activo");
+}
+
+function cerrarModalFusion(){
+  document.getElementById("modal-fusion").classList.remove("activo");
+  _fusionPrincipal=null;
+  _fusionSeleccionado=null;
+}
+
+function renderFusionCandidatos(){
+  const box=document.getElementById("fusion-candidatos");
+  const busq=document.getElementById("fusion-busqueda").value.trim().toLowerCase();
+  if(!busq){
+    box.innerHTML="<div style=\"font-size:12px;color:var(--text3);padding:10px 4px\">Escribe para buscar el cliente duplicado</div>";
+    return;
+  }
+  const candidatos=_clientes.filter(c=>
+    c.id!==_fusionPrincipal.id &&
+    (c.nombre.toLowerCase().includes(busq)||c.email.toLowerCase().includes(busq)||c.telefono.includes(busq))
+  ).slice(0,8);
+  if(!candidatos.length){
+    box.innerHTML="<div style=\"font-size:12px;color:var(--text3);padding:10px 4px\">Sin coincidencias</div>";
+    return;
+  }
+  box.innerHTML=candidatos.map(c=>
+    "<div class=\"fusion-candidato"+(_fusionSeleccionado&&_fusionSeleccionado.id===c.id?" sel":"")+"\" data-id=\""+c.id+"\" onclick=\"seleccionarFusionCandidato("+c.id+")\" style=\"padding:10px 12px;border:1.5px solid "+(_fusionSeleccionado&&_fusionSeleccionado.id===c.id?"var(--azul)":"var(--border)")+";border-radius:8px;margin-bottom:6px;cursor:pointer;background:"+(_fusionSeleccionado&&_fusionSeleccionado.id===c.id?"var(--azul-soft)":"transparent")+"\">"
+    +"<div style=\"font-weight:600;font-size:13px\">"+c.nombre+" <span style=\"font-weight:400;color:var(--text3)\">ID #"+c.id+"</span></div>"
+    +"<div style=\"font-size:11px;color:var(--text3)\">"+c.pedidos.length+" pedidos"+(c.telefono!=="—"?" · 📱 "+c.telefono:"")+(c.email!=="—"?" · 📧 "+c.email:"")+"</div>"
+    +"</div>"
+  ).join("");
+}
+
+function seleccionarFusionCandidato(id){
+  _fusionSeleccionado=_clientes.find(c=>c.id===id);
+  document.getElementById("fusion-confirmar").disabled=false;
+  renderFusionCandidatos();
+}
+
+async function confirmarFusion(){
+  if(!_fusionPrincipal||!_fusionSeleccionado) return;
+  if(!confirm("¿Fusionar \""+_fusionSeleccionado.nombre+"\" (ID #"+_fusionSeleccionado.id+") dentro de \""+_fusionPrincipal.nombre+"\" (ID #"+_fusionPrincipal.id+")? Se moverán "+_fusionSeleccionado.pedidos.length+" pedido(s) y el registro duplicado se eliminará. Esto no se puede deshacer.")) return;
+  const btn=document.getElementById("fusion-confirmar");
+  btn.disabled=true;
+  btn.textContent="Fusionando...";
+  try{
+    const r=await fetch(API+"/clientes/"+_fusionPrincipal.id+"/fusionar",{
+      method:"POST",
+      headers:{"Content-Type":"application/json"},
+      body:JSON.stringify({duplicado_id:_fusionSeleccionado.id})
+    });
+    if(!r.ok) throw new Error("Error al fusionar");
+    toast("✅ Clientes fusionados — "+_fusionSeleccionado.pedidos.length+" pedido(s) movidos");
+    cerrarModalFusion();
+    cargarClientes();
+  }catch(e){
+    toast("❌ Error al fusionar: "+e.message);
+  } finally {
+    btn.disabled=false;
+    btn.textContent="Fusionar";
+  }
+}
+
+// ── SEGUIMIENTO DE ENVÍOS ─────────────────────────────────────
+let _seguimiento=[];
+let _subTabSeg="activos";
+
+function setSubTabSeg(tab){
+  _subTabSeg=tab;
+  document.getElementById("seg-tab-activos").classList.toggle("active",tab==="activos");
+  document.getElementById("seg-tab-historial").classList.toggle("active",tab==="historial");
+  renderSeguimiento();
+}
+
+async function abrirSeguimiento(){
+  document.getElementById("modal-seguimiento").classList.add("activo");
+  document.getElementById("seg-busqueda").value="";
+  _subTabSeg="activos";
+  document.getElementById("seg-tab-activos").classList.add("active");
+  document.getElementById("seg-tab-historial").classList.remove("active");
+  await cargarSeguimiento();
+}
+
+function cerrarSeguimiento(){
+  document.getElementById("modal-seguimiento").classList.remove("activo");
+}
+
+async function cargarSeguimiento(){
+  document.getElementById("seguimiento-lista").innerHTML="<div class=\"spinner\"></div>";
+  try{
+    const r=await fetch(API+"/pedidos?limite=300");
+    const data=await r.json();
+    // Solo pedidos que pasaron por paquetería (tienen guía o estado enviado/entregado con guía)
+    _seguimiento=data.pedidos.filter(p=>
+      p.estado_actual==="empaquetado"||
+      p.estado_actual==="enviado"||
+      (p.guia_numero&&p.estado_actual!=="cancelado")
+    );
+    renderSeguimiento();
+  }catch(e){
+    document.getElementById("seguimiento-lista").innerHTML="<div class=\"empty-state\"><div class=\"empty-icon\">⚠️</div><div>Error cargando envíos</div></div>";
+  }
+}
+
+const ESTADO_ENVIO_LABEL={
+  guia_generada:"📦 Guía generada — esperando recolección",
+  picked_up:"🚚 Recolectado por la paquetería",
+  in_transit:"🚚 En tránsito",
+  out_for_delivery:"🚚 En reparto",
+  delivered:"✅ Entregado",
+  exception:"⚠️ Incidencia reportada por la paquetería"
+};
+
+function renderSeguimiento(){
+  const box=document.getElementById("seguimiento-lista");
+  const busq=document.getElementById("seg-busqueda").value.trim().toLowerCase();
+
+  // Activos: empaquetado (pendiente de guía) o enviado (en tránsito)
+  // Historial: entregado con guía (enviados por paquetería que ya llegaron)
+  const esActivo=p=>p.estado_actual==="empaquetado"||p.estado_actual==="enviado";
+  const esHistorial=p=>p.estado_actual==="entregado"&&!!p.guia_numero;
+
+  let lista=_seguimiento.filter(_subTabSeg==="activos"?esActivo:esHistorial);
+  if(busq) lista=lista.filter(p=>
+    (p.id_repositorio||p.token.substring(0,8)).toLowerCase().includes(busq)||
+    (p.cliente_nombre||"").toLowerCase().includes(busq)||
+    (p.guia_numero||"").toLowerCase().includes(busq)
+  );
+
+  if(!lista.length){
+    const msg=_subTabSeg==="activos"
+      ?"Sin envíos activos — todos los pedidos enviados han sido entregados"
+      :"Sin historial de envíos por paquetería aún";
+    box.innerHTML="<div class=\"empty-state\"><div class=\"empty-icon\">🚚</div><div>"+msg+"</div></div>";
+    return;
+  }
+
+  box.innerHTML=lista.map(p=>{
+    const idCorto=p.id_repositorio||p.token.substring(0,8).toUpperCase();
+    const estadoEnvioTexto=p.estado_envio?(ESTADO_ENVIO_LABEL[p.estado_envio]||p.estado_envio):null;
+    const ultimaAct=p.ultima_actualizacion_envio?new Date(p.ultima_actualizacion_envio).toLocaleString("es-MX",{day:"2-digit",month:"short",hour:"2-digit",minute:"2-digit"}):null;
+    const esEntregado=p.estado_actual==="entregado";
+    return "<div style=\"border:1px solid var(--border);border-radius:10px;padding:14px 16px;margin-bottom:10px\">"
+      +"<div style=\"display:flex;justify-content:space-between;align-items:center;margin-bottom:8px\">"
+      +"<div><strong style=\"font-size:13px\">"+idCorto+"</strong> <span style=\"color:var(--text3);font-size:12px\">· "+(p.cliente_nombre||"—")+"</span></div>"
+      +badge(mapEstado(p.estado_actual))
+      +"</div>"
+      +(estadoEnvioTexto?"<div style=\"font-size:12px;color:var(--azul);margin-bottom:6px\">"+estadoEnvioTexto+(p.ultima_ubicacion_envio?" · "+p.ultima_ubicacion_envio:"")+(ultimaAct?" · "+ultimaAct:"")+"</div>":"")
+      +(esEntregado
+        ? "<div style=\"font-size:12px;color:var(--text3)\">"+(p.paqueteria?"<strong>"+p.paqueteria+"</strong> · ":"")+"Guía: <span style=\"font-family:monospace\">"+(p.guia_numero||"—")+"</span></div>"
+        : "<div style=\"display:flex;gap:8px;flex-wrap:wrap\">"
+          +"<input type=\"text\" placeholder=\"Número de guía\" value=\""+(p.guia_numero||"")+"\" id=\"seg-guia-"+p.id+"\" style=\"flex:1;min-width:140px;padding:7px 10px;border:1.5px solid var(--border);border-radius:7px;font-size:12px;font-family:var(--sans)\">"
+          +"<select id=\"seg-paq-"+p.id+"\" style=\"padding:7px 10px;border:1.5px solid var(--border);border-radius:7px;font-size:12px;font-family:var(--sans);background:var(--surface)\">"
+          +["Estafeta","DHL","FedEx","UPS","Redpack","Otra"].map(pq=>"<option"+(p.paqueteria===pq?" selected":"")+">"+pq+"</option>").join("")
+          +"</select>"
+          +"<button class=\"btn btn-primary btn-sm\" onclick=\"guardarGuia('"+p.token+"','"+p.id+"')\">"+(p.guia_numero?"Actualizar":"Guardar")+"</button>"
+          +"</div>")
+      +"</div>";
+  }).join("");
+}
+
+async function guardarGuia(token,pedidoId){
+  const guia=document.getElementById("seg-guia-"+pedidoId).value.trim();
+  const paqueteria=document.getElementById("seg-paq-"+pedidoId).value;
+  if(!guia){ toast("⚠️ Escribe el número de guía"); return; }
+  try{
+    const r=await fetch(API+"/pedidos/"+token+"/guia",{
+      method:"PATCH",
+      headers:{"Content-Type":"application/json"},
+      body:JSON.stringify({guia_numero:guia,paqueteria:paqueteria})
+    });
+    if(!r.ok) throw new Error("Error al guardar guía");
+    toast("✅ Guía registrada — pedido marcado como Enviado");
+    cargarSeguimiento();
+    filtrar(); // refresca también la tabla principal de pedidos por si está visible
+  }catch(e){
+    toast("❌ Error al guardar la guía");
+  }
 }
 
 
@@ -1215,7 +1479,7 @@ function filtrar(){
 }
 
 function renderFila(p){
-  return "<tr class=\""+rowClass(p)+"\" onclick=\"abrirDetalle('"+p.id+"')\"><td><span class=\"td-id\">"+p.id+"</span></td><td><span class=\"td-socio\">"+p.socio+"</span></td><td><span class=\"td-cliente\">"+p.cliente+"</span></td><td><span class=\"td-fecha\">"+p.fecha+"</span></td><td><div class=\"areas-pills\">"+(p.areas||[]).map(a=>"<span class=\"area-pill "+(AREA_MAP[a]?.cls||"")+"\">"+( AREA_MAP[a]?.label||a)+"</span>").join("")+"</div></td><td><span class=\"td-monto\">"+fmx(p.total)+"</span></td><td>"+estadoSelector(p)+badgeListoEmpacar(p)+"<span class=\""+(esDelegado(p.id)?"badge-delegado":"badge-no-delegado")+"\" title=\"Clic para "+(esDelegado(p.id)?"quitar":"dar")+" delegación al Revisor\" onclick=\"event.stopPropagation();toggleDelegadoRapido('"+p.id+"')\">"+(esDelegado(p.id)?"🔓":"🔒")+"</span></td><td>"+prioridadBadge(p.id)+"</td></tr>";
+  return "<tr class=\""+rowClass(p)+"\" onclick=\"abrirDetalle('"+p.id+"')\"><td><span class=\"td-id\">"+p.id+"</span></td><td><span class=\"td-socio\">"+p.socio+"</span></td><td><span class=\"td-cliente\">"+p.cliente+"</span></td><td><span class=\"td-fecha\">"+p.fecha+"</span></td><td><div class=\"areas-pills\">"+(p.areas||[]).map(a=>"<span class=\"area-pill "+(AREA_MAP[a]?.cls||"")+"\">"+( AREA_MAP[a]?.label||a)+"</span>").join("")+"</div></td><td><span class=\"td-monto\">"+fmx(p.total)+"</span></td><td>"+estadoSelector(p)+badgeListoEmpacar(p)+((p.fotos&&p.fotos.length)?"<span class=\"evidencia-icono\" title=\""+p.fotos.length+" evidencia(s) — clic para ver detalle\">📷 "+p.fotos.length+"</span>":"")+"<span class=\""+(esDelegado(p.id)?"badge-delegado":"badge-no-delegado")+"\" title=\"Clic para "+(esDelegado(p.id)?"quitar":"dar")+" delegación al Revisor\" onclick=\"event.stopPropagation();toggleDelegadoRapido('"+p.id+"')\">"+(esDelegado(p.id)?"🔓":"🔒")+"</span></td><td>"+prioridadBadge(p.id)+"</td></tr>";
 }
 
 function renderTabla(){
@@ -1297,7 +1561,17 @@ async function abrirDetalle(id){
     "<button class=\"pack-btn\" onclick=\"toast('🔧 Próximamente')\">📦 Asignar a área</button>"+
     "<button class=\"pack-btn\" onclick=\"toast('🔧 Próximamente')\">✅ Lo empacamos nosotros</button>"+
     "<button class=\"pack-btn\" onclick=\"toast('🔧 Próximamente')\">🚚 Envío independiente</button>"+
-    "</div></div>"+
+    "</div>"+
+    (p.fotos&&p.fotos.length
+      ? "<div class=\"evidencia-detalle-grid\">"+p.fotos.map(f=>{
+          const esImg=f.tipo&&f.tipo.indexOf("image/")===0;
+          const preview=esImg
+            ? "<img class=\"evidencia-detalle-thumb\" src=\""+f.url+"\" alt=\""+(f.nombre||"Evidencia")+"\">"
+            : "<div class=\"evidencia-detalle-thumb evidencia-detalle-archivo\">📄</div>";
+          return "<a href=\""+f.url+"\" target=\"_blank\" rel=\"noopener\" class=\"evidencia-detalle-item\">"+preview+"</a>";
+        }).join("")+"</div><div class=\"evidencia-detalle-nota\">📷 "+p.fotos.length+" evidencia(s) subida(s) por el área</div>"
+      : "<div class=\"evidencia-detalle-nota\" style=\"margin-top:10px;color:var(--text3)\">Aún no se sube evidencia — se sube desde el panel del área al marcar Empaquetado.</div>")+
+    "</div>"+
 
     "<div class=\"d-section\"><div class=\"d-section-title\">Historial</div>"+
     renderHistorial(historial)+"</div>"+
@@ -1345,22 +1619,28 @@ function renderHistorial(historial){
 
 async function cambiarEstado(id,estado){
   const p=_todos.find(x=>x.id===id);if(!p)return;
+  let motivo="Cambio desde Panel Admin";
+  if(estado==="Cancelado"){
+    const r=prompt("⚠️ Vas a cancelar el pedido "+id+". Escribe el motivo de la cancelación:");
+    if(r===null) return;
+    motivo="Cancelado: "+(r.trim()||"sin motivo especificado");
+  }
   try{
     await fetch(API+"/pedidos/"+p.token+"/estado",{
       method:"PATCH",
       headers:{"Content-Type":"application/json"},
-      body:JSON.stringify({estado_nuevo:estadoApi(estado),motivo:"Cambio desde Panel Admin"})
+      body:JSON.stringify({estado_nuevo:estadoApi(estado),motivo:motivo})
     });
     p.estado=estado;
     filtrar();
     abrirDetalle(id);
-    toast("✓ "+id+" → "+estado);
+    toast(estado==="Cancelado"?"✖ "+id+" cancelado":"✓ "+id+" → "+estado);
   }catch(e){toast("⚠️ Error al cambiar estado")}
 }
 
 function generarLink(id){
-  const p=_todos.find(x=>x.id===id);if(!p)return;
-  const url=window.location.origin+"/fungiterra-sistema/cliente/"+p.token;
+  const p=_todos.find(x=>x.id==id);if(!p)return;
+  const url="https://fungiterra-bot.github.io/fungiterra-sistema/Panel/cliente.html?token="+p.token;
   navigator.clipboard.writeText(url).then(()=>toast("🔗 Link copiado al portapapeles")).catch(()=>toast("Link: "+p.token.substring(0,16)+"..."));
 }
 
