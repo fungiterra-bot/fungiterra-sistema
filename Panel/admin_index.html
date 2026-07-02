@@ -397,6 +397,14 @@ th.sort-desc::after{content:" ▼";font-size:9px;opacity:.7}
   padding:3px 8px;border-radius:10px;margin-left:6px;vertical-align:middle;
   animation:pulso-badge 1.2s ease-in-out infinite}
 @keyframes pulso-badge{0%,100%{opacity:1}50%{opacity:.6}}
+.seg-steps{display:flex;align-items:center;margin:10px 0 4px}
+.seg-dot{width:11px;height:11px;border-radius:50%;background:var(--border);flex-shrink:0;transition:background .2s}
+.seg-dot.done{background:var(--verde)}
+.seg-dot.active{background:#2B7FC0;box-shadow:0 0 0 3px rgba(43,127,192,.2)}
+.seg-line{flex:1;height:2px;background:var(--border);margin:0 3px}
+.seg-line.done{background:var(--verde)}
+.seg-steps-labels{display:flex;justify-content:space-between;font-size:9px;color:var(--text3);margin-top:3px}
+.seg-steps-labels span{max-width:60px;text-align:center;line-height:1.2}
 </style>
 </head>
 <body>
@@ -613,7 +621,8 @@ th.sort-desc::after{content:" ▼";font-size:9px;opacity:.7}
       <div class="modal-titulo" style="margin-bottom:0">🚚 Seguimiento de envíos</div>
       <button class="modal-cerrar" onclick="cerrarSeguimiento()" style="background:none;border:none;font-size:18px;color:var(--text3);cursor:pointer">✕</button>
     </div>
-    <div class="modal-sub" style="font-size:12px;color:var(--text3);margin-bottom:14px">Solo pedidos enviados por paquetería. Pega la guía cuando generes el envío en Envia.com — el pedido pasa a "Enviado" automáticamente.</div>
+    <div class="modal-sub" style="font-size:12px;color:var(--text3);margin-bottom:8px">Solo pedidos enviados por paquetería. Pega la guía cuando generes el envío en Envia.com — el pedido pasa a "Enviado" automáticamente.</div>
+    <div id="seg-salud-webhook" style="font-size:11px;padding:6px 10px;border-radius:7px;margin-bottom:12px;background:var(--surface2);color:var(--text3)">Comprobando estado del webhook…</div>
     <div class="prod-subtabs" style="margin-bottom:0">
       <div class="prod-subtab active" id="seg-tab-activos" onclick="setSubTabSeg('activos')">🚚 Activos</div>
       <div class="prod-subtab" id="seg-tab-historial" onclick="setSubTabSeg('historial')">✅ Historial</div>
@@ -1299,7 +1308,31 @@ async function abrirSeguimiento(){
   _subTabSeg="activos";
   document.getElementById("seg-tab-activos").classList.add("active");
   document.getElementById("seg-tab-historial").classList.remove("active");
+  cargarSaludWebhook();
   await cargarSeguimiento();
+}
+
+async function cargarSaludWebhook(){
+  const box=document.getElementById("seg-salud-webhook");
+  try{
+    const r=await fetch(API+"/webhooks/envia/salud");
+    const s=await r.json();
+    if(!s.ultimo_recibido){
+      box.style.background="var(--surface2)";
+      box.style.color="var(--text3)";
+      box.innerHTML="⚪ El webhook de Envia.com nunca ha recibido tráfico — el polling de respaldo sigue actualizando los envíos cada pocas horas de todas formas.";
+      return;
+    }
+    const activo=s.activo;
+    box.style.background=activo?"var(--verde-soft)":"#fff3e0";
+    box.style.color=activo?"var(--verde-dark)":"#b45309";
+    const cuando=s.minutos_desde_ultimo<60?s.minutos_desde_ultimo+" min":Math.round(s.minutos_desde_ultimo/60)+" h";
+    box.innerHTML=(activo?"🟢 Webhook activo":"🟡 Webhook sin tráfico reciente")+" — última señal hace "+cuando+" · "+s.total_recibidos+" recibidas en total";
+  }catch(e){
+    box.style.background="#fdecea";
+    box.style.color="#b91c1c";
+    box.innerHTML="🔴 No se pudo consultar el estado del webhook";
+  }
 }
 
 function cerrarSeguimiento(){
@@ -1331,6 +1364,38 @@ const ESTADO_ENVIO_LABEL={
   delivered:"✅ Entregado",
   exception:"⚠️ Incidencia reportada por la paquetería"
 };
+
+const PASOS_ENVIO_SEG=[
+  {key:"empaquetado",label:"Empaquetado"},
+  {key:"guia_generada",label:"Guía generada"},
+  {key:"en_transito",label:"En tránsito"},
+  {key:"out_for_delivery",label:"En reparto"},
+  {key:"delivered",label:"Entregado"}
+];
+function renderPasosEnvio(p){
+  // Traduce el estado real del pedido a un índice dentro de PASOS_ENVIO_SEG
+  let idx=0;
+  if(p.estado_actual==="entregado") idx=4;
+  else if(p.estado_envio==="out_for_delivery") idx=3;
+  else if(p.estado_envio==="in_transit"||p.estado_envio==="picked_up") idx=2;
+  else if(p.estado_envio==="guia_generada") idx=1;
+  else if(p.estado_actual==="empaquetado") idx=0;
+  else idx=p.guia_numero?1:0;
+
+  const esExcepcion=p.estado_envio==="exception";
+
+  let dots="",labels="";
+  PASOS_ENVIO_SEG.forEach((paso,i)=>{
+    const estado=esExcepcion&&i===idx?"active":(i<idx?"done":(i===idx?"active":""));
+    dots+="<div class=\"seg-dot "+estado+"\"></div>";
+    if(i<PASOS_ENVIO_SEG.length-1){
+      dots+="<div class=\"seg-line "+(i<idx?"done":"")+"\"></div>";
+    }
+    labels+="<span"+(i===idx?" style=\"color:var(--text2);font-weight:600\"":"")+">"+paso.label+"</span>";
+  });
+  return "<div class=\"seg-steps\">"+dots+"</div><div class=\"seg-steps-labels\">"+labels+"</div>"
+    +(esExcepcion?"<div style=\"font-size:11px;color:#b45309;margin-top:2px\">⚠️ Incidencia reportada por la paquetería</div>":"");
+}
 
 function renderSeguimiento(){
   const box=document.getElementById("seguimiento-lista");
@@ -1366,7 +1431,8 @@ function renderSeguimiento(){
       +"<div><strong style=\"font-size:13px\">"+idCorto+"</strong> <span style=\"color:var(--text3);font-size:12px\">· "+(p.cliente_nombre||"—")+"</span></div>"
       +badge(mapEstado(p.estado_actual))
       +"</div>"
-      +(estadoEnvioTexto?"<div style=\"font-size:12px;color:var(--azul);margin-bottom:6px\">"+estadoEnvioTexto+(p.ultima_ubicacion_envio?" · "+p.ultima_ubicacion_envio:"")+(ultimaAct?" · "+ultimaAct:"")+"</div>":"")
+      +(estadoEnvioTexto?"<div style=\"font-size:12px;color:var(--azul);margin-bottom:2px\">"+estadoEnvioTexto+(p.ultima_ubicacion_envio?" · "+p.ultima_ubicacion_envio:"")+(ultimaAct?" · "+ultimaAct:"")+"</div>":"")
+      +(p.guia_numero?renderPasosEnvio(p):"")
       +(esEntregado
         ? "<div style=\"font-size:12px;color:var(--text3)\">"+(p.paqueteria?"<strong>"+p.paqueteria+"</strong> · ":"")+"Guía: <span style=\"font-family:monospace\">"+(p.guia_numero||"—")+"</span></div>"
         : "<div style=\"display:flex;gap:8px;flex-wrap:wrap\">"
