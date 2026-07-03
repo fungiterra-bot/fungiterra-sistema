@@ -122,7 +122,7 @@ textarea{resize:vertical;min-height:60px}
 <body>
 
 <header>
-  <div><h1>🍄 Sistema Fungiterra</h1><div class="header-sub">Cotizador · Generador de IDs · Cotización formal</div></div>
+  <div><h1>🍄 Sistema Fungiterra</h1><div class="header-sub">Cotizador · Generador de IDs · Cotización formal · v2</div></div>
   <a href="https://fungiterra-bot.github.io/fungiterra-sistema/repositorioD.html" target="_blank" style="color:rgba(255,255,255,.85);font-size:12px;text-decoration:none;border:1px solid rgba(255,255,255,.35);border-radius:7px;padding:6px 14px;font-family:var(--sans);font-weight:500;transition:all .2s;background:rgba(255,255,255,.08)" onmouseover="this.style.background='rgba(255,255,255,.18)'" onmouseout="this.style.background='rgba(255,255,255,.08)'">📋 Repositorio →</a>
 </header>
 
@@ -295,6 +295,7 @@ textarea{resize:vertical;min-height:60px}
     </div>
     <button class="btn btn-block btn-naranja" id="btn-guardar-cambios" style="display:none;margin-top:8px" onclick="guardarCambiosCliente()">💾 Guardar cambios (sin nuevo ID)</button>
     <button class="btn btn-block" style="margin-top:8px" onclick="showTab2('cot')">← Volver</button>
+    <button class="btn btn-block" style="margin-top:8px;color:#b91c1c" onclick="limpiarCotizacion()">🧹 Limpiar campos</button>
   </div>
 </div>
 
@@ -631,6 +632,7 @@ function selSocio(p,v,btn){
 
 // MODO 1
 function generarIDRapido(){
+  if(idGenerado&&!confirm('Ya generaste el ID '+idGenerado+' con esta información. ¿Deseas generar uno nuevo?'))return;
   var socio=getSocio('m1'),tipo=document.getElementById('m1-tipo').value,monto=parseFloat(document.getElementById('m1-monto').value);
   var err=document.getElementById('m1-error');
   if(!monto||monto<=0){err.textContent='Ingresa un monto válido';return;}
@@ -767,6 +769,7 @@ function renderRes2(){
   document.getElementById('res2-card').innerHTML=h;
 }
 function generarIDDesdeResumen(){
+  if(idGenerado&&!confirm('Ya generaste el ID '+idGenerado+' con esta información. ¿Deseas generar uno nuevo?'))return;
   var socio=getSocio('m2'),tipo=document.getElementById('m2-tipo-venta').value,t=getTotales();
   if(!t.tot){alert('Total es 0. Agrega productos primero.');return;}
   var btn=document.getElementById('btn-gen-id2');btn.innerHTML='<span class="spinner"></span> Generando...';btn.disabled=true;
@@ -820,6 +823,23 @@ function guardarCambiosCliente(){
   }).catch(()=>{btn.innerHTML='💾 Guardar cambios';btn.disabled=false;mostrarToast('⚠️ Sin conexión');});
 }
 function copiarIDM2(){navigator.clipboard.writeText(idGenerado).then(()=>{var b=document.querySelector('#res2-id-area .btn-sm');b.textContent='✓';setTimeout(()=>b.textContent='📋 Copiar',2000);});}
+
+function limpiarCotizacion(){
+  if(!confirm('¿Limpiar todos los campos y empezar una cotización nueva?'))return;
+  ['cli-nom','cli-emp','cli-tel','cli-correo','env-pak'].forEach(function(id){
+    var el=document.getElementById(id); if(el) el.value='';
+  });
+  var envMonto=document.getElementById('env-monto'); if(envMonto) envMonto.value='0';
+  ftItems=[]; fbItems=[]; otItems=[];
+  renderFTLista(); renderFBLista(); renderOTLista();
+  idGenerado='';
+  window._idAnterior=null;
+  var idArea=document.getElementById('res2-id-area'); if(idArea) idArea.style.display='none';
+  var idVal=document.getElementById('res2-id-val'); if(idVal) idVal.textContent='—';
+  var btnGuardar=document.getElementById('btn-guardar-cambios'); if(btnGuardar) btnGuardar.style.display='none';
+  mostrarToast('✓ Campos limpios — lista para una nueva cotización');
+  showTab2('cot');
+}
 function copiarWA(){
   var nom=document.getElementById('cli-nom').value.trim()||'—',emp=document.getElementById('cli-emp').value.trim();
   var pak=document.getElementById('env-pak').value.trim(),socio=getSocio('m2'),sd=SOCIOS[socio],t=getTotales();
@@ -886,6 +906,7 @@ function actualizarID(id){
   if(e1)e1.value=id;if(e2)e2.textContent=id;if(e3)e3.textContent=id;
 }
 function generarIDFormal(){
+  if(idGenerado&&!confirm('Ya generaste el ID '+idGenerado+' con esta información. ¿Deseas generar uno nuevo?'))return;
   var socio=getSocio('m2');
   var tipoEl=document.getElementById('m2-tipo-venta');
   var tipo=(tipoEl&&tipoEl.value)?tipoEl.value:'Mixto';
