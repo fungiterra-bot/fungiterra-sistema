@@ -516,7 +516,7 @@ async function cargar(){
     _pedidos=data.pedidos||[];
     document.getElementById("s-total").textContent=_pedidos.length;
     document.getElementById("s-prod").textContent=_pedidos.filter(p=>(p.productos||[]).some(pr=>pr.estado==="en_produccion")).length;
-    document.getElementById("s-listo").textContent=_pedidos.filter(p=>(p.productos||[]).length&&(p.productos||[]).every(pr=>pr.estado==="listo")).length;
+    document.getElementById("s-listo").textContent=_pedidos.filter(p=>(p.productos||[]).length&&(p.productos||[]).every(pr=>pr.estado==="listo"||pr.estado==="empaquetado")).length;
     await cargarInventarioSilencioso();
     renderGrid();
     document.getElementById("topbar-sub").textContent=_pedidos.length+" cepas y micelio activos";
@@ -569,7 +569,7 @@ function matchInventario(nombreProducto){
 
 function renderGrid(){
   const grid=document.getElementById("grid");
-  const lista=_pedidos.filter(p=>_subTabFB==="listos" ? estArea(p)==="listo" : estArea(p)!=="listo");
+  const lista=_pedidos.filter(p=>_subTabFB==="listos" ? (estArea(p)==="listo"||estArea(p)==="empaquetado") : (estArea(p)!=="listo"&&estArea(p)!=="empaquetado"));
   if(!lista.length){
     const msg=_subTabFB==="listos"?"Sin pedidos listos todavía":"Sin cepas y micelio activos";
     grid.innerHTML="<div class=\"empty-state\"><div class=\"empty-icon\">📭</div><div>"+msg+"</div></div>";
