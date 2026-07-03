@@ -16,6 +16,9 @@ body{margin:0;background:#eef1f4;font-family:'Inter',sans-serif}
 .ft-header-text h2{margin:0;font-size:15px;font-weight:600;color:white}
 .ft-header-text p{margin:0;font-size:12px;color:rgba(255,255,255,0.75)}
 .ft-card{background:white;border-radius:12px;padding:16px 20px;margin-bottom:12px;border:0.5px solid #e5e7eb}
+.ft-evidencia-grid{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}
+.ft-evidencia-thumb{width:52px;height:52px;object-fit:cover;border-radius:9px;border:0.5px solid #e5e7eb;display:block}
+.ft-evidencia-archivo{display:flex;align-items:center;justify-content:center;font-size:22px;background:#f3f4f6}
 .ft-order-id{font-size:11px;color:#6b7280;margin-bottom:2px}
 .ft-client-name{font-size:17px;font-weight:600;color:#111827;margin-bottom:4px}
 .ft-order-meta{font-size:12px;color:#6b7280}
@@ -68,7 +71,7 @@ body{margin:0;background:#eef1f4;font-family:'Inter',sans-serif}
     <div class="ft-header">
       <div class="ft-logo-circle">FT</div>
       <div class="ft-header-text">
-        <h2>Seguimiento de pedido · v-envios3</h2>
+        <h2>Seguimiento de pedido · v-envios4</h2>
         <p>Fungiterra — Hongos a tu servicio</p>
       </div>
     </div>
@@ -187,6 +190,17 @@ function renderSteps(p){
     if(paso.key==="entregado"&&estado==="done"&&p.ultima_actualizacion_envio){
       sub="Entregado el "+new Date(p.ultima_actualizacion_envio).toLocaleDateString("es-MX",{day:"2-digit",month:"short"});
     }
+    let evidenciaHtml="";
+    if(paso.key==="empaquetado"&&p.fotos_empaquetado&&p.fotos_empaquetado.length){
+      sub=(sub?sub+" · ":"")+"📷 "+p.fotos_empaquetado.length+" foto"+(p.fotos_empaquetado.length!==1?"s":"");
+      evidenciaHtml="<div class=\"ft-evidencia-grid\">"+p.fotos_empaquetado.map(f=>{
+        const esImg=f.tipo&&f.tipo.indexOf("image/")===0;
+        const preview=esImg
+          ? "<img class=\"ft-evidencia-thumb\" src=\""+f.url+"\" alt=\"Evidencia\">"
+          : "<div class=\"ft-evidencia-thumb ft-evidencia-archivo\">📄</div>";
+        return "<a href=\""+f.url+"\" target=\"_blank\" rel=\"noopener\">"+preview+"</a>";
+      }).join("")+"</div>";
+    }
 
     const lineClass=estado==="done"?"done":estado==="active"?"active":"";
     const pulseClass=estado==="active"?" ft-pulse":"";
@@ -195,6 +209,7 @@ function renderSteps(p){
     s+="<div class=\"ft-step-dot "+estado+pulseClass+"\"><i class=\"ti "+paso.icon+"\"></i></div>";
     s+="<div class=\"ft-step-info\"><div class=\"ft-step-title"+(estado==="pending"?" pending":"")+"\">"+paso.title+"</div>";
     if(sub) s+="<div class=\"ft-step-sub\">"+sub+"</div>";
+    s+=evidenciaHtml;
     s+="</div></div>";
     return s;
   }).join("");
@@ -210,6 +225,7 @@ function renderEnvio(p){
   }
 
   let mensajeEstado=ESTADO_ENVIO_MENSAJE[p.estado_envio]||"Estamos esperando la primera actualización de la paquetería.";
+  const fechaEstimada=p.fecha_estimada_entrega?new Date(p.fecha_estimada_entrega).toLocaleDateString("es-MX",{weekday:"long",day:"2-digit",month:"long"}):null;
   const horasSinActualizar=tiempoDesde(p.ultima_actualizacion_envio);
   let avisoTardanza="";
   if(p.estado_envio&&p.estado_envio!=="delivered"&&horasSinActualizar!==null&&horasSinActualizar>48){
@@ -225,7 +241,6 @@ function renderEnvio(p){
   }
 
   const ultimaAct=p.ultima_actualizacion_envio?new Date(p.ultima_actualizacion_envio).toLocaleString("es-MX",{day:"2-digit",month:"short",hour:"2-digit",minute:"2-digit"}):"—";
-  const fechaEstimada=p.fecha_estimada_entrega?new Date(p.fecha_estimada_entrega).toLocaleDateString("es-MX",{weekday:"long",day:"2-digit",month:"long"}):null;
 
   cont.innerHTML=
     "<div class=\"ft-card\">"+
@@ -233,8 +248,8 @@ function renderEnvio(p){
     "<div class=\"ft-tracking-box\">"+
     "<div class=\"ft-tracking-row\"><span class=\"ft-tracking-label\">Paquetería</span><span style=\"font-weight:500\">"+(p.paqueteria||"—")+"</span></div>"+
     "<div class=\"ft-tracking-row\"><span class=\"ft-tracking-label\">Guía</span><span style=\"font-weight:500;font-family:monospace\">"+p.guia_numero+"</span></div>"+
-    (fechaEstimada?"<div class=\"ft-tracking-row\"><span class=\"ft-tracking-label\">Entrega estimada</span><span style=\"font-weight:500;color:#2563eb;text-transform:capitalize\">"+fechaEstimada+"</span></div>":"")+
     (p.ultima_ubicacion_envio?"<div class=\"ft-tracking-row\"><span class=\"ft-tracking-label\">Última ubicación</span><span>"+p.ultima_ubicacion_envio+"</span></div>":"")+
+    (fechaEstimada?"<div class=\"ft-tracking-row\"><span class=\"ft-tracking-label\">Entrega estimada</span><span style=\"font-weight:500;color:#2563eb;text-transform:capitalize\">"+fechaEstimada+"</span></div>":"")+
     "<div class=\"ft-tracking-row\" style=\"margin-bottom:0\"><span class=\"ft-tracking-label\">Última actualización</span><span>"+ultimaAct+"</span></div>"+
     "</div>"+
     (p.estado_envio?"<div class=\"ft-tracking-status-box\">"+mensajeEstado+"</div>":"")+
