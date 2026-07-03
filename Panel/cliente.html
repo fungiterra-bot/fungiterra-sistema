@@ -16,10 +16,6 @@ body{margin:0;background:#eef1f4;font-family:'Inter',sans-serif}
 .ft-header-text h2{margin:0;font-size:15px;font-weight:600;color:white}
 .ft-header-text p{margin:0;font-size:12px;color:rgba(255,255,255,0.75)}
 .ft-card{background:white;border-radius:12px;padding:16px 20px;margin-bottom:12px;border:0.5px solid #e5e7eb}
-.ft-evidencia-title{font-size:13px;font-weight:600;color:#374151;margin-bottom:10px}
-.ft-evidencia-grid{display:flex;gap:8px;flex-wrap:wrap}
-.ft-evidencia-thumb{width:64px;height:64px;object-fit:cover;border-radius:10px;border:0.5px solid #e5e7eb;display:block}
-.ft-evidencia-archivo{display:flex;align-items:center;justify-content:center;font-size:26px;background:#f3f4f6}
 .ft-order-id{font-size:11px;color:#6b7280;margin-bottom:2px}
 .ft-client-name{font-size:17px;font-weight:600;color:#111827;margin-bottom:4px}
 .ft-order-meta{font-size:12px;color:#6b7280}
@@ -149,26 +145,11 @@ function render(p,productos){
     "<div class=\"ft-order-meta\">"+productos.length+" producto"+(productos.length!==1?"s":"")+" · "+fecha+"</div>"+
     "</div>"+
     "<div class=\"ft-card\"><div class=\"ft-steps\" id=\"steps-container\"></div></div>"+
-    (p.fotos_empaquetado&&p.fotos_empaquetado.length?"<div class=\"ft-card\" id=\"evidencia-card\"></div>":"")+
     "</div>"+
     "<div id=\"tab-envio\" style=\"display:none\"></div>";
 
   renderSteps(p);
-  renderEvidencia(p);
   renderEnvio(p);
-}
-
-function renderEvidencia(p){
-  const el=document.getElementById("evidencia-card");
-  if(!el||!p.fotos_empaquetado||!p.fotos_empaquetado.length)return;
-  const items=p.fotos_empaquetado.map(f=>{
-    const esImg=f.tipo&&f.tipo.indexOf("image/")===0;
-    const preview=esImg
-      ? "<img class=\"ft-evidencia-thumb\" src=\""+f.url+"\" alt=\"Evidencia\">"
-      : "<div class=\"ft-evidencia-thumb ft-evidencia-archivo\">📄</div>";
-    return "<a href=\""+f.url+"\" target=\"_blank\" rel=\"noopener\">"+preview+"</a>";
-  }).join("");
-  el.innerHTML="<div class=\"ft-evidencia-title\">📷 Tu pedido ya empacado</div><div class=\"ft-evidencia-grid\">"+items+"</div>";
 }
 
 const PASOS_BASE=[
@@ -244,6 +225,7 @@ function renderEnvio(p){
   }
 
   const ultimaAct=p.ultima_actualizacion_envio?new Date(p.ultima_actualizacion_envio).toLocaleString("es-MX",{day:"2-digit",month:"short",hour:"2-digit",minute:"2-digit"}):"—";
+  const fechaEstimada=p.fecha_estimada_entrega?new Date(p.fecha_estimada_entrega).toLocaleDateString("es-MX",{weekday:"long",day:"2-digit",month:"long"}):null;
 
   cont.innerHTML=
     "<div class=\"ft-card\">"+
@@ -251,6 +233,7 @@ function renderEnvio(p){
     "<div class=\"ft-tracking-box\">"+
     "<div class=\"ft-tracking-row\"><span class=\"ft-tracking-label\">Paquetería</span><span style=\"font-weight:500\">"+(p.paqueteria||"—")+"</span></div>"+
     "<div class=\"ft-tracking-row\"><span class=\"ft-tracking-label\">Guía</span><span style=\"font-weight:500;font-family:monospace\">"+p.guia_numero+"</span></div>"+
+    (fechaEstimada?"<div class=\"ft-tracking-row\"><span class=\"ft-tracking-label\">Entrega estimada</span><span style=\"font-weight:500;color:#2563eb;text-transform:capitalize\">"+fechaEstimada+"</span></div>":"")+
     (p.ultima_ubicacion_envio?"<div class=\"ft-tracking-row\"><span class=\"ft-tracking-label\">Última ubicación</span><span>"+p.ultima_ubicacion_envio+"</span></div>":"")+
     "<div class=\"ft-tracking-row\" style=\"margin-bottom:0\"><span class=\"ft-tracking-label\">Última actualización</span><span>"+ultimaAct+"</span></div>"+
     "</div>"+
