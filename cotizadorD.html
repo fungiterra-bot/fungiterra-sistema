@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Cotizador Fungiterra v3</title>
+<title>Cotizador Fungiterra v4</title>
 <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=DM+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
@@ -122,7 +122,7 @@ textarea{resize:vertical;min-height:60px}
 <body>
 
 <header>
-  <div><h1>🍄 Sistema Fungiterra <span style="font-size:14px;opacity:.7">v3</span></h1><div class="header-sub">Cotizador · Generador de IDs · Cotización formal</div></div>
+  <div><h1>🍄 Sistema Fungiterra</h1><div class="header-sub">Cotizador · Generador de IDs · Cotización formal · v4</div></div>
   <a href="https://fungiterra-bot.github.io/fungiterra-sistema/repositorioD.html" target="_blank" style="color:rgba(255,255,255,.85);font-size:12px;text-decoration:none;border:1px solid rgba(255,255,255,.35);border-radius:7px;padding:6px 14px;font-family:var(--sans);font-weight:500;transition:all .2s;background:rgba(255,255,255,.08)" onmouseover="this.style.background='rgba(255,255,255,.18)'" onmouseout="this.style.background='rgba(255,255,255,.08)'">📋 Repositorio →</a>
 </header>
 
@@ -209,14 +209,17 @@ textarea{resize:vertical;min-height:60px}
       <div class="ct">Productos Fungiterra</div>
       <div class="g4">
         <div><label>Especie</label>
-          <select id="ft-esp">
+          <select id="ft-esp" onchange="onCambioEspecieSelect()">
             <optgroup label="Setas comunes"><option>Seta Azul</option><option>Seta Ostreatus</option><option>Seta Fénix</option><option>Seta Rosa</option><option>Seta Amarilla</option><option>Seta de Cardo</option></optgroup>
-            <optgroup label="Otras especies"><option>Shiitake</option><option>Bunapi Shimeji</option><option>Buna Shimeji</option><option>Portobello</option><option>Champiñón Blanco</option><option>Hongo Barbuda</option><option>Nameko</option><option>Chestnut</option><option>Piopino</option><option>Enokitake Golden</option><option>Melena de León</option><option>Cola de Pavo</option><option>Reishi multipileum</option><option>Reishi resinaceum</option><option>Cordyceps</option></optgroup>
+            <optgroup label="Otras especies"><option>Shiitake</option><option>Bunapi Shimeji</option><option>Buna Shimeji</option><option>Portobello</option><option>Champiñón Blanco</option><option>Hongo Barbuda</option><option>Nameko</option><option>Chestnut</option><option>Piopino</option><option>Enokitake Golden</option><option>Melena de León</option><option>Cola de Pavo</option><option>Reishi multipileum</option><option>Reishi resinaceum</option><option>Cordyceps</option><option>Coprinus</option><option>Seta composteada</option></optgroup>
             <optgroup label="Especiales"><option>Hongo de Pino</option><option>Seta de Agave</option><option>Shiitake Donko</option><option>Hongo Diente de Oso</option><option>Champiñón Almendra</option></optgroup>
+            <optgroup label="Especies agregadas" id="ft-esp-custom-group"></optgroup>
+            <option value="__nueva__">➕ Nueva especie...</option>
           </select>
+          <input type="text" id="ft-esp-nueva" placeholder="Escribe el nombre de la nueva especie" oninput="actualizarPreviewEspecieNueva()" style="display:none;margin-top:6px">
         </div>
         <div><label>Tipo</label>
-          <select id="ft-tipo" onchange="ftActualizarCant()"><option value="cepa">Cepa (petri)</option><option value="micelio">Micelio (kg)</option><option value="mushbag">Mushbag (1.5kg)</option><option value="mushbag3">Mushbag (3kg)</option><option value="fresco">Fresco (kg)</option><option value="deshidratado">Deshidratado (kg)</option></select>
+          <select id="ft-tipo" onchange="ftActualizarCant()"><option value="cepa">Cepa (petri)</option><option value="micelio">Micelio (kg)</option><option value="mushbag">Mushbag (1.5kg)</option><option value="mushbag3">Mushbag (3kg)</option><option value="fresco">Fresco (kg)</option><option value="deshidratado">Deshidratado (kg)</option><option value="extracto">Extracto (kg)</option></select>
         </div>
         <div><label>Cantidad</label><input type="number" id="ft-cant" min="0.1" step="0.1" value="1"></div>
         <div><label>Precio unitario ($)</label><input type="number" id="ft-precio" min="0" step="0.01" placeholder="0.00"></div>
@@ -256,13 +259,50 @@ textarea{resize:vertical;min-height:60px}
     </div>
 
     <div class="card">
+      <div class="ct">Insumos — Pellets</div>
+      <div class="g4">
+        <div><label>Producto</label>
+          <select id="pl-tipo" onchange="plActualizarPrecio()">
+            <option value="aserrin10">Pellets de aserrín 10%</option>
+            <option value="aserrin20">Pellets de aserrín 20%</option>
+            <option value="compostchampi">Pellets de compost champi</option>
+            <option value="compostseta">Pellets de compost seta</option>
+          </select>
+        </div>
+        <div><label>Kilos</label><input type="number" id="pl-cant" min="0.1" step="0.1" value="1"></div>
+        <div><label>Precio por kilo ($)</label><input type="number" id="pl-precio" min="0" step="0.01" placeholder="0.00"></div>
+        <div style="display:flex;align-items:flex-end"><button class="btn btn-g btn-sm" style="width:100%" onclick="plAgregar()">+ Agregar</button></div>
+      </div>
+      <div style="margin-top:12px" id="pl-lista"></div>
+    </div>
+
+    <div class="card">
       <div class="ct">Otro producto / servicio</div>
       <div class="g4">
-        <div style="grid-column:span 2"><label>Descripción</label><input type="text" id="ot-desc" placeholder="Ej: Fungisopa, descuento..."></div>
+        <div style="grid-column:span 2"><label>Descripción</label><input type="text" id="ot-desc" placeholder="Ej: Fungisopa, Mix de hongos, descuento..."></div>
         <div><label>Cantidad</label><input type="number" id="ot-cant" min="1" value="1"></div>
         <div><label>Precio unitario ($)</label><input type="number" id="ot-precio" min="0" step="0.01" placeholder="0.00"></div>
       </div>
-      <button class="btn btn-g btn-sm" onclick="otAgregar()">+ Agregar</button>
+      <div class="g2" style="margin-top:8px">
+        <div><label>Área (opcional)</label>
+          <select id="ot-area">
+            <option value="">— Elegir área —</option>
+            <option value="fungibolsa">FungiBolsa</option>
+            <option value="laboratorio">Laboratorio</option>
+            <option value="transformacion">Transformación</option>
+            <option value="insumos">Insumos</option>
+            <option value="piopis">Piopis</option>
+          </select>
+        </div>
+        <div style="display:flex;align-items:flex-end">
+          <label style="display:flex;align-items:center;gap:6px;font-size:12px;font-weight:400">
+            <input type="checkbox" id="ot-guardar-regla" style="width:auto">
+            Guardar este producto en esta área para futuras cotizaciones
+          </label>
+        </div>
+      </div>
+      <button class="btn btn-g btn-sm" style="margin-top:8px" onclick="otAgregar()">+ Agregar</button>
+      <span class="note" id="ot-nota"></span>
       <div style="margin-top:12px" id="ot-lista"></div>
     </div>
 
@@ -486,7 +526,7 @@ textarea{resize:vertical;min-height:60px}
 
 <script>
 const SCRIPT_URL='https://script.google.com/macros/s/AKfycbwDrQYyK9CVCrl8AdyBET9klNBZcALNz3wNKWy_JqPLJA082rkpz6ryDDJe5yUfoweIMw/exec';
-var ftItems=[],fbItems=[],otItems=[],idGenerado='';
+var ftItems=[],fbItems=[],otItems=[],plItems=[],idGenerado='';
 var SOCIOS={
   J:{nombre:'Socio J',banco:'',cuenta:'',clabe:'',tarjeta:'',cargo:'Ventas'},
   V:{nombre:'Victor Manuel Martínez',banco:'BBVA',cuenta:'288 850 5136',clabe:'012 180 02888505136 8',tarjeta:'4152 3138 7779 8624',cargo:'Ventas'},
@@ -662,28 +702,59 @@ function showTab2(n){
   document.getElementById('panel2-res').classList.toggle('active',n==='res');
   if(n==='res')renderRes2();
 }
+function onCambioEspecieSelect(){
+  var esNueva=document.getElementById('ft-esp').value==='__nueva__';
+  var campo=document.getElementById('ft-esp-nueva');
+  campo.style.display=esNueva?'block':'none';
+  if(esNueva)campo.focus();
+}
+var ESPECIES_CUSTOM_KEY='ft_especies_custom_v1';
+function getEspeciesCustom(){try{return JSON.parse(localStorage.getItem(ESPECIES_CUSTOM_KEY)||'[]');}catch(e){return[];}}
+function guardarEspecieCustom(nombre){
+  var lista=getEspeciesCustom();
+  if(!lista.includes(nombre)){lista.push(nombre);localStorage.setItem(ESPECIES_CUSTOM_KEY,JSON.stringify(lista));}
+}
+function poblarEspeciesCustom(){
+  var grupo=document.getElementById('ft-esp-custom-group');
+  if(!grupo)return;
+  grupo.innerHTML=getEspeciesCustom().map(function(e){return '<option>'+e+'</option>';}).join('');
+}
+function especieActual(){
+  var sel=document.getElementById('ft-esp').value;
+  if(sel==='__nueva__')return document.getElementById('ft-esp-nueva').value.trim();
+  return sel;
+}
 function ftActualizarCant(){
   var tipo=document.getElementById('ft-tipo').value,ci=document.getElementById('ft-cant');
-  if(['fresco','deshidratado','micelio'].includes(tipo)){ci.step='0.1';ci.min='0.1';}
+  if(['fresco','deshidratado','micelio','extracto'].includes(tipo)){ci.step='0.1';ci.min='0.1';}
   else{ci.step='1';ci.min='1';ci.value=Math.round(parseFloat(ci.value)||1);}
 }
 function ftBuscarPrecio(){
-  var esp=document.getElementById('ft-esp').value,tipo=document.getElementById('ft-tipo').value,p=null,nota=document.getElementById('ft-nota');
+  var esp=especieActual(),tipo=document.getElementById('ft-tipo').value,p=null,nota=document.getElementById('ft-nota');
   if(tipo==='cepa')p=CEPA[esp]||2500;
   else if(tipo==='micelio'){if(esp==='Cordyceps'){nota.textContent='Sin precio micelio Cordyceps';nota.className='note warn';return;}else if(MIC_ESP[esp])p=MIC_ESP[esp];else if(G1.includes(esp))p=85;else if(G2.includes(esp))p=125;}
   else if(tipo==='mushbag'){if(esp==='Cordyceps')p=250;else if(MB_EXTRA[esp])p=MB_EXTRA[esp];else if(MIC_ESP[esp])p=MIC_ESP[esp];else if(G1.includes(esp))p=85;else if(G2.includes(esp))p=125;}
   else if(tipo==='mushbag3'){nota.textContent='Precio manual';nota.className='note warn';return;}
   else if(tipo==='fresco')p=FRESCO[esp]||null;
   else if(tipo==='deshidratado')p=DESH[esp]||null;
+  else if(tipo==='extracto'){nota.textContent='Precio manual — se vende por kilo';nota.className='note warn';return;}
   if(!p){nota.textContent='Sin precio — ingresa manualmente';nota.className='note warn';return;}
   document.getElementById('ft-precio').value=p.toFixed(2);nota.textContent='Catálogo: '+fmx(p);nota.className='note';
 }
 function ftAgregar(){
-  var esp=document.getElementById('ft-esp').value,tipo=document.getElementById('ft-tipo').value;
+  var esp=especieActual(),tipo=document.getElementById('ft-tipo').value;
+  if(!esp){alert('Escribe el nombre de la especie');return;}
   var cant=parseFloat(document.getElementById('ft-cant').value),precio=parseFloat(document.getElementById('ft-precio').value);
   if(isNaN(cant)||cant<=0||isNaN(precio)||precio<=0){alert('Datos inválidos');return;}
-  var tl={cepa:'Cepa (petri)',micelio:'Micelio (kg)',mushbag:'Mushbag (1.5kg)',mushbag3:'Mushbag (3kg)',fresco:'Fresco (kg)',deshidratado:'Deshidratado (kg)'};
+  var tl={cepa:'Cepa (petri)',micelio:'Micelio (kg)',mushbag:'Mushbag (1.5kg)',mushbag3:'Mushbag (3kg)',fresco:'Fresco (kg)',deshidratado:'Deshidratado (kg)',extracto:'Extracto (kg)'};
   ftItems.push({desc:esp+' — '+tl[tipo],cant,precio,total:cant*precio});
+  if(document.getElementById('ft-esp').value==='__nueva__'){
+    guardarEspecieCustom(esp);
+    poblarEspeciesCustom();
+    document.getElementById('ft-esp').value=esp;
+    document.getElementById('ft-esp-nueva').value='';
+    document.getElementById('ft-esp-nueva').style.display='none';
+  }
   document.getElementById('ft-cant').value=1;document.getElementById('ft-precio').value='';document.getElementById('ft-nota').textContent='';renderFTLista();
 }
 function ftEliminar(i){ftItems.splice(i,1);renderFTLista();}
@@ -712,11 +783,47 @@ function renderFBLista(){
   var el=document.getElementById('fb-lista');
   el.innerHTML=fbItems.length?'<div style="font-size:10px;color:#9ca3af;margin-bottom:6px;text-transform:uppercase">Bolsas</div>'+fbItems.map((it,i)=>'<div class="item-row"><div class="item-desc">'+it.desc+'<div class="item-sub">'+it.cant+' × '+fmx(it.precio)+'</div></div><div class="item-price">'+fmx(it.total)+'</div><button class="btn-del" onclick="fbEliminar('+i+')">×</button></div>').join(''):'';
 }
+var PL_PRECIOS={aserrin10:30,aserrin20:35,compostchampi:50,compostseta:45};
+var PL_LABELS={aserrin10:'Pellets de aserrín 10%',aserrin20:'Pellets de aserrín 20%',compostchampi:'Pellets de compost champi',compostseta:'Pellets de compost seta'};
+function plActualizarPrecio(){
+  var tipo=document.getElementById('pl-tipo').value;
+  document.getElementById('pl-precio').value=PL_PRECIOS[tipo].toFixed(2);
+}
+function plAgregar(){
+  var tipo=document.getElementById('pl-tipo').value;
+  var cant=parseFloat(document.getElementById('pl-cant').value),precio=parseFloat(document.getElementById('pl-precio').value);
+  if(isNaN(cant)||cant<=0||isNaN(precio)||precio<=0){alert('Datos inválidos');return;}
+  plItems.push({desc:PL_LABELS[tipo]+' (kg)',cant,precio,total:cant*precio});
+  document.getElementById('pl-cant').value=1;renderPLLista();
+}
+function plEliminar(i){plItems.splice(i,1);renderPLLista();}
+function renderPLLista(){
+  var el=document.getElementById('pl-lista');
+  el.innerHTML=plItems.length?'<div style="font-size:10px;color:#9ca3af;margin-bottom:6px;text-transform:uppercase">Pellets agregados</div>'+plItems.map((it,i)=>'<div class="item-row"><div class="item-desc">'+it.desc+'<div class="item-sub">'+it.cant+' × '+fmx(it.precio)+'</div></div><div class="item-price">'+fmx(it.total)+'</div><button class="btn-del" onclick="plEliminar('+i+')">×</button></div>').join(''):'';
+}
 function otAgregar(){
   var desc=document.getElementById('ot-desc').value.trim(),cant=parseFloat(document.getElementById('ot-cant').value),precio=parseFloat(document.getElementById('ot-precio').value);
   if(!desc||isNaN(cant)||cant<=0||isNaN(precio)||precio<=0){alert('Datos inválidos');return;}
   otItems.push({desc,cant,precio,total:cant*precio});
-  document.getElementById('ot-desc').value='';document.getElementById('ot-cant').value=1;document.getElementById('ot-precio').value='';renderOTLista();
+  var area=document.getElementById('ot-area').value;
+  var guardar=document.getElementById('ot-guardar-regla').checked;
+  var nota=document.getElementById('ot-nota');
+  if(guardar&&area){
+    fetch('https://fungiterra-api-production.up.railway.app/producto-areas',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({producto:desc,area:area})
+    }).then(function(r){return r.json();}).then(function(){
+      nota.textContent='✅ Guardado: "'+desc+'" → '+area;nota.className='note';
+    }).catch(function(){
+      nota.textContent='⚠️ No se pudo guardar la regla (sin conexión)';nota.className='note warn';
+    });
+  } else {
+    nota.textContent='';
+  }
+  document.getElementById('ot-desc').value='';document.getElementById('ot-cant').value=1;document.getElementById('ot-precio').value='';
+  document.getElementById('ot-area').value='';document.getElementById('ot-guardar-regla').checked=false;
+  renderOTLista();
 }
 function otEliminar(i){otItems.splice(i,1);renderOTLista();}
 function renderOTLista(){
@@ -752,7 +859,7 @@ function renderOTLista(){
 }
 function getTotales(){
   var envio=parseFloat(document.getElementById('env-monto').value)||0;
-  var todos=ftItems.concat(fbItems).concat(otItems);
+  var todos=ftItems.concat(fbItems).concat(otItems).concat(plItems);
   var sub=todos.reduce((s,i)=>s+i.total,0);
   return{todos,sub,envio,tot:sub+envio};
 }
@@ -831,8 +938,8 @@ function limpiarCotizacion(){
     var el=document.getElementById(id); if(el) el.value='';
   });
   var envMonto=document.getElementById('env-monto'); if(envMonto) envMonto.value='0';
-  ftItems=[]; fbItems=[]; otItems=[];
-  renderFTLista(); renderFBLista(); renderOTLista();
+  ftItems=[]; fbItems=[]; otItems=[]; plItems=[];
+  renderFTLista(); renderFBLista(); renderOTLista(); renderPLLista();
   idGenerado='';
   window._idAnterior=null;
   var idArea=document.getElementById('res2-id-area'); if(idArea) idArea.style.display='none';
@@ -1033,6 +1140,8 @@ async function descargarPDF(){
   }catch(e){alert('Error: '+e.message);}
   btn.innerHTML='⬇️ Descargar PDF';btn.disabled=false;
 }
+poblarEspeciesCustom();
+plActualizarPrecio();
 </script>
 </body>
 </html>
