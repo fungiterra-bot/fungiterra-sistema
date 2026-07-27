@@ -4,7 +4,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Repositorio v35 — Fungiterra</title>
+<title>Repositorio v35.6 — Fungiterra</title>
 <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=DM+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <style>
@@ -197,7 +197,7 @@ td.gris{color:#6b7280;font-size:12px}
 </head>
 <body>
 <header>
-  <div><h1>🍄 Repositorio Fungiterra</h1><div class="header-sub">Cotizaciones · Estados · Pagos · v35.5</div></div>
+  <div><h1>🍄 Repositorio Fungiterra</h1><div class="header-sub">Cotizaciones · Estados · Pagos · v35.6</div></div>
   <div style="display:flex;gap:8px;align-items:center">
     <button onclick="abrirAnalizador()" style="background:rgba(255,255,255,.15);border:1.5px solid rgba(255,255,255,.4);color:white;border-radius:7px;padding:6px 14px;cursor:pointer;font-size:12px;font-weight:600;font-family:var(--sans)">🏦 Conciliar</button>
     <button onclick="abrirReglas()" style="background:rgba(255,255,255,.15);border:1.5px solid rgba(255,255,255,.4);color:white;border-radius:7px;padding:6px 14px;cursor:pointer;font-size:12px;font-weight:600;font-family:var(--sans)">⚙️ Reglas</button>
@@ -649,14 +649,23 @@ function _enPeriodo(f, periodo) {
 
 function cargar(){
   document.getElementById('tb').innerHTML='<tr><td colspan="6" class="empty"><span class="spinner"></span>Cargando...</td></tr>';
-  fetch(SCRIPT_URL+'?accion=repositorio')
-  .then(function(r){return r.json();})
-  .then(function(data){
+  Promise.all([
+    fetch(SCRIPT_URL+'?accion=repositorio').then(function(r){return r.json();}),
+    fetch('https://fungiterra-api-production.up.railway.app/pedidos?limite=500').then(function(r){return r.json();}).catch(function(){return [];})
+  ])
+  .then(function(res){
+    var data=res[0];
+    var pedidosRailway=Array.isArray(res[1])?res[1]:(res[1].pedidos||[]);
+    var enviados={};
+    pedidosRailway.forEach(function(p){
+      if(p.id_repositorio) enviados[p.id_repositorio]=p.creado_en?new Date(p.creado_en).toLocaleString('es-MX'):'sí';
+    });
     _todos=(data.cotizaciones||[]).sort(function(a,b){
       var fa=_parseFechaSort(a.fechaEstado||a.fecha);
       var fb=_parseFechaSort(b.fechaEstado||b.fecha);
       return fb-fa;
     });
+    _todos.forEach(function(c){ if(enviados[c.id]) c.enviadoFungiterra=enviados[c.id]; });
     var pend=_todos.filter(function(c){return c.estado==='Generada'||c.estado==='Pago parcial';}).length;
     var pag=_todos.filter(function(c){return c.estado==='Pagada';}).length;
     var suma=_todos.filter(function(c){return c.estado==='Pagada';}).reduce(function(s,c){return s+Number(c.total||0);},0);
@@ -742,20 +751,24 @@ function mostrarDetalle(c){
 
   var notasTexto = parsed.notasLimpias;
 
+  var btnFungiterra = c.enviadoFungiterra
+    ? '<span class="btn btn-sm" style="background:#e8f5e9;color:#2d6a2d;border:1px solid #2d6a2d;cursor:default" title="Enviado el '+c.enviadoFungiterra+'">✅ Enviado a Fungiterra</span>'
+    : '<button class="btn btn-fungiterra btn-sm" onclick="enviarAFungiterra(\''+c.id+'\')" style="background:#834b3e;color:white;border-color:#834b3e">🍄 Enviar a Fungiterra</button>';
+
   var btns='';
   if(est==='Generada'){
-    btns='<button class="btn btn-fungiterra btn-sm" onclick="enviarAFungiterra(\''+c.id+'\')" style="background:#834b3e;color:white;border-color:#834b3e">🍄 Enviar a Fungiterra</button>'+
+    btns=btnFungiterra+
          '<button class="btn btn-amarillo btn-sm" onclick="abrirAbono(\''+c.id+'\')">💵 Registrar abono</button>'+
          '<button class="btn btn-v btn-sm" onclick="cambiarEstado(\''+c.id+'\',\'Pagada\')">✅ Pagada completa</button>'+
          '<button class="btn btn-a btn-sm" onclick="editarCotizacion(\''+c.id+'\')">✏️ Editar</button>'+
          '<button class="btn btn-sm btn-r" onclick="cambiarEstado(\''+c.id+'\',\'Cancelada\')">Cancelar</button>';
   } else if(est==='Pago parcial'){
-    btns='<button class="btn btn-fungiterra btn-sm" onclick="enviarAFungiterra(\''+c.id+'\')" style="background:#834b3e;color:white;border-color:#834b3e">🍄 Enviar a Fungiterra</button>'+
+    btns=btnFungiterra+
          '<button class="btn btn-amarillo btn-sm" onclick="abrirAbono(\''+c.id+'\')">💵 Agregar abono</button>'+
          '<button class="btn btn-v btn-sm" onclick="cambiarEstado(\''+c.id+'\',\'Pagada\')">✅ Marcar pagada completa</button>'+
          '<button class="btn btn-sm btn-r" onclick="abrirCpago(\''+c.id+'\')">↩️ Cancelar pagos</button>';
   } else if(est==='Pagada'){
-    btns='<button class="btn btn-fungiterra btn-sm" onclick="enviarAFungiterra(\''+c.id+'\')" style="background:#834b3e;color:white;border-color:#834b3e">🍄 Enviar a Fungiterra</button>'+
+    btns=btnFungiterra+
          '<button class="btn btn-a btn-sm" onclick="facturar(\''+c.id+'\')">🧾 Facturar</button>'+
          '<button class="btn btn-sm btn-r" onclick="abrirCpago(\''+c.id+'\')">↩️ Cancelar pago</button>';
   } else if(est==='Cancelada'){
@@ -846,7 +859,8 @@ cargar();
 function enviarAFungiterra(id){
   var c=_todos.find(function(x){return x.id===id;});
   if(!c)return;
-  if(!confirm('¿Enviar '+id+' a Fungiterra?\n\nNota: si ya fue enviado antes se creará un duplicado.'))return;
+  if(c.enviadoFungiterra){toast('⚠️ Ya fue enviado el '+c.enviadoFungiterra,false);return;}
+  if(!confirm('¿Enviar '+id+' a Fungiterra?'))return;
   toast('Enviando a Fungiterra...');
   
   // Parsear productos del texto
@@ -895,6 +909,9 @@ function enviarAFungiterra(id){
   .then(function(data){
     if(data.token){
       toast('✅ '+id+' enviado a Fungiterra');
+      c.enviadoFungiterra=new Date().toLocaleString('es-MX');
+      filtrar();
+      if(_sel===id) mostrarDetalle(c);
     } else {
       toast('⚠️ '+(data.error||'Error al enviar'),false);
     }
