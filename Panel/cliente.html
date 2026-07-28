@@ -71,7 +71,7 @@ body{margin:0;background:#eef1f4;font-family:'Inter',sans-serif}
     <div class="ft-header">
       <div class="ft-logo-circle">FT</div>
       <div class="ft-header-text">
-        <h2>Seguimiento de pedido · v-envios4</h2>
+        <h2>Seguimiento de pedido · v9</h2>
         <p>Fungiterra — Hongos a tu servicio</p>
       </div>
     </div>
@@ -151,7 +151,7 @@ function render(p,productos){
     "</div>"+
     "<div id=\"tab-envio\" style=\"display:none\"></div>";
 
-  renderSteps(p);
+  renderSteps(p,productos);
   renderEnvio(p);
 }
 
@@ -163,7 +163,7 @@ const PASOS_BASE=[
   {key:"entregado",icon:"ti-circle-check",title:"Entregado"}
 ];
 
-function renderSteps(p){
+function renderSteps(p,productos){
   const orden=["recibido","en_produccion","empaquetado","enviado","entregado"];
   const estadoActual=p.estado_actual;
 
@@ -184,6 +184,15 @@ function renderSteps(p){
     else if(i===idxActual) estado="active";
 
     let sub="";
+    if(paso.key==="en_produccion"&&estado!=="pending"){
+      const fechasEst=(productos||[])
+        .filter(pr=>pr.estado==="en_produccion"&&pr.fecha_estimada_termino)
+        .map(pr=>new Date(pr.fecha_estimada_termino));
+      if(fechasEst.length){
+        const maxFecha=new Date(Math.max.apply(null,fechasEst));
+        sub="Estimado: "+maxFecha.toLocaleDateString("es-MX",{day:"2-digit",month:"short"});
+      }
+    }
     if(paso.key==="enviado"&&estado!=="pending"&&p.guia_numero){
       sub="Guía activa"+(p.paqueteria?" · "+p.paqueteria:"");
     }
