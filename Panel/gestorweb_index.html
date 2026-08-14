@@ -1316,8 +1316,7 @@ async function abrirDetalle(id){
     "<div class=\"d-row\"><span class=\"d-label\">Canal</span><span class=\"d-val\">"+(CANAL_LABEL[p.canal]||p.canal||"—")+"</span></div>"+
     "<div class=\"d-row\"><span class=\"d-label\">Socio</span><span class=\"d-val\">"+(p.socio||"—")+"</span></div>"+
     "<div class=\"d-row\"><span class=\"d-label\">Fecha</span><span class=\"d-val\">"+(p.fecha||"—")+"</span></div>"+
-    "<div class=\"d-row\"><span class=\"d-label\">Tipo</span><span class=\"d-val\">"+(p.tipo||"—")+"</span></div>"+
-    "<div class=\"d-monto\">"+fmx(p.total)+"</div></div>"+
+    "<div class=\"d-row\"><span class=\"d-label\">Tipo</span><span class=\"d-val\">"+(p.tipo||"—")+"</span></div></div>"+
 
     "<div class=\"d-section\"><div class=\"d-section-title\">Estado del pedido</div>"+
     "<div>"+badge(p.estado)+"</div></div>"+
@@ -1361,7 +1360,7 @@ function renderAreas(productos){
     const info=AREA_MAP[area]||{label:area,blk:""};
     const items=prods.map(p=>{
       const fechaEst=p.fecha_estimada_termino?new Date(p.fecha_estimada_termino).toLocaleDateString("es-MX",{day:"2-digit",month:"short"}):null;
-      return "<div class=\"prod-row\"><span>"+p.cantidad+"x "+p.nombre_producto+" <em style=\"color:var(--text3);font-style:normal;font-size:10px\">("+(p.estado||"pendiente")+")</em>"+(fechaEst?" <span style=\"color:var(--azul);font-weight:600;font-size:10px;background:var(--azul-soft);padding:1px 6px;border-radius:6px;margin-left:4px\">📅 "+fechaEst+"</span>":"")+"</span><span style=\"color:var(--text3)\">"+fmx(p.subtotal)+"</span></div>";
+      return "<div class=\"prod-row\"><span>"+p.cantidad+"x "+p.nombre_producto+" <em style=\"color:var(--text3);font-style:normal;font-size:10px\">("+(p.estado||"pendiente")+")</em>"+(fechaEst?" <span style=\"color:var(--azul);font-weight:600;font-size:10px;background:var(--azul-soft);padding:1px 6px;border-radius:6px;margin-left:4px\">📅 "+fechaEst+"</span>":"")+"</span></div>";
     }).join("");
     return "<div class=\"area-block "+(info.blk||"")+"\"><div class=\"area-block-top\"><span class=\"area-block-name\">"+(info.label||area)+"</span></div>"+items+"</div>";
   }).join("");
