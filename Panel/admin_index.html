@@ -846,6 +846,32 @@ th.sort-desc::after{content:" ▼";font-size:9px;opacity:.7}
 <script>
 
 const API="https://fungiterra-api-production.up.railway.app";
+// ── SESIÓN DE ADMIN (v58, 2026-08-25) ────────────────────────────
+// Antes de esto, pasar el passcode una vez solo quedaba recordado
+// LOCALMENTE — ninguna llamada posterior volvía a probar nada, así que
+// cualquiera con la URL del API veía los datos sin passcode. Ahora
+// /auth/verificar regresa un boleto de sesión (ver TOKEN_KEY más abajo)
+// que se manda en cada llamada vía x-session-token. Ver fungiterra-api v58.
+const TOKEN_KEY="ft_admin_token";
+(function(){
+  var _fetch=window.fetch;
+  window.fetch=function(url,opts){
+    opts=opts||{};
+    if(typeof url==="string"&&url.indexOf("fungiterra-api-production.up.railway.app")!==-1){
+      var token=localStorage.getItem(TOKEN_KEY);
+      opts.headers=Object.assign({},opts.headers,token?{"x-session-token":token}:{});
+      return _fetch(url,opts).then(function(res){
+        if(res.status===401&&token){
+          localStorage.removeItem("ft_admin_auth");
+          localStorage.removeItem(TOKEN_KEY);
+          location.reload();
+        }
+        return res;
+      });
+    }
+    return _fetch(url,opts);
+  };
+})();
 let _todos=[];
 let _clientes=[];
 let _vistaActual="pedidos";
@@ -3287,7 +3313,7 @@ const AUTH_DIAS=5; // cuántos días dura la sesión guardada antes de pedir con
 function authValido(){
   try{
     const g=JSON.parse(localStorage.getItem(AUTH_KEY)||"null");
-    return g&&g.exp&&Date.now()<g.exp;
+    return g&&g.exp&&Date.now()<g.exp&&!!localStorage.getItem(TOKEN_KEY);
   }catch(e){return false}
 }
 async function intentarLogin(){
@@ -3301,6 +3327,7 @@ async function intentarLogin(){
     const data=await r.json();
     if(data.ok){
       localStorage.setItem(AUTH_KEY,JSON.stringify({exp:Date.now()+AUTH_DIAS*24*60*60*1000}));
+      localStorage.setItem(TOKEN_KEY,data.token);
       iniciarPanelAutenticado();
     }else{
       err.textContent="⚠️ Contraseña incorrecta";
