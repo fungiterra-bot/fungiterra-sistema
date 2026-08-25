@@ -206,13 +206,93 @@ td.gris{color:#6b7280;font-size:12px}
 </style>
 </head>
 <body>
+<div id="ft-gate-overlay" style="position:fixed;inset:0;z-index:999999;background:#f4f4f2;display:flex;align-items:center;justify-content:center;font-family:Arial,Helvetica,sans-serif;">
+  <div style="background:#fff;border-radius:12px;box-shadow:0 1px 4px rgba(0,0,0,.08);padding:32px;width:280px;text-align:center;">
+    <div style="font-size:15px;color:#2b2b28;margin-bottom:16px;font-weight:bold;">🔒 Acceso — Repositorio</div>
+    <input id="ft-gate-input" type="password" placeholder="Contraseña" autocomplete="off" style="width:100%;box-sizing:border-box;padding:10px;border:1px solid #ddd;border-radius:8px;font-size:14px;margin-bottom:10px;">
+    <button id="ft-gate-btn" type="button" style="width:100%;padding:10px;background:#0177bf;color:#fff;border:none;border-radius:8px;font-weight:bold;cursor:pointer;">Entrar</button>
+    <div id="ft-gate-error" style="color:#c0392b;font-size:12px;margin-top:10px;min-height:14px;"></div>
+  </div>
+</div>
+<script>
+// ── ACCESO OPERATIVO (v58, 2026-08-25) ───────────────────────────
+// Antes este panel no pedía ninguna contraseña — cualquiera con la URL
+// veía los datos. Ahora pide el passcode operativo compartido (distinto
+// al de Admin) y guarda un boleto de sesión que se manda en cada llamada
+// al API vía el header x-session-token. Ver fungiterra-api v58.
+(function(){
+  var AUTH_KEY = 'ft_operativo_auth';
+  var TOKEN_KEY = 'ft_operativo_token';
+  var AUTH_DIAS = 5;
+  var API_BASE = 'https://fungiterra-api-production.up.railway.app';
+
+  function authValido(){
+    try{
+      var g = JSON.parse(localStorage.getItem(AUTH_KEY)||"null");
+      return !!(g && g.exp && Date.now() < g.exp && localStorage.getItem(TOKEN_KEY));
+    }catch(e){ return false; }
+  }
+  function ocultarGate(){
+    var el = document.getElementById('ft-gate-overlay');
+    if (el) el.style.display = 'none';
+  }
+  function intentarGateLogin(){
+    var input = document.getElementById('ft-gate-input');
+    var err = document.getElementById('ft-gate-error');
+    var pass = input.value;
+    if(!pass){ err.textContent = 'Escribe la contraseña'; return; }
+    err.textContent = 'Verificando...';
+    fetch(API_BASE + '/auth/verificar-operativo', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({passcode: pass})})
+      .then(function(r){ return r.json(); })
+      .then(function(data){
+        if(data.ok){
+          localStorage.setItem(AUTH_KEY, JSON.stringify({exp: Date.now() + AUTH_DIAS*24*60*60*1000}));
+          localStorage.setItem(TOKEN_KEY, data.token);
+          ocultarGate();
+        } else {
+          err.textContent = '⚠️ Contraseña incorrecta';
+          input.value = '';
+          input.focus();
+        }
+      })
+      .catch(function(){ err.textContent = '⚠️ Error de conexión, intenta de nuevo'; });
+  }
+  document.getElementById('ft-gate-btn').addEventListener('click', intentarGateLogin);
+  document.getElementById('ft-gate-input').addEventListener('keydown', function(e){ if(e.key==='Enter') intentarGateLogin(); });
+  document.getElementById('ft-gate-input').focus();
+
+  if (authValido()) ocultarGate();
+
+  // Intercepta fetch: si la URL apunta a nuestro API, agrega el header de
+  // sesión automáticamente — así no hay que tocar cada llamada existente
+  // del panel una por una.
+  var _fetch = window.fetch;
+  window.fetch = function(url, opts){
+    opts = opts || {};
+    if (typeof url === 'string' && url.indexOf('fungiterra-api-production.up.railway.app') !== -1) {
+      var token = localStorage.getItem(TOKEN_KEY);
+      opts.headers = Object.assign({}, opts.headers, token ? {'x-session-token': token} : {});
+      return _fetch(url, opts).then(function(res){
+        if (res.status === 401 && token) {
+          localStorage.removeItem(AUTH_KEY);
+          localStorage.removeItem(TOKEN_KEY);
+          location.reload();
+        }
+        return res;
+      });
+    }
+    return _fetch(url, opts);
+  };
+})();
+</script>
+
 <header>
   <div><h1>🍄 Repositorio Fungiterra</h1><div class="header-sub">Cotizaciones · Estados · Pagos · v36.1</div></div>
   <div style="display:flex;gap:8px;align-items:center">
     <button onclick="abrirAnalizador()" style="background:rgba(255,255,255,.15);border:1.5px solid rgba(255,255,255,.4);color:white;border-radius:7px;padding:6px 14px;cursor:pointer;font-size:12px;font-weight:600;font-family:var(--sans)">🏦 Conciliar</button>
     <button onclick="abrirReglas()" style="background:rgba(255,255,255,.15);border:1.5px solid rgba(255,255,255,.4);color:white;border-radius:7px;padding:6px 14px;cursor:pointer;font-size:12px;font-weight:600;font-family:var(--sans)">⚙️ Reglas</button>
     <a href="https://fungiterra-bot.github.io/fungiterra-sistema/Panel/admin_index.html" class="header-link">🍄 Fungiterra →</a>
-    <a href="https://fungiterra-bot.github.io/fungiterra-sistema/cotizadorD.html" class="header-link">← Cotizador</a>
+    <a href="https://fungiterra-bot.github.io/fungiterra-sistema/Panel/cotizadorD.html" class="header-link">← Cotizador</a>
   </div>
 </header>
 
@@ -949,7 +1029,12 @@ function enviarAFungiterra(id){
   })
   .then(function(r){return r.json();})
   .then(function(data){
-    if(data.token){
+    if(data.ya_existia){
+      toast('⚠️ '+id+' ya se había enviado antes, no se creó un duplicado',false);
+      c.enviadoFungiterra=new Date().toLocaleString('es-MX');
+      filtrar();
+      if(_sel===id) mostrarDetalle(c);
+    } else if(data.token){
       toast('✅ '+id+' enviado a Fungiterra');
       c.enviadoFungiterra=new Date().toLocaleString('es-MX');
       filtrar();
