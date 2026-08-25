@@ -670,7 +670,12 @@ td.gris{color:#6b7280;font-size:12px}
 </div>
 
 <script>
-var SCRIPT_URL='https://script.google.com/macros/s/AKfycbw4fvlj5bnDW1BTCgvfg0cRbWLTBVa7HDKx9m5BZfwLLZ8twNT2xrFd9gACBB4m0rsd3Q/exec';
+// Antes esto apuntaba DIRECTO a Google Apps Script, sin ninguna protección
+// (cualquiera con la URL podía leer datos fiscales o cambiar pagos). Ahora
+// pasa por nuestro API (mismo dominio que ya requiere sesión operativa),
+// que reenvía la llamada a Apps Script agregando la clave secreta por
+// detrás — la clave nunca viaja al navegador.
+var SCRIPT_URL='https://fungiterra-api-production.up.railway.app/repositorio-legacy';
 var _todos=[], _sel=null;
 
 function fmx(n){return '$'+Number(n||0).toLocaleString('es-MX',{minimumFractionDigits:2,maximumFractionDigits:2});}
