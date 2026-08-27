@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- rebuild-force: 2026-07-02 -->
+<!-- rebuild-force: 2026-08-26 -->
 <html lang="es">
 <head>
 <meta charset="UTF-8">
@@ -148,6 +148,7 @@ td.gris{color:#6b7280;font-size:12px}
 .badge-metodo.transferencia{background:#dbeafe;color:#1e40af}
 .badge-metodo.link{background:#f3e8ff;color:#7e22ce}
 .badge-metodo.mixto{background:#fef3c7;color:#92400e}
+.badge-metodo.paypal{background:#dbeafe;color:#003087}
 
 /* MODAL ANALIZADOR BANCARIO */
 .anl-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:1200;align-items:flex-start;justify-content:center;padding-top:24px}
@@ -368,7 +369,7 @@ td.gris{color:#6b7280;font-size:12px}
     </div>
     <div class="abono-campo">
       <label>Monto ($)</label>
-      <input type="number" id="abono-monto" placeholder="0.00" min="0.01" step="0.01" oninput="actualizarResumenAbono()">
+      <input type="number" id="abono-monto" placeholder="0.00" min="0.01" step="0.01" oninput="actualizarResumenAbono();actualizarNetoPaypal()">
     </div>
     <div class="abono-campo">
       <label>Método de pago</label>
@@ -376,7 +377,23 @@ td.gris{color:#6b7280;font-size:12px}
         <div class="metodo-btn" data-metodo="Efectivo" onclick="seleccionarMetodoAbono('Efectivo')">💵 Efectivo</div>
         <div class="metodo-btn" data-metodo="Transferencia" onclick="seleccionarMetodoAbono('Transferencia')">🏦 Transferencia</div>
         <div class="metodo-btn" data-metodo="Link de pago" onclick="seleccionarMetodoAbono('Link de pago')">🔗 Link de pago</div>
+        <div class="metodo-btn" data-metodo="PayPal" onclick="seleccionarMetodoAbono('PayPal')">🅿️ PayPal</div>
       </div>
+    </div>
+    <div class="abono-campo abono-paypal-campo" id="abono-paypal-bloque" style="display:none">
+      <label>Comisión PayPal <span style="font-weight:400;text-transform:none;letter-spacing:0">(editable si no coincide con la real)</span></label>
+      <div style="display:flex;gap:8px">
+        <div style="flex:1">
+          <input type="number" id="abono-paypal-pct" value="3.95" min="0" step="0.01" oninput="actualizarNetoPaypal()" style="width:100%">
+          <div style="font-size:10px;color:#9ca3af;margin-top:2px">% comisión</div>
+        </div>
+        <div style="flex:1">
+          <input type="number" id="abono-paypal-fijo" value="4" min="0" step="0.01" oninput="actualizarNetoPaypal()" style="width:100%">
+          <div style="font-size:10px;color:#9ca3af;margin-top:2px">Fijo MXN</div>
+        </div>
+      </div>
+      <div class="abono-resumen-fila" style="margin-top:8px"><span>Bruto que pagó el cliente</span><span id="abono-paypal-bruto-label">—</span></div>
+      <div class="abono-resumen-fila"><span>Neto que se registra</span><span id="abono-paypal-neto-label">—</span></div>
     </div>
     <div class="abono-campo">
       <label>Referencia <span style="font-weight:400;text-transform:none;letter-spacing:0">(opcional)</span></label>
@@ -711,9 +728,16 @@ function parsearAbonos(notas) {
   if (!listaStr) return result;
   result.abonos = listaStr.split(';;').map(function(a){ return a.trim(); }).filter(Boolean).map(function(a){
     var p = a.split('|');
-    return { fecha: p[0]||'—', monto: parseFloat(p[1])||0, ref: p[2]||'—', metodo: p[3]||'' };
+    var bruto = parseFloat(p[1])||0;
+    // p[4] (neto) solo existe en abonos con comisión (ej. PayPal). Si no viene,
+    // neto = bruto (el método no descuenta nada).
+    var neto = p.length >= 5 && p[4] !== '' ? (parseFloat(p[4])||0) : bruto;
+    return { fecha: p[0]||'—', monto: bruto, neto: neto, ref: p[2]||'—', metodo: p[3]||'' };
   });
-  result.totalAbonado = result.abonos.reduce(function(s,a){ return s + a.monto; }, 0);
+  // El total abonado que decide si el pedido queda cubierto se calcula con el NETO,
+  // no con el bruto — para PayPal (u otro método con comisión futuro) lo que
+  // realmente cuenta es lo que efectivamente llegó.
+  result.totalAbonado = result.abonos.reduce(function(s,a){ return s + a.neto; }, 0);
   return result;
 }
 
@@ -722,6 +746,7 @@ function iconoMetodo(m){
   if(m==='Efectivo') return '💵';
   if(m==='Transferencia') return '🏦';
   if(m==='Link de pago') return '🔗';
+  if(m==='PayPal') return '🅿️';
   return '';
 }
 
@@ -735,7 +760,7 @@ function badgeMetodoCotizacion(abonos){
   var unicos = metodos.filter(function(m,i){return metodos.indexOf(m)===i;});
   if(unicos.length===1){
     var m=unicos[0];
-    var clase = m==='Efectivo'?'efectivo':m==='Transferencia'?'transferencia':'link';
+    var clase = m==='Efectivo'?'efectivo':m==='Transferencia'?'transferencia':m==='PayPal'?'paypal':'link';
     return '<span class="badge-metodo '+clase+'">'+iconoMetodo(m)+' '+m+'</span>';
   }
   return '<span class="badge-metodo mixto">'+unicos.map(iconoMetodo).join('')+' Mixto</span>';
@@ -861,9 +886,10 @@ function mostrarDetalle(c){
     var total = Number(c.total)||0;
     var pct = total > 0 ? Math.min(100, Math.round(parsed.totalAbonado/total*100)) : 0;
     var filasAbonos = parsed.abonos.map(function(a){
+      var huboComision = a.neto !== a.monto;
       return '<div class="abono-fila">'+
         '<span class="abono-fecha">'+a.fecha+(a.metodo?'<span class="abono-metodo">'+iconoMetodo(a.metodo)+' '+a.metodo+'</span>':'')+'</span>'+
-        '<span class="abono-monto">'+fmx(a.monto)+'</span>'+
+        '<span class="abono-monto">'+fmx(a.neto)+(huboComision?' <span style="font-size:10px;color:#9ca3af;font-weight:400">(bruto '+fmx(a.monto)+')</span>':'')+'</span>'+
         (a.ref&&a.ref!=='—'?'<span class="abono-ref">'+a.ref+'</span>':'')+
       '</div>';
     }).join('');
@@ -1064,6 +1090,20 @@ function seleccionarMetodoAbono(m){
   document.querySelectorAll('.metodo-btn').forEach(function(b){
     b.classList.toggle('activo', b.dataset.metodo === m);
   });
+  document.getElementById('abono-paypal-bloque').style.display = (m === 'PayPal') ? 'block' : 'none';
+  if (m === 'PayPal') actualizarNetoPaypal();
+}
+
+// Recalcula en vivo el neto que se registrará cuando el método es PayPal:
+// neto = bruto − (bruto × %comisión) − fijo. El % y el fijo son editables
+// porque la comisión real de PayPal puede variar por promoción, volumen, etc.
+function actualizarNetoPaypal(){
+  var bruto = parseFloat(document.getElementById('abono-monto').value) || 0;
+  var pct = parseFloat(document.getElementById('abono-paypal-pct').value) || 0;
+  var fijo = parseFloat(document.getElementById('abono-paypal-fijo').value) || 0;
+  var neto = Math.max(0, bruto - (bruto * pct / 100) - fijo);
+  document.getElementById('abono-paypal-bruto-label').textContent = fmx(bruto);
+  document.getElementById('abono-paypal-neto-label').textContent = fmx(neto);
 }
 
 function abrirAbono(id) {
@@ -1085,6 +1125,9 @@ function abrirAbono(id) {
   document.getElementById('abono-monto').readOnly = false;
   document.getElementById('abono-ref').value = '';
   document.querySelectorAll('.metodo-btn').forEach(function(b){ b.classList.remove('activo'); });
+  document.getElementById('abono-paypal-bloque').style.display = 'none';
+  document.getElementById('abono-paypal-pct').value = '3.95';
+  document.getElementById('abono-paypal-fijo').value = '4';
   document.getElementById('abono-overlay').classList.add('activo');
   setTimeout(function(){ document.getElementById('abono-monto').focus(); }, 100);
 }
@@ -1123,6 +1166,9 @@ function abrirPagoCompleto(id) {
   document.getElementById('abono-monto').readOnly = true;
   document.getElementById('abono-ref').value = '';
   document.querySelectorAll('.metodo-btn').forEach(function(b){ b.classList.remove('activo'); });
+  document.getElementById('abono-paypal-bloque').style.display = 'none';
+  document.getElementById('abono-paypal-pct').value = '3.95';
+  document.getElementById('abono-paypal-fijo').value = '4';
   document.getElementById('abono-overlay').classList.add('activo');
 }
 
@@ -1132,8 +1178,14 @@ function actualizarResumenAbono() {
   if (!c) return;
   var parsed = parsearAbonos(c.notas);
   var total = Number(c.total) || 0;
-  var nuevoAbono = parseFloat(document.getElementById('abono-monto').value) || 0;
-  var pendiente = total - parsed.totalAbonado - nuevoAbono;
+  var bruto = parseFloat(document.getElementById('abono-monto').value) || 0;
+  var nuevoAbonoNeto = bruto;
+  if (_abono_metodo === 'PayPal') {
+    var pct = parseFloat(document.getElementById('abono-paypal-pct').value) || 0;
+    var fijo = parseFloat(document.getElementById('abono-paypal-fijo').value) || 0;
+    nuevoAbonoNeto = Math.max(0, bruto - (bruto * pct / 100) - fijo);
+  }
+  var pendiente = total - parsed.totalAbonado - nuevoAbonoNeto;
   document.getElementById('abono-pendiente-label').textContent = fmx(Math.max(0, pendiente));
 }
 
@@ -1153,11 +1205,16 @@ function confirmarAbono() {
   var ref = document.getElementById('abono-ref').value.trim();
   var id = _abono_id;
   var esCompleto = _abono_modo === 'completo';
+  var payload = { accion: 'registrar_abono', id: id, monto: monto, referencia: ref, metodo: _abono_metodo };
+  if (_abono_metodo === 'PayPal') {
+    payload.comisionPct = parseFloat(document.getElementById('abono-paypal-pct').value) || 0;
+    payload.comisionFijo = parseFloat(document.getElementById('abono-paypal-fijo').value) || 0;
+  }
   cerrarAbono();
   toast(esCompleto ? 'Registrando pago...' : 'Registrando abono...');
   fetch(SCRIPT_URL, {
     method: 'POST',
-    body: JSON.stringify({ accion: 'registrar_abono', id: id, monto: monto, referencia: ref, metodo: _abono_metodo })
+    body: JSON.stringify(payload)
   })
   .then(function(r){ return r.json(); })
   .then(function(data){
