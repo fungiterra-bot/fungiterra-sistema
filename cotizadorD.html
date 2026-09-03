@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Cotizador Fungiterra v6</title>
+<title>Cotizador Fungiterra v7</title>
 <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=DM+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
@@ -122,7 +122,7 @@ textarea{resize:vertical;min-height:60px}
 <body>
 
 <header>
-  <div><h1>🍄 Sistema Fungiterra</h1><div class="header-sub">Cotizador · Generador de IDs · Cotización formal · v6</div></div>
+  <div><h1>🍄 Sistema Fungiterra</h1><div class="header-sub">Cotizador · Generador de IDs · Cotización formal · v7</div></div>
   <a href="https://fungiterra-bot.github.io/fungiterra-sistema/repositorioD.html" target="_blank" style="color:rgba(255,255,255,.85);font-size:12px;text-decoration:none;border:1px solid rgba(255,255,255,.35);border-radius:7px;padding:6px 14px;font-family:var(--sans);font-weight:500;transition:all .2s;background:rgba(255,255,255,.08)" onmouseover="this.style.background='rgba(255,255,255,.18)'" onmouseout="this.style.background='rgba(255,255,255,.08)'">📋 Repositorio →</a>
 </header>
 
@@ -320,6 +320,7 @@ textarea{resize:vertical;min-height:60px}
       </div>
     </div>
     <button class="btn btn-g btn-block" onclick="showTab2('res')">Ver resumen →</button>
+    <button class="btn btn-block btn-naranja" id="btn-guardar-cambios-form" style="display:none;margin-top:8px" onclick="guardarCambios()">💾 Guardar cambios (sin nuevo ID)</button>
     <button class="btn btn-block" style="margin-top:8px;color:#b91c1c" onclick="limpiarCotizacion()">🧹 Limpiar campos</button>
   </div>
 
@@ -340,7 +341,7 @@ textarea{resize:vertical;min-height:60px}
       <button class="btn btn-azul" style="flex:1" onclick="setModo(3,null)">③ Editar formal</button>
       <button class="btn" style="flex:1" onclick="copiarWA()">📋 WhatsApp</button>
     </div>
-    <button class="btn btn-block btn-naranja" id="btn-guardar-cambios" style="display:none;margin-top:8px" onclick="guardarCambiosCliente()">💾 Guardar cambios (sin nuevo ID)</button>
+    <button class="btn btn-block btn-naranja" id="btn-guardar-cambios" style="display:none;margin-top:8px" onclick="guardarCambios()">💾 Guardar cambios (sin nuevo ID)</button>
     <button class="btn btn-block" style="margin-top:8px" onclick="showTab2('cot')">← Volver</button>
     <button class="btn btn-block" style="margin-top:8px;color:#b91c1c" onclick="limpiarCotizacion()">🧹 Limpiar campos</button>
   </div>
@@ -667,7 +668,9 @@ window.addEventListener('load', function(){
     window._idAnterior=idAnterior;
     mostrarToast('✏️ Editando '+idAnterior+' — productos precargados abajo');
     var btnGuardar=document.getElementById('btn-guardar-cambios');
-    if(btnGuardar) btnGuardar.style.display='inline-block';
+    var btnGuardarForm=document.getElementById('btn-guardar-cambios-form');
+    if(btnGuardar) btnGuardar.style.display='block';
+    if(btnGuardarForm) btnGuardarForm.style.display='block';
   }
 });
 
@@ -936,30 +939,40 @@ function generarIDDesdeResumen(){
       document.getElementById('res2-id-val').textContent=data.id;
       document.getElementById('res2-id-area').style.display='block';
       var btnGuardarCambios=document.getElementById('btn-guardar-cambios');
+      var btnGuardarCambiosForm=document.getElementById('btn-guardar-cambios-form');
       if(btnGuardarCambios) btnGuardarCambios.style.display='inline-block';
+      if(btnGuardarCambiosForm) btnGuardarCambiosForm.style.display='block';
       actualizarID(data.id);
       guardarCotizacion(data.id, socio, _cliente2, t.tot, tipo);
     } else alert('Error al generar ID');
   }).catch(()=>{btn.innerHTML='🔑 Generar ID';btn.disabled=false;alert('Sin conexión');});
 }
 
-// Guardar cambios sin generar ID nuevo (solo datos del cliente cambiaron)
-function guardarCambiosCliente(){
+// Guardar cambios sin generar ID nuevo (cliente + productos + envío, todo junto)
+function guardarCambios(){
   var idViejo=window._idAnterior;
   if(!idViejo){mostrarToast('⚠️ Sin ID para actualizar');return;}
   var cliente  = (document.getElementById('cli-nom')||{}).value||''; cliente=cliente.trim()||'—';
   var telefono = (document.getElementById('cli-tel')||{}).value||''; telefono=telefono.trim()||'—';
   var correo   = (document.getElementById('cli-correo')||{}).value||''; correo=correo.trim()||'—';
-  var btn=document.getElementById('btn-guardar-cambios');
-  btn.innerHTML='<span class="spinner"></span>';btn.disabled=true;
+  var pak      = (document.getElementById('env-pak')||{}).value||''; pak=pak.trim()||'—';
+  var t=getTotales();
+  var items=t.todos.map(function(it){return {desc:it.desc, cant:it.cant, precio:it.precio, subtotal:it.total};});
+  var botones=[document.getElementById('btn-guardar-cambios'),document.getElementById('btn-guardar-cambios-form')];
+  botones.forEach(function(b){if(b){b.innerHTML='<span class="spinner"></span> Guardando...';b.disabled=true;}});
   fetch(SCRIPT_URL,{method:'POST',body:JSON.stringify({
-    accion:'actualizar_cliente', id:idViejo, cliente, telefono, correo
+    accion:'actualizar_cliente', id:idViejo, cliente, telefono, correo,
+    items:items, envio:t.envio, paqueteria:pak, monto:t.tot
   })}).then(r=>r.json()).then(data=>{
-    btn.innerHTML='💾 Guardar cambios';btn.disabled=false;
+    botones.forEach(function(b){if(b){b.innerHTML='💾 Guardar cambios (sin nuevo ID)';b.disabled=false;}});
     if(data.ok){
-      mostrarToast('✓ Datos de '+idViejo+' actualizados');
+      if(document.getElementById('panel2-res').classList.contains('active')) renderRes2();
+      mostrarToast('✓ '+idViejo+' actualizado (cliente y productos)');
     } else mostrarToast('⚠️ '+(data.error||'Error'));
-  }).catch(()=>{btn.innerHTML='💾 Guardar cambios';btn.disabled=false;mostrarToast('⚠️ Sin conexión');});
+  }).catch(()=>{
+    botones.forEach(function(b){if(b){b.innerHTML='💾 Guardar cambios (sin nuevo ID)';b.disabled=false;}});
+    mostrarToast('⚠️ Sin conexión');
+  });
 }
 function copiarIDM2(){navigator.clipboard.writeText(idGenerado).then(()=>{var b=document.querySelector('#res2-id-area .btn-sm');b.textContent='✓';setTimeout(()=>b.textContent='📋 Copiar',2000);});}
 
@@ -976,6 +989,7 @@ function limpiarCotizacion(){
   var idArea=document.getElementById('res2-id-area'); if(idArea) idArea.style.display='none';
   var idVal=document.getElementById('res2-id-val'); if(idVal) idVal.textContent='—';
   var btnGuardar=document.getElementById('btn-guardar-cambios'); if(btnGuardar) btnGuardar.style.display='none';
+  var btnGuardarForm=document.getElementById('btn-guardar-cambios-form'); if(btnGuardarForm) btnGuardarForm.style.display='none';
   mostrarToast('✓ Campos limpios — lista para una nueva cotización');
   showTab2('cot');
 }
