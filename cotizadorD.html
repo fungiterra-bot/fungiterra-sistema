@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Cotizador Fungiterra v5</title>
+<title>Cotizador Fungiterra v6</title>
 <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=DM+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
@@ -122,7 +122,7 @@ textarea{resize:vertical;min-height:60px}
 <body>
 
 <header>
-  <div><h1>🍄 Sistema Fungiterra</h1><div class="header-sub">Cotizador · Generador de IDs · Cotización formal · v5</div></div>
+  <div><h1>🍄 Sistema Fungiterra</h1><div class="header-sub">Cotizador · Generador de IDs · Cotización formal · v6</div></div>
   <a href="https://fungiterra-bot.github.io/fungiterra-sistema/repositorioD.html" target="_blank" style="color:rgba(255,255,255,.85);font-size:12px;text-decoration:none;border:1px solid rgba(255,255,255,.35);border-radius:7px;padding:6px 14px;font-family:var(--sans);font-weight:500;transition:all .2s;background:rgba(255,255,255,.08)" onmouseover="this.style.background='rgba(255,255,255,.18)'" onmouseout="this.style.background='rgba(255,255,255,.08)'">📋 Repositorio →</a>
 </header>
 
@@ -932,9 +932,11 @@ function generarIDDesdeResumen(){
     btn.innerHTML='🔑 Generar ID';btn.disabled=false;
     if(data.id){
       idGenerado=data.id;
-      window._idAnterior=null;
+      window._idAnterior=data.id;
       document.getElementById('res2-id-val').textContent=data.id;
       document.getElementById('res2-id-area').style.display='block';
+      var btnGuardarCambios=document.getElementById('btn-guardar-cambios');
+      if(btnGuardarCambios) btnGuardarCambios.style.display='inline-block';
       actualizarID(data.id);
       guardarCotizacion(data.id, socio, _cliente2, t.tot, tipo);
     } else alert('Error al generar ID');
@@ -956,7 +958,6 @@ function guardarCambiosCliente(){
     btn.innerHTML='💾 Guardar cambios';btn.disabled=false;
     if(data.ok){
       mostrarToast('✓ Datos de '+idViejo+' actualizados');
-      window._idAnterior=null;
     } else mostrarToast('⚠️ '+(data.error||'Error'));
   }).catch(()=>{btn.innerHTML='💾 Guardar cambios';btn.disabled=false;mostrarToast('⚠️ Sin conexión');});
 }
