@@ -1158,10 +1158,10 @@ let _modalAreaSel=null;// área seleccionada en el modal
 // Cargar reglas aprendidas de la API
 async function cargarReglas(){
   try{
-    const r=await fetch(API+"/producto-areas");
+    const r=await fetch(API+"/catalogo-conocido");
     const d=await r.json();
     _reglas={};
-    (d.reglas||[]).forEach(row=>{ _reglas[row.producto.toLowerCase()]=row.area; });
+    (d.productos||[]).forEach(row=>{ _reglas[row.producto.toLowerCase()]=row.area; });
   }catch(e){ console.warn("No se pudieron cargar reglas",e); }
 }
 
