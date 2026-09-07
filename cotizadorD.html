@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Cotizador Fungiterra v7</title>
+<title>Cotizador Fungiterra v8</title>
 <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=DM+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
@@ -121,8 +121,102 @@ textarea{resize:vertical;min-height:60px}
 </head>
 <body>
 
+<div id="ft-gate-overlay" style="position:fixed;inset:0;z-index:999999;background:#f4f4f2;display:flex;align-items:center;justify-content:center;font-family:Arial,Helvetica,sans-serif;">
+  <div style="background:#fff;border-radius:12px;box-shadow:0 1px 4px rgba(0,0,0,.08);padding:32px;width:280px;text-align:center;">
+    <div id="ft-gate-titulo" style="font-size:15px;color:#2b2b28;margin-bottom:16px;font-weight:bold;">🔒 Acceso — Cotizador</div>
+    <input id="ft-gate-input" type="password" placeholder="Contraseña" autocomplete="off" style="width:100%;box-sizing:border-box;padding:10px;border:1px solid #ddd;border-radius:8px;font-size:14px;margin-bottom:10px;">
+    <button id="ft-gate-btn" type="button" style="width:100%;padding:10px;background:#0177bf;color:#fff;border:none;border-radius:8px;font-weight:bold;cursor:pointer;">Entrar</button>
+    <div id="ft-gate-error" style="color:#c0392b;font-size:12px;margin-top:10px;min-height:14px;"></div>
+  </div>
+</div>
+<script>
+// ── ACCESO (v8, 2026-09-07) ──────────────────────────────────────
+// Antes este cotizador llamaba a Apps Script DIRECTO (URL vieja, sin la
+// clave secreta que ya usan repositorioD/admin desde v11) — cualquiera
+// con el código fuente público podía leer y escribir el repositorio sin
+// autenticarse. Ahora pasa por el mismo proxy /repositorio-legacy de
+// Railway que ya usa repositorioD.html, con el mismo passcode operativo
+// (misma llave ft_operativo_token — si ya iniciaste sesión en
+// repositorioD.html en este navegador, aquí no vuelve a pedir nada).
+//
+// Excepción: si se abre como ?origen=gestorweb (el acceso de Uriel desde
+// Gestor Web), usa el passcode PROPIO de Gestor Web en vez del operativo
+// compartido — así su sesión queda marcada rol='gestorweb' y el backend
+// filtra solo lo que él capturó (ver fungiterra-api v63).
+(function(){
+  var esGestorWeb = new URLSearchParams(window.location.search).get('origen') === 'gestorweb';
+  var AUTH_KEY  = esGestorWeb ? 'ft_gestorweb_auth'  : 'ft_operativo_auth';
+  var TOKEN_KEY = esGestorWeb ? 'ft_gestorweb_token' : 'ft_operativo_token';
+  var RUTA_VERIFICAR = esGestorWeb ? '/auth/verificar-gestorweb' : '/auth/verificar-operativo';
+  var AUTH_DIAS = 5;
+  var API_BASE_GATE = 'https://fungiterra-api-production.up.railway.app';
+
+  if (esGestorWeb) {
+    document.getElementById('ft-gate-titulo').textContent = '🔒 Acceso — Gestor Web';
+  }
+
+  function authValido(){
+    try{
+      var g = JSON.parse(localStorage.getItem(AUTH_KEY)||"null");
+      return !!(g && g.exp && Date.now() < g.exp && localStorage.getItem(TOKEN_KEY));
+    }catch(e){ return false; }
+  }
+  function ocultarGate(){
+    var el = document.getElementById('ft-gate-overlay');
+    if (el) el.style.display = 'none';
+  }
+  function intentarGateLogin(){
+    var input = document.getElementById('ft-gate-input');
+    var err = document.getElementById('ft-gate-error');
+    var pass = input.value;
+    if(!pass){ err.textContent = 'Escribe la contraseña'; return; }
+    err.textContent = 'Verificando...';
+    fetch(API_BASE_GATE + RUTA_VERIFICAR, {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({passcode: pass})})
+      .then(function(r){ return r.json(); })
+      .then(function(data){
+        if(data.ok){
+          localStorage.setItem(AUTH_KEY, JSON.stringify({exp: Date.now() + AUTH_DIAS*24*60*60*1000}));
+          localStorage.setItem(TOKEN_KEY, data.token);
+          ocultarGate();
+        } else {
+          err.textContent = '⚠️ Contraseña incorrecta';
+          input.value = '';
+          input.focus();
+        }
+      })
+      .catch(function(){ err.textContent = '⚠️ Error de conexión, intenta de nuevo'; });
+  }
+  document.getElementById('ft-gate-btn').addEventListener('click', intentarGateLogin);
+  document.getElementById('ft-gate-input').addEventListener('keydown', function(e){ if(e.key==='Enter') intentarGateLogin(); });
+  document.getElementById('ft-gate-input').focus();
+
+  if (authValido()) ocultarGate();
+
+  // Intercepta fetch: si la URL apunta a nuestro API (proxy del repositorio
+  // Y /producto-areas, que ya vivía sin ningún header de sesión), agrega el
+  // token automáticamente — así no hay que tocar cada llamada existente.
+  var _fetch = window.fetch;
+  window.fetch = function(url, opts){
+    opts = opts || {};
+    if (typeof url === 'string' && url.indexOf('fungiterra-api-production.up.railway.app') !== -1) {
+      var token = localStorage.getItem(TOKEN_KEY);
+      opts.headers = Object.assign({}, opts.headers, token ? {'x-session-token': token} : {});
+      return _fetch(url, opts).then(function(res){
+        if (res.status === 401 && token) {
+          localStorage.removeItem(AUTH_KEY);
+          localStorage.removeItem(TOKEN_KEY);
+          location.reload();
+        }
+        return res;
+      });
+    }
+    return _fetch(url, opts);
+  };
+})();
+</script>
+
 <header>
-  <div><h1>🍄 Sistema Fungiterra</h1><div class="header-sub">Cotizador · Generador de IDs · Cotización formal · v7</div></div>
+  <div><h1>🍄 Sistema Fungiterra</h1><div class="header-sub">Cotizador · Generador de IDs · Cotización formal · v8</div></div>
   <a href="https://fungiterra-bot.github.io/fungiterra-sistema/repositorioD.html" target="_blank" style="color:rgba(255,255,255,.85);font-size:12px;text-decoration:none;border:1px solid rgba(255,255,255,.35);border-radius:7px;padding:6px 14px;font-family:var(--sans);font-weight:500;transition:all .2s;background:rgba(255,255,255,.08)" onmouseover="this.style.background='rgba(255,255,255,.18)'" onmouseout="this.style.background='rgba(255,255,255,.08)'">📋 Repositorio →</a>
 </header>
 
@@ -146,6 +240,15 @@ textarea{resize:vertical;min-height:60px}
           <button class="socio-pill" onclick="selSocio('m1','M',this)">M</button>
         </div>
         <input type="hidden" id="m1-socio" value="J">
+      </div>
+      <div style="margin-bottom:12px">
+        <label>Cotizó</label>
+        <div class="socio-pills" id="m1-creadores">
+          <button class="socio-pill" onclick="selCreador('m1','Victor',this)">Victor</button>
+          <button class="socio-pill" onclick="selCreador('m1','Juan',this)">Juan</button>
+          <button class="socio-pill" onclick="selCreador('m1','Uriel',this)">Uriel</button>
+        </div>
+        <input type="hidden" id="m1-creado_por" value="">
       </div>
       <div class="g2">
         <div><label>Tipo de producto</label>
@@ -193,6 +296,15 @@ textarea{resize:vertical;min-height:60px}
         <div><label>Tipo de venta</label>
           <select id="m2-tipo-venta"><option value="FungiBolsas">FungiBolsas</option><option value="Micelio">Micelio</option><option value="Mushbags">Mushbags</option><option value="Deshidratado">Deshidratado</option><option value="Fresco">Fresco</option><option value="Mixto">Mixto</option><option value="Otro">Otro</option></select>
         </div>
+      </div>
+      <div style="margin-bottom:10px">
+        <label>Cotizó</label>
+        <div class="socio-pills" id="m2-creadores">
+          <button class="socio-pill" onclick="selCreador('m2','Victor',this)">Victor</button>
+          <button class="socio-pill" onclick="selCreador('m2','Juan',this)">Juan</button>
+          <button class="socio-pill" onclick="selCreador('m2','Uriel',this)">Uriel</button>
+        </div>
+        <input type="hidden" id="m2-creado_por" value="">
       </div>
       <div class="g2">
         <div><label>Nombre del cliente</label><input type="text" id="cli-nom" placeholder="Nombre del cliente" oninput="autocompletarCliente(this.value)"></div>
@@ -532,7 +644,8 @@ textarea{resize:vertical;min-height:60px}
 
 
 <script>
-const SCRIPT_URL='https://script.google.com/macros/s/AKfycbwDrQYyK9CVCrl8AdyBET9klNBZcALNz3wNKWy_JqPLJA082rkpz6ryDDJe5yUfoweIMw/exec';
+const API_BASE='https://fungiterra-api-production.up.railway.app';
+const SCRIPT_URL=API_BASE+'/repositorio-legacy';
 var ftItems=[],fbItems=[],otItems=[],plItems=[],idGenerado='';
 var SOCIOS={
   J:{nombre:'Socio J',banco:'',cuenta:'',clabe:'',tarjeta:'',cargo:'Ventas'},
@@ -679,6 +792,24 @@ function selSocio(p,v,btn){
   document.querySelectorAll('#'+p+'-socios .socio-pill').forEach(b=>b.classList.remove('active'));
   btn.classList.add('active');document.getElementById(p+'-socio').value=v;
 }
+function selCreador(p,v,btn){
+  document.querySelectorAll('#'+p+'-creadores .socio-pill').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');document.getElementById(p+'-creado_por').value=v;
+}
+function getCreadoPor(p){var el=document.getElementById(p+'-creado_por');return el?el.value:'';}
+
+// Si se abre desde el acceso de Gestor Web, precargar "Uriel" en ambos
+// modos (sigue siendo editable, por si algún día otra persona usa el
+// mismo link). No depende del flujo de "editar" de abajo — aplica siempre.
+window.addEventListener('load', function(){
+  if(new URLSearchParams(window.location.search).get('origen')!=='gestorweb') return;
+  ['m1','m2'].forEach(function(p){
+    var grupo=document.getElementById(p+'-creadores');
+    if(!grupo) return;
+    var btn=Array.prototype.find.call(grupo.querySelectorAll('.socio-pill'), function(b){return b.textContent.trim()==='Uriel';});
+    if(btn) btn.click();
+  });
+});
 
 // MODO 1
 function generarIDRapido(){
@@ -688,7 +819,7 @@ function generarIDRapido(){
   if(!monto||monto<=0){err.textContent='Ingresa un monto válido';return;}
   err.textContent='';
   var btn=document.querySelector('#modo1 .btn-azul');btn.innerHTML='<span class="spinner"></span> Generando...';btn.disabled=true;
-  fetch(SCRIPT_URL,{method:'POST',body:JSON.stringify({accion:'generar_id',socio,tipo_producto:tipo,monto,cliente:'—',telefono:'—',correo:'—',items:[],paqueteria:'—',envio:0})})
+  fetch(SCRIPT_URL,{method:'POST',body:JSON.stringify({accion:'generar_id',socio,creado_por:getCreadoPor('m1'),tipo_producto:tipo,monto,cliente:'—',telefono:'—',correo:'—',items:[],paqueteria:'—',envio:0})})
   .then(r=>r.json()).then(data=>{
     btn.innerHTML='Generar ID';btn.disabled=false;
     if(data.id){
@@ -924,7 +1055,7 @@ function generarIDDesdeResumen(){
   });
   var idViejo = window._idAnterior||null;
   var payload = {
-    accion:'generar_id', socio:socio, tipo_producto:tipo,
+    accion:'generar_id', socio:socio, creado_por:getCreadoPor('m2'), tipo_producto:tipo,
     monto:t.tot, envio:t.envio, cliente:_cliente2,
     telefono:_telefono2, correo:_correo2,
     items:_items, paqueteria:_pak2v
@@ -1090,7 +1221,7 @@ function generarIDFormal(){
   var _pakF=(document.getElementById('env-pak')||{}).value||''; _pakF=_pakF.trim()||'—';
   var idViejo=window._idAnterior||null;
   var payload={
-    accion:'generar_id', socio:socio, tipo_producto:tipo,
+    accion:'generar_id', socio:socio, creado_por:getCreadoPor('m2'), tipo_producto:tipo,
     monto:monto, envio:_envioFormal, cliente:_clienteF,
     telefono:_telF, correo:_correoF,
     items:_itemsFormal, paqueteria:_pakF
