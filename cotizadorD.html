@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Cotizador Fungiterra v8</title>
+<title>Cotizador Fungiterra v9</title>
 <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=DM+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
@@ -216,7 +216,7 @@ textarea{resize:vertical;min-height:60px}
 </script>
 
 <header>
-  <div><h1>🍄 Sistema Fungiterra</h1><div class="header-sub">Cotizador · Generador de IDs · Cotización formal · v8</div></div>
+  <div><h1>🍄 Sistema Fungiterra</h1><div class="header-sub">Cotizador · Generador de IDs · Cotización formal · v9</div></div>
   <a href="https://fungiterra-bot.github.io/fungiterra-sistema/repositorioD.html" target="_blank" style="color:rgba(255,255,255,.85);font-size:12px;text-decoration:none;border:1px solid rgba(255,255,255,.35);border-radius:7px;padding:6px 14px;font-family:var(--sans);font-weight:500;transition:all .2s;background:rgba(255,255,255,.08)" onmouseover="this.style.background='rgba(255,255,255,.18)'" onmouseout="this.style.background='rgba(255,255,255,.08)'">📋 Repositorio →</a>
 </header>
 
@@ -646,6 +646,42 @@ textarea{resize:vertical;min-height:60px}
 <script>
 const API_BASE='https://fungiterra-api-production.up.railway.app';
 const SCRIPT_URL=API_BASE+'/repositorio-legacy';
+
+// ── Verificación anti-falso-negativo ─────────────────────────────
+// Google Sheets a veces tarda más de lo que el proxy espera (20s) y
+// el proxy responde "no se pudo confirmar" aunque la escritura SÍ
+// haya llegado a aplicarse del otro lado. Antes de decirle a la
+// persona que algo falló, revisamos el repositorio real una vez más.
+function _normVal(v){
+  v=(v==null)?'':String(v).trim();
+  return v===''?'—':v;
+}
+// ¿La cotización `id` ya tiene los campos que intentamos guardar?
+function verificarCambioGuardado(id, camposEsperados){
+  return fetch(SCRIPT_URL+'?accion=repositorio').then(function(r){return r.json();}).then(function(data){
+    var cot=(data.cotizaciones||[]).find(function(c){return c.id===id;});
+    if(!cot) return false;
+    return Object.keys(camposEsperados).every(function(k){
+      return _normVal(cot[k])===_normVal(camposEsperados[k]);
+    });
+  }).catch(function(){return false;});
+}
+// ¿Ya existe una cotización recién creada con estos datos? (para
+// cuando "generar_id" truena por timeout pero sí alcanzó a crearse)
+function buscarIdGenerado(creadoPor, cliente, monto){
+  return fetch(SCRIPT_URL+'?accion=repositorio').then(function(r){return r.json();}).then(function(data){
+    var hoyISO=new Date().toISOString().slice(0,10);
+    var candidatos=(data.cotizaciones||[]).filter(function(c){
+      return c.creadoPor===creadoPor && _normVal(c.cliente)===_normVal(cliente)
+        && Math.abs(Number(c.total)-Number(monto))<0.01
+        && typeof c.fechaEstado==='string' && c.fechaEstado.slice(0,10)===hoyISO;
+    });
+    if(!candidatos.length) return null;
+    candidatos.sort(function(a,b){return b.id.localeCompare(a.id, undefined, {numeric:true});});
+    return candidatos[0].id;
+  }).catch(function(){return null;});
+}
+
 var ftItems=[],fbItems=[],otItems=[],plItems=[],idGenerado='';
 var SOCIOS={
   J:{nombre:'Socio J',banco:'',cuenta:'',clabe:'',tarjeta:'',cargo:'Ventas'},
@@ -821,16 +857,40 @@ function generarIDRapido(){
   var btn=document.querySelector('#modo1 .btn-azul');btn.innerHTML='<span class="spinner"></span> Generando...';btn.disabled=true;
   fetch(SCRIPT_URL,{method:'POST',body:JSON.stringify({accion:'generar_id',socio,creado_por:getCreadoPor('m1'),tipo_producto:tipo,monto,cliente:'—',telefono:'—',correo:'—',items:[],paqueteria:'—',envio:0})})
   .then(r=>r.json()).then(data=>{
-    btn.innerHTML='Generar ID';btn.disabled=false;
     if(data.id){
+      btn.innerHTML='Generar ID';btn.disabled=false;
       idGenerado=data.id;
       document.getElementById('m1-id-val').textContent=data.id;
       document.getElementById('m1-resumen-datos').innerHTML='<div style="display:grid;grid-template-columns:1fr 1fr;gap:4px"><span style="color:#888">Socio:</span><span>'+socio+'</span><span style="color:#888">Producto:</span><span>'+tipo+'</span><span style="color:#888">Monto:</span><span>'+fmx(monto)+'</span><span style="color:#888">Fecha:</span><span>'+new Date().toLocaleDateString('es-MX')+'</span></div>';
       document.getElementById('m1-resultado').style.display='block';
       document.querySelector('#modo1 .card').style.display='none';
       guardarCotizacion(data.id, socio, '—', monto, tipo);
-    } else err.textContent='Error al generar ID';
-  }).catch(()=>{btn.innerHTML='Generar ID';btn.disabled=false;err.textContent='Sin conexión.';});
+    } else {
+      btn.innerHTML='<span class="spinner"></span> Verificando...';
+      buscarIdGenerado(getCreadoPor('m1'), '—', monto).then(function(idEncontrado){
+        btn.innerHTML='Generar ID';btn.disabled=false;
+        if(idEncontrado){
+          idGenerado=idEncontrado;
+          document.getElementById('m1-id-val').textContent=idEncontrado;
+          document.getElementById('m1-resumen-datos').innerHTML='<div style="display:grid;grid-template-columns:1fr 1fr;gap:4px"><span style="color:#888">Socio:</span><span>'+socio+'</span><span style="color:#888">Producto:</span><span>'+tipo+'</span><span style="color:#888">Monto:</span><span>'+fmx(monto)+'</span><span style="color:#888">Fecha:</span><span>'+new Date().toLocaleDateString('es-MX')+'</span></div>';
+          document.getElementById('m1-resultado').style.display='block';
+          document.querySelector('#modo1 .card').style.display='none';
+        } else err.textContent='Error al generar ID';
+      });
+    }
+  }).catch(()=>{
+    btn.innerHTML='<span class="spinner"></span> Verificando conexión...';
+    buscarIdGenerado(getCreadoPor('m1'), '—', monto).then(function(idEncontrado){
+      btn.innerHTML='Generar ID';btn.disabled=false;
+      if(idEncontrado){
+        idGenerado=idEncontrado;
+        document.getElementById('m1-id-val').textContent=idEncontrado;
+        document.getElementById('m1-resumen-datos').innerHTML='<div style="display:grid;grid-template-columns:1fr 1fr;gap:4px"><span style="color:#888">Socio:</span><span>'+socio+'</span><span style="color:#888">Producto:</span><span>'+tipo+'</span><span style="color:#888">Monto:</span><span>'+fmx(monto)+'</span><span style="color:#888">Fecha:</span><span>'+new Date().toLocaleDateString('es-MX')+'</span></div>';
+        document.getElementById('m1-resultado').style.display='block';
+        document.querySelector('#modo1 .card').style.display='none';
+      } else err.textContent='Sin conexión.';
+    });
+  });
 }
 function copiarIDM1(){navigator.clipboard.writeText(idGenerado).then(()=>{var b=document.querySelector('#modo1 .btn-g');b.textContent='✓ Copiado';setTimeout(()=>b.textContent='📋 Copiar ID',2000);});}
 function nuevoIDM1(){document.getElementById('m1-resultado').style.display='none';document.querySelector('#modo1 .card').style.display='block';document.getElementById('m1-monto').value='';idGenerado='';}
@@ -1061,22 +1121,31 @@ function generarIDDesdeResumen(){
     items:_items, paqueteria:_pak2v
   };
   if(idViejo) payload.id_anterior=idViejo;
+  function _exito2(id){
+    btn.innerHTML='🔑 Generar ID';btn.disabled=false;
+    idGenerado=id;
+    window._idAnterior=id;
+    document.getElementById('res2-id-val').textContent=id;
+    document.getElementById('res2-id-area').style.display='block';
+    var btnGuardarCambios=document.getElementById('btn-guardar-cambios');
+    var btnGuardarCambiosForm=document.getElementById('btn-guardar-cambios-form');
+    if(btnGuardarCambios) btnGuardarCambios.style.display='inline-block';
+    if(btnGuardarCambiosForm) btnGuardarCambiosForm.style.display='block';
+    actualizarID(id);
+    guardarCotizacion(id, socio, _cliente2, t.tot, tipo);
+  }
+  function _reintentar2(mensajeError){
+    btn.innerHTML='<span class="spinner"></span> Verificando...';
+    buscarIdGenerado(getCreadoPor('m2'), _cliente2, t.tot).then(function(idEncontrado){
+      if(idEncontrado) _exito2(idEncontrado);
+      else{btn.innerHTML='🔑 Generar ID';btn.disabled=false;alert(mensajeError||'Error al generar ID');}
+    });
+  }
   fetch(SCRIPT_URL,{method:'POST',body:JSON.stringify(payload)})
   .then(r=>r.json()).then(data=>{
-    btn.innerHTML='🔑 Generar ID';btn.disabled=false;
-    if(data.id){
-      idGenerado=data.id;
-      window._idAnterior=data.id;
-      document.getElementById('res2-id-val').textContent=data.id;
-      document.getElementById('res2-id-area').style.display='block';
-      var btnGuardarCambios=document.getElementById('btn-guardar-cambios');
-      var btnGuardarCambiosForm=document.getElementById('btn-guardar-cambios-form');
-      if(btnGuardarCambios) btnGuardarCambios.style.display='inline-block';
-      if(btnGuardarCambiosForm) btnGuardarCambiosForm.style.display='block';
-      actualizarID(data.id);
-      guardarCotizacion(data.id, socio, _cliente2, t.tot, tipo);
-    } else alert('Error al generar ID');
-  }).catch(()=>{btn.innerHTML='🔑 Generar ID';btn.disabled=false;alert('Sin conexión');});
+    if(data.id) _exito2(data.id);
+    else _reintentar2(data.error);
+  }).catch(function(){_reintentar2('Sin conexión');});
 }
 
 // Guardar cambios sin generar ID nuevo (cliente + productos + envío, todo junto)
@@ -1091,20 +1160,30 @@ function guardarCambios(){
   var items=t.todos.map(function(it){return {desc:it.desc, cant:it.cant, precio:it.precio, subtotal:it.total};});
   var botones=[document.getElementById('btn-guardar-cambios'),document.getElementById('btn-guardar-cambios-form')];
   botones.forEach(function(b){if(b){b.innerHTML='<span class="spinner"></span> Guardando...';b.disabled=true;}});
+  function _terminar(mensajeExito){
+    botones.forEach(function(b){if(b){b.innerHTML='💾 Guardar cambios (sin nuevo ID)';b.disabled=false;}});
+    if(document.getElementById('panel2-res').classList.contains('active')) renderRes2();
+    mostrarToast(mensajeExito);
+  }
+  function _verificarYresolver(mensajeError){
+    botones.forEach(function(b){if(b){b.innerHTML='<span class="spinner"></span> Verificando...';}});
+    verificarCambioGuardado(idViejo, {cliente:cliente, telefono:telefono, correo:correo}).then(function(sí){
+      if(sí) _terminar('✓ '+idViejo+' actualizado (Google tardó en responder, pero sí se guardó)');
+      else{
+        botones.forEach(function(b){if(b){b.innerHTML='💾 Guardar cambios (sin nuevo ID)';b.disabled=false;}});
+        mostrarToast('⚠️ '+(mensajeError||'Error')+' — no se detectó el cambio, intenta de nuevo');
+      }
+    });
+  }
   fetch(SCRIPT_URL,{method:'POST',body:JSON.stringify({
     accion:'actualizar_cliente', id:idViejo, cliente, telefono, correo,
     items:items, envio:t.envio, paqueteria:pak, monto:t.tot
   })}).then(r=>r.json()).then(data=>{
-    botones.forEach(function(b){if(b){b.innerHTML='💾 Guardar cambios (sin nuevo ID)';b.disabled=false;}});
-    if(data.ok){
-      if(document.getElementById('panel2-res').classList.contains('active')) renderRes2();
-      mostrarToast('✓ '+idViejo+' actualizado (cliente y productos)');
-    } else mostrarToast('⚠️ '+(data.error||'Error'));
-  }).catch(()=>{
-    botones.forEach(function(b){if(b){b.innerHTML='💾 Guardar cambios (sin nuevo ID)';b.disabled=false;}});
-    mostrarToast('⚠️ Sin conexión');
-  });
+    if(data.ok) _terminar('✓ '+idViejo+' actualizado (cliente y productos)');
+    else _verificarYresolver(data.error);
+  }).catch(function(){_verificarYresolver('Sin conexión');});
 }
+
 function copiarIDM2(){navigator.clipboard.writeText(idGenerado).then(()=>{var b=document.querySelector('#res2-id-area .btn-sm');b.textContent='✓';setTimeout(()=>b.textContent='📋 Copiar',2000);});}
 
 function limpiarCotizacion(){
@@ -1227,19 +1306,27 @@ function generarIDFormal(){
     items:_itemsFormal, paqueteria:_pakF
   };
   if(idViejo)payload.id_anterior=idViejo;
+  function _exito3(id){
+    btn.innerHTML='🔑 Generar ID';btn.disabled=false;
+    idGenerado=id;
+    window._idAnterior=null;
+    actualizarID(id);
+    var el=document.getElementById('res2-id-val');
+    if(el){el.textContent=id;document.getElementById('res2-id-area').style.display='block';}
+    guardarCotizacion(id, socio, _clienteF, monto, tipo);
+  }
+  function _reintentar3(mensajeError){
+    btn.innerHTML='<span class="spinner"></span> Verificando...';
+    buscarIdGenerado(getCreadoPor('m2'), _clienteF, monto).then(function(idEncontrado){
+      if(idEncontrado) _exito3(idEncontrado);
+      else{btn.innerHTML='🔑 Generar ID';btn.disabled=false;alert(mensajeError||'Error al generar ID');}
+    });
+  }
   fetch(SCRIPT_URL,{method:'POST',body:JSON.stringify(payload)})
   .then(r=>r.json()).then(data=>{
-    btn.innerHTML='🔑 Generar ID';btn.disabled=false;
-    if(data.id){
-      idGenerado=data.id;
-      window._idAnterior=null;
-      actualizarID(data.id);
-      var el=document.getElementById('res2-id-val');
-      if(el){el.textContent=data.id;document.getElementById('res2-id-area').style.display='block';}
-      guardarCotizacion(data.id, socio, _clienteF, monto, tipo);
-    }
-    else alert('Error al generar ID');
-  }).catch(()=>{btn.innerHTML='🔑 Generar ID';btn.disabled=false;alert('Sin conexión');});
+    if(data.id) _exito3(data.id);
+    else _reintentar3(data.error);
+  }).catch(function(){_reintentar3('Sin conexión');});
 }
 
 // MODO 4
