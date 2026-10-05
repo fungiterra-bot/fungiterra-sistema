@@ -96,7 +96,7 @@ body{margin:0;background:#eef1f4;font-family:'Inter',sans-serif}
     <div class="ft-header">
       <div class="ft-logo-circle">FT</div>
       <div class="ft-header-text">
-        <h2>Seguimiento de pedido · v10</h2>
+        <h2>Seguimiento de pedido · v10.1</h2>
         <p>Fungiterra — Hongos a tu servicio</p>
       </div>
     </div>
@@ -198,7 +198,7 @@ const PASOS_BASE=[
 function renderSteps(p,productos){
   // v10: si recoge en planta, no hay pasos de envío
   const recoge=!!(_dc&&_dc.recoge_en_planta);
-  const PASOS=recoge?[PASOS_BASE[0],PASOS_BASE[1],{key:"listo",icon:"ti-building-factory-2",title:"Listo para recoger en planta"},{key:"entregado",icon:"ti-circle-check",title:"Recogido"}]:PASOS_BASE;
+  const PASOS=recoge?[PASOS_BASE[0],PASOS_BASE[1],{key:"listo",icon:"ti-package",title:"Listo para recoger en planta"},{key:"entregado",icon:"ti-circle-check",title:"Recogido"}]:PASOS_BASE;
   const orden=PASOS.map(x=>x.key);
   const MAPA=recoge?{empaquetado:"listo",enviado:"listo"}:{listo:"empaquetado"};
   const estadoActual=MAPA[p.estado_actual]||p.estado_actual;
@@ -338,7 +338,7 @@ function renderDatos(modo){
   if(pideDir){
     h+="<div class=\"ft-card\"><p class=\"dc-sec\">📍 ¿A dónde te lo enviamos?</p>";
     (dc.direcciones||[]).forEach(d=>{
-      h+="<label class=\"dc-opt\" data-dir=\"id:"+d.id+"\" onclick=\"dcElegirDir('id:"+d.id+"')\"><input type=\"radio\" name=\"dc-dir\"><div><div class=\"dc-opt-t\">"+dcEsc(d.alias||"Mi dirección")+"</div><div class=\"dc-opt-s\">"+dcEsc(dcResumen(d))+"</div></div></label>";
+      h+="<label class=\"dc-opt\" data-dir=\"id:"+d.id+"\" onclick=\"dcElegirDir('id:"+d.id+"')\"><input type=\"radio\" name=\"dc-dir\"><div><div class=\"dc-opt-t\">"+dcEsc(dcResumen(d))+"</div><div class=\"dc-opt-s\">Dirección guardada</div></div></label>";
     });
     h+="<label class=\"dc-opt\" data-dir=\"nueva\" onclick=\"dcElegirDir('nueva')\"><input type=\"radio\" name=\"dc-dir\"><div><div class=\"dc-opt-t\">+ "+((dc.direcciones||[]).length?"Otra dirección":"Agregar mi dirección")+"</div><div class=\"dc-opt-s\">Se guarda para tus próximos pedidos</div></div></label>";
     h+="<div class=\"dc-form\" id=\"dc-form\">"
@@ -350,7 +350,6 @@ function renderDatos(modo){
       +"<div class=\"dc-row\"><div><label class=\"dc-lbl\">Código postal</label><input class=\"dc-in\" id=\"dc-cp\" inputmode=\"numeric\" maxlength=\"5\" autocomplete=\"postal-code\"></div><div><label class=\"dc-lbl\">Ciudad o municipio</label><input class=\"dc-in\" id=\"dc-ciudad\"></div></div>"
       +"<label class=\"dc-lbl\">Estado</label><select class=\"dc-sel\" id=\"dc-estado\"><option value=\"\">Elige tu estado</option>"+(dc.estados||[]).map(e=>"<option>"+dcEsc(e)+"</option>").join("")+"</select>"
       +"<label class=\"dc-lbl\">Referencias</label><input class=\"dc-in\" id=\"dc-referencias\" placeholder=\"Entre calles, color de la casa… (opcional)\">"
-      +"<label class=\"dc-lbl\">Nombre para esta dirección</label><input class=\"dc-in\" id=\"dc-alias\" placeholder=\"Casa, Trabajo… (opcional)\">"
       +"</div>";
     h+="<label class=\"dc-opt\" data-dir=\"planta\" onclick=\"dcElegirDir('planta')\"><input type=\"radio\" name=\"dc-dir\"><div><div class=\"dc-opt-t\">🏭 Paso a recogerlo a la planta</div><div class=\"dc-opt-s\">Te avisamos cuando esté listo para recoger</div></div></label>";
     h+="</div>";
@@ -394,7 +393,7 @@ async function dcEnviar(){
     if(_dcDir==="planta") body.recoge_en_planta=true;
     else if(_dcDir.indexOf("id:")===0) body.direccion_id=Number(_dcDir.slice(3));
     else {
-      const n={}; ["nombre_recibe","telefono","calle","numero_ext","numero_int","colonia","cp","ciudad","estado","referencias","alias"].forEach(k=>{n[k]=document.getElementById("dc-"+k).value.trim();});
+      const n={}; ["nombre_recibe","telefono","calle","numero_ext","numero_int","colonia","cp","ciudad","estado","referencias"].forEach(k=>{n[k]=document.getElementById("dc-"+k).value.trim();});
       const falta=[]; const marca=k=>{document.getElementById("dc-"+k).classList.add("err");};
       if(!n.nombre_recibe){falta.push("nombre de quien recibe");marca("nombre_recibe");}
       if(n.telefono.replace(/\D/g,"").length<10){falta.push("teléfono a 10 dígitos");marca("telefono");}
@@ -431,7 +430,7 @@ function dcMostrarPedido(){ render(_dcPedido,_dcProductos); }
 function dcEntregaCard(){
   const dc=_dc; if(!dc) return "";
   if(!dc.recoge_en_planta&&!dc.direccion_confirmada) return "";
-  let h="<div class=\"ft-card\"><div class=\"dc-entrega\"><i class=\"ti "+(dc.recoge_en_planta?"ti-building-factory-2":"ti-map-pin")+"\"></i><div style=\"flex:1\">";
+  let h="<div class=\"ft-card\"><div class=\"dc-entrega\"><span style=\"font-size:20px;line-height:1\">"+(dc.recoge_en_planta?"🏭":"📍")+"</span><div style=\"flex:1\">";
   h+="<div class=\"ft-order-id\">"+(dc.recoge_en_planta?"Entrega":"Se envía a")+"</div>";
   h+="<div style=\"font-size:13px;font-weight:500;color:#111827;line-height:1.4\">"+(dc.recoge_en_planta?"Recoges en planta":dcEsc(dc.direccion_confirmada))+"</div>";
   h+="<span class=\"dc-ok\">✓ Confirmada</span>";
