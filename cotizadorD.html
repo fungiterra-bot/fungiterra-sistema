@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Cotizador Fungiterra v12</title>
+<title>Cotizador Fungiterra v13</title>
 <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=DM+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
@@ -237,7 +237,7 @@ textarea{resize:vertical;min-height:60px}
 </script>
 
 <header>
-  <div><h1>🍄 Sistema Fungiterra</h1><div class="header-sub">Cotizador · Generador de IDs · Cotización formal · v12</div></div>
+  <div><h1>🍄 Sistema Fungiterra</h1><div class="header-sub">Cotizador · Generador de IDs · Cotización formal · v13</div></div>
   <a id="link-repositorio" href="https://fungiterra-bot.github.io/fungiterra-sistema/repositorioD.html" target="_blank" style="color:rgba(255,255,255,.85);font-size:12px;text-decoration:none;border:1px solid rgba(255,255,255,.35);border-radius:7px;padding:6px 14px;font-family:var(--sans);font-weight:500;transition:all .2s;background:rgba(255,255,255,.08)" onmouseover="this.style.background='rgba(255,255,255,.18)'" onmouseout="this.style.background='rgba(255,255,255,.08)'">📋 Repositorio →</a>
 </header>
 
@@ -270,6 +270,25 @@ textarea{resize:vertical;min-height:60px}
           <button class="socio-pill" onclick="selCreador('m1','Uriel',this)">Uriel</button>
         </div>
         <input type="hidden" id="m1-creado_por" value="">
+      </div>
+      <div style="margin-bottom:12px">
+        <label>¿Cómo nos conoció? <span style="color:#c0392b">*</span></label>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+          <select id="m1-origen">
+            <option value="">— Elige —</option>
+            <option value="facebook">Facebook</option>
+            <option value="instagram">Instagram</option>
+            <option value="tiktok">TikTok</option>
+            <option value="google">Google</option>
+            <option value="mercado_libre">Mercado Libre</option>
+            <option value="recomendacion">Recomendación</option>
+            <option value="feria_curso">Feria / curso</option>
+            <option value="ya_era_cliente">Ya era cliente</option>
+            <option value="otro">Otro</option>
+            <option value="no_se">No sé</option>
+          </select>
+          <input type="text" id="m1-origen-det" placeholder="Detalle (opcional, ej. quién lo recomendó)" maxlength="150">
+        </div>
       </div>
       <div class="g2">
         <div><label>Tipo de producto</label>
@@ -326,6 +345,25 @@ textarea{resize:vertical;min-height:60px}
           <button class="socio-pill" onclick="selCreador('m2','Uriel',this)">Uriel</button>
         </div>
         <input type="hidden" id="m2-creado_por" value="">
+      </div>
+      <div style="margin-bottom:12px">
+        <label>¿Cómo nos conoció? <span style="color:#c0392b">*</span></label>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+          <select id="m2-origen">
+            <option value="">— Elige —</option>
+            <option value="facebook">Facebook</option>
+            <option value="instagram">Instagram</option>
+            <option value="tiktok">TikTok</option>
+            <option value="google">Google</option>
+            <option value="mercado_libre">Mercado Libre</option>
+            <option value="recomendacion">Recomendación</option>
+            <option value="feria_curso">Feria / curso</option>
+            <option value="ya_era_cliente">Ya era cliente</option>
+            <option value="otro">Otro</option>
+            <option value="no_se">No sé</option>
+          </select>
+          <input type="text" id="m2-origen-det" placeholder="Detalle (opcional, ej. quién lo recomendó)" maxlength="150">
+        </div>
       </div>
       <div class="g2">
         <div><label>Nombre del cliente</label><input type="text" id="cli-nom" placeholder="Nombre del cliente" oninput="autocompletarCliente(this.value)"></div>
@@ -911,6 +949,25 @@ function faltaCreador(p){
   return true;
 }
 
+// v13: "¿Cómo nos conoció?" obligatorio para generar un ID nuevo (con opción "No sé").
+// Se guarda ligado al folio (POST /api/cotizaciones/:id/origen) y el backend lo pasa al
+// perfil del cliente cuando la cotización se vuelve pedido.
+function getOrigen(p){var el=document.getElementById(p+'-origen');return el?el.value:'';}
+function faltaOrigen(p){
+  if(getOrigen(p)) return false;
+  var g=document.getElementById(p+'-origen');
+  if(g){g.scrollIntoView({behavior:'smooth',block:'center'});g.style.outline='2px solid #c0392b';g.style.outlineOffset='2px';setTimeout(function(){g.style.outline='';},2500);g.focus();}
+  alert('Elige cómo nos conoció el cliente (si no sabes, elige "No sé").');
+  return true;
+}
+function registrarOrigen(p,id){
+  var o=getOrigen(p); if(!o||!id) return;
+  var det=((document.getElementById(p+'-origen-det')||{}).value||'').trim();
+  fetch(API_BASE+'/api/cotizaciones/'+encodeURIComponent(id)+'/origen',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({como_nos_conocio:o,detalle:det||null})})
+    .then(function(r){if(!r.ok) console.warn('No se pudo guardar el origen de '+id);})
+    .catch(function(){console.warn('Sin conexión al guardar el origen de '+id);});
+}
+
 // Si se abre desde el acceso de Gestor Web, precargar "Uriel" en ambos
 // modos (sigue siendo editable, por si algún día otra persona usa el
 // mismo link). No depende del flujo de "editar" de abajo — aplica siempre.
@@ -939,6 +996,7 @@ function generarIDRapido(){
   var err=document.getElementById('m1-error');
   if(!monto||monto<=0){err.textContent='Ingresa un monto válido';return;}
   if(faltaCreador('m1')) return;
+  if(faltaOrigen('m1')) return;
   err.textContent='';
   var btn=document.querySelector('#modo1 .btn-azul');btn.innerHTML='<span class="spinner"></span> Generando...';btn.disabled=true;
   fetch(SCRIPT_URL,{method:'POST',body:JSON.stringify({accion:'generar_id',socio,creado_por:getCreadoPor('m1'),tipo_producto:tipo,monto,cliente:'—',telefono:'—',correo:'—',items:[],paqueteria:'—',envio:0})})
@@ -948,7 +1006,7 @@ function generarIDRapido(){
       idGenerado=data.id;
       document.getElementById('m1-id-val').textContent=data.id;
       document.getElementById('m1-resumen-datos').innerHTML='<div style="display:grid;grid-template-columns:1fr 1fr;gap:4px"><span style="color:#888">Socio:</span><span>'+socio+'</span><span style="color:#888">Producto:</span><span>'+tipo+'</span><span style="color:#888">Monto:</span><span>'+fmx(monto)+'</span><span style="color:#888">Fecha:</span><span>'+new Date().toLocaleDateString('es-MX')+'</span></div>';
-      document.getElementById('m1-resultado').style.display='block';
+      document.getElementById('m1-resultado').style.display='block';registrarOrigen('m1',idGenerado);
       document.querySelector('#modo1 .card').style.display='none';
       guardarCotizacion(data.id, socio, '—', monto, tipo);
     } else {
@@ -959,7 +1017,7 @@ function generarIDRapido(){
           idGenerado=idEncontrado;
           document.getElementById('m1-id-val').textContent=idEncontrado;
           document.getElementById('m1-resumen-datos').innerHTML='<div style="display:grid;grid-template-columns:1fr 1fr;gap:4px"><span style="color:#888">Socio:</span><span>'+socio+'</span><span style="color:#888">Producto:</span><span>'+tipo+'</span><span style="color:#888">Monto:</span><span>'+fmx(monto)+'</span><span style="color:#888">Fecha:</span><span>'+new Date().toLocaleDateString('es-MX')+'</span></div>';
-          document.getElementById('m1-resultado').style.display='block';
+          document.getElementById('m1-resultado').style.display='block';registrarOrigen('m1',idGenerado);
           document.querySelector('#modo1 .card').style.display='none';
         } else err.textContent='Error al generar ID';
       });
@@ -972,14 +1030,14 @@ function generarIDRapido(){
         idGenerado=idEncontrado;
         document.getElementById('m1-id-val').textContent=idEncontrado;
         document.getElementById('m1-resumen-datos').innerHTML='<div style="display:grid;grid-template-columns:1fr 1fr;gap:4px"><span style="color:#888">Socio:</span><span>'+socio+'</span><span style="color:#888">Producto:</span><span>'+tipo+'</span><span style="color:#888">Monto:</span><span>'+fmx(monto)+'</span><span style="color:#888">Fecha:</span><span>'+new Date().toLocaleDateString('es-MX')+'</span></div>';
-        document.getElementById('m1-resultado').style.display='block';
+        document.getElementById('m1-resultado').style.display='block';registrarOrigen('m1',idGenerado);
         document.querySelector('#modo1 .card').style.display='none';
       } else err.textContent='Sin conexión.';
     });
   });
 }
 function copiarIDM1(){navigator.clipboard.writeText(idGenerado).then(()=>{var b=document.querySelector('#modo1 .btn-g');b.textContent='✓ Copiado';setTimeout(()=>b.textContent='📋 Copiar ID',2000);});}
-function nuevoIDM1(){document.getElementById('m1-resultado').style.display='none';document.querySelector('#modo1 .card').style.display='block';document.getElementById('m1-monto').value='';idGenerado='';}
+function nuevoIDM1(){document.getElementById('m1-resultado').style.display='none';document.querySelector('#modo1 .card').style.display='block';document.getElementById('m1-monto').value='';idGenerado='';['m1-origen','m1-origen-det'].forEach(function(i){var e=document.getElementById(i);if(e)e.value='';});}
 
 // MODO 2
 function showTab2(n){
@@ -1191,6 +1249,7 @@ function generarIDDesdeResumen(){
   var socio=getSocio('m2'),tipo=document.getElementById('m2-tipo-venta').value,t=getTotales();
   if(!t.tot){alert('Total es 0. Agrega productos primero.');return;}
   if(faltaCreador('m2')) return;
+  if(faltaOrigen('m2')) return;
   var btn=document.getElementById('btn-gen-id2');btn.innerHTML='<span class="spinner"></span> Generando...';btn.disabled=true;
   var _cliente2  = (document.getElementById('cli-nom')||{}).value||''; _cliente2=_cliente2.trim()||'—';
   var _telefono2 = (document.getElementById('cli-tel')||{}).value||''; _telefono2=_telefono2.trim()||'—';
@@ -1212,6 +1271,7 @@ function generarIDDesdeResumen(){
     btn.innerHTML='🔑 Generar ID';btn.disabled=false;
     idGenerado=id;
     window._idAnterior=id;
+    registrarOrigen('m2',id);
     document.getElementById('res2-id-val').textContent=id;
     document.getElementById('res2-id-area').style.display='block';
     var btnGuardarCambios=document.getElementById('btn-guardar-cambios');
@@ -1239,6 +1299,7 @@ function generarIDDesdeResumen(){
 function guardarCambios(){
   var idViejo=window._idAnterior;
   if(!idViejo){mostrarToast('⚠️ Sin ID para actualizar');return;}
+  registrarOrigen('m2',idViejo); // v13: si se eligió origen al editar, se guarda/actualiza
   var cliente  = (document.getElementById('cli-nom')||{}).value||''; cliente=cliente.trim()||'—';
   var telefono = (document.getElementById('cli-tel')||{}).value||''; telefono=telefono.trim()||'—';
   var correo   = (document.getElementById('cli-correo')||{}).value||''; correo=correo.trim()||'—';
@@ -1287,6 +1348,7 @@ function limpiarCotizacion(){
   var idVal=document.getElementById('res2-id-val'); if(idVal) idVal.textContent='—';
   var btnGuardar=document.getElementById('btn-guardar-cambios'); if(btnGuardar) btnGuardar.style.display='none';
   var btnGuardarForm=document.getElementById('btn-guardar-cambios-form'); if(btnGuardarForm) btnGuardarForm.style.display='none';
+  ['m2-origen','m2-origen-det'].forEach(function(i){var e=document.getElementById(i);if(e)e.value='';});
   mostrarToast('✓ Campos limpios — lista para una nueva cotización');
   showTab2('cot');
 }
@@ -1385,6 +1447,7 @@ function generarIDFormal(){
   var monto=_sub3+_envioFormal;
   if(!monto||monto<=0){alert('Monto inválido');return;}
   if(faltaCreador('m2')) return;
+  if(faltaOrigen('m2')) return;
   var btn=document.getElementById('btn-gen-id3');btn.innerHTML='<span class="spinner"></span>';btn.disabled=true;
   var _clienteF=(document.getElementById('cf-cliente')||document.getElementById('cli-nom')||{}).value||'';
   _clienteF=_clienteF.trim()||'—';
@@ -1403,6 +1466,7 @@ function generarIDFormal(){
     btn.innerHTML='🔑 Generar ID';btn.disabled=false;
     idGenerado=id;
     window._idAnterior=null;
+    registrarOrigen('m2',id);
     actualizarID(id);
     var el=document.getElementById('res2-id-val');
     if(el){el.textContent=id;document.getElementById('res2-id-area').style.display='block';}
