@@ -1,0 +1,29 @@
+{
+  "id": "ft-fungibolsa",
+  "name": "Fungiterra FungiBolsa",
+  "short_name": "FungiBolsa",
+  "start_url": "fungibolsa.html",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#0177bf",
+  "lang": "es-MX",
+  "icons": [
+    {
+      "src": "app/icono-192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "app/icono-512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    },
+    {
+      "src": "app/icono-maskable-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ]
+}

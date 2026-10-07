@@ -1,0 +1,29 @@
+{
+  "id": "ft-transformacion",
+  "name": "Fungiterra Transformación",
+  "short_name": "Transformación",
+  "start_url": "transformacion.html",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#28974b",
+  "lang": "es-MX",
+  "icons": [
+    {
+      "src": "app/icono-192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "app/icono-512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    },
+    {
+      "src": "app/icono-maskable-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ]
+}
