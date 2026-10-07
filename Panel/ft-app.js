@@ -28,17 +28,18 @@
   // ── Botón y menú de avisos ──────────────────────────────────────
   var css = document.createElement('style');
   css.textContent =
-    '#ft-av-btn{position:fixed;right:16px;bottom:16px;z-index:9000;width:46px;height:46px;border-radius:50%;border:none;' +
+    '#ft-av-btn{position:fixed;right:16px;bottom:16px;z-index:1000000;width:46px;height:46px;border-radius:50%;border:none;' +
     'background:' + COLOR + ';color:#fff;font-size:20px;box-shadow:0 4px 14px rgba(0,0,0,.22);cursor:pointer;display:none}' +
     '#ft-av-btn.off{background:#fff;color:' + COLOR + ';border:2px solid ' + COLOR + '}' +
     '#ft-av-btn .pt{position:absolute;top:6px;right:7px;width:9px;height:9px;border-radius:50%;background:#e74c3c;border:2px solid #fff}' +
-    '#ft-av-menu{position:fixed;right:16px;bottom:72px;z-index:9001;background:#fff;border-radius:12px;box-shadow:0 8px 30px rgba(0,0,0,.2);' +
+    '#ft-av-menu{position:fixed;right:16px;bottom:72px;z-index:1000001;background:#fff;border-radius:12px;box-shadow:0 8px 30px rgba(0,0,0,.2);' +
     'width:270px;max-width:calc(100vw - 32px);padding:14px;font:13px/1.45 system-ui,sans-serif;color:#2b2b28;display:none}' +
     '#ft-av-menu b{display:block;font-size:14px;margin-bottom:6px}' +
     '#ft-av-menu p{margin:0 0 10px;color:#5b6470}' +
     '#ft-av-menu button{display:block;width:100%;margin-top:6px;padding:9px;border-radius:8px;border:1px solid #d9dee5;background:#f6f8fa;' +
     'font:600 13px system-ui,sans-serif;cursor:pointer;color:#2b2b28}' +
     '#ft-av-menu button.pri{background:' + COLOR + ';border-color:' + COLOR + ';color:#fff}' +
+    '#ft-av-menu a.pie{display:block;margin-top:12px;padding-top:10px;border-top:1px solid #e2e6e3;text-align:center;font-weight:600;font-size:12.5px;color:#5b6470;text-decoration:none}' +
     '#ft-av-menu .msg{margin-top:8px;font-size:12px;color:#5b6470;min-height:16px}';
   document.head.appendChild(css);
 
@@ -47,6 +48,12 @@
   btn.setAttribute('data-uso', 'Botón avisos 🔔');
   var menu = document.createElement('div');
   menu.id = 'ft-av-menu';
+  // El contenido cambia según el estado de los avisos; el pie "Cambiar de panel" es fijo.
+  var cont = document.createElement('div');
+  var pie = document.createElement('a');
+  pie.href = 'inicio.html?elegir=1'; pie.className = 'pie'; pie.textContent = 'Cambiar de panel';
+  pie.setAttribute('data-uso', 'Cambiar de panel');
+  menu.appendChild(cont); menu.appendChild(pie);
   document.addEventListener('DOMContentLoaded', function () { document.body.appendChild(btn); document.body.appendChild(menu); pintarBoton(); });
   if (document.body) { document.body.appendChild(btn); document.body.appendChild(menu); }
 
@@ -79,18 +86,18 @@
 
   function pintarMenu() {
     if (!soportaPush && esIOS && !instalada) {
-      menu.innerHTML = '<b>🔔 Avisos en iPhone</b><p>Primero instala la app: toca <b style="display:inline">Compartir</b> (el cuadro con flecha) → ' +
+      cont.innerHTML = '<b>🔔 Avisos en iPhone</b><p>Primero instala la app: toca <b style="display:inline">Compartir</b> (el cuadro con flecha) → ' +
         '<b style="display:inline">Agregar a pantalla de inicio</b>. Ábrela desde ese ícono y vuelve a tocar 🔔.</p>';
       return;
     }
-    if (!soportaPush) { menu.innerHTML = '<b>🔔 Avisos</b><p>Este navegador no permite avisos. Usa Chrome en Android o computadora.</p>'; return; }
+    if (!soportaPush) { cont.innerHTML = '<b>🔔 Avisos</b><p>Este navegador no permite avisos. Usa Chrome en Android o computadora.</p>'; return; }
     suscripcionActual().then(function (s) {
       var activo = !!s && Notification.permission === 'granted';
       if (Notification.permission === 'denied') {
-        menu.innerHTML = '<b>🔔 Avisos bloqueados</b><p>Los bloqueaste en este dispositivo. Actívalos en los ajustes del navegador (permisos del sitio → Notificaciones) y vuelve a intentar.</p>';
+        cont.innerHTML = '<b>🔔 Avisos bloqueados</b><p>Los bloqueaste en este dispositivo. Actívalos en los ajustes del navegador (permisos del sitio → Notificaciones) y vuelve a intentar.</p>';
         return;
       }
-      menu.innerHTML = activo
+      cont.innerHTML = activo
         ? '<b>🔔 Avisos activados</b><p>Te llegan los mismos avisos que hoy recibes por correo de este panel.</p>' +
           '<button class="pri" id="ft-av-probar">Mandar aviso de prueba</button><button id="ft-av-quitar">Quitar avisos en este dispositivo</button><div class="msg" id="ft-av-msg"></div>'
         : '<b>🔔 Activar avisos</b><p>Recibe en este dispositivo los avisos de este panel (pedidos nuevos, alertas), aunque la app esté cerrada.</p>' +
@@ -151,7 +158,7 @@
         // Solo se desuscribe del navegador si no hay otros paneles usando la misma suscripción;
         // como no lo sabemos desde aquí, la dejamos y solo se borra este grupo en el servidor.
       });
-    }).then(function () { pintarBoton(); menu.innerHTML = '<b>🔕 Avisos quitados</b><p>Ya no te llegarán avisos de este panel en este dispositivo.</p>'; });
+    }).then(function () { pintarBoton(); cont.innerHTML = '<b>🔕 Avisos quitados</b><p>Ya no te llegarán avisos de este panel en este dispositivo.</p>'; });
   }
 
   // ── Conteo de uso ───────────────────────────────────────────────

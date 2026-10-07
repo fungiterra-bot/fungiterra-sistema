@@ -1,8 +1,9 @@
 {
-  "id": "ft-gestorweb",
-  "name": "Fungiterra Gestor Web",
-  "short_name": "FT Gestor",
-  "start_url": "../gestorweb_index.html",
+  "id": "ft-inicio",
+  "name": "Fungiterra",
+  "short_name": "Fungiterra",
+  "description": "Paneles de pedidos y producción de Fungiterra",
+  "start_url": "../inicio.html",
   "scope": "../",
   "display": "standalone",
   "background_color": "#ffffff",

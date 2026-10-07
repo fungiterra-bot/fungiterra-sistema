@@ -1,0 +1,80 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Fungiterra</title>
+<link rel="manifest" href="app/manifest-inicio.json">
+<meta name="theme-color" content="#0177bf">
+<link rel="apple-touch-icon" href="app/apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Fungiterra">
+<link rel="icon" href="app/icono-192.png">
+<!-- Inicio de la app Fungiterra (v1, 2026-10-07). Es la pantalla con la que abre la
+     app instalada (APK de Android o "Agregar a pantalla de inicio"). La primera vez
+     cada quien elige su panel; después entra directo a ese panel. Para cambiar:
+     botón 🔔 del panel → "Cambiar de panel" (abre inicio.html?elegir=1). -->
+<script>
+(function(){
+  var KEY = 'ft_panel_inicio';
+  var q = new URLSearchParams(location.search);
+  var guardado = null;
+  try { guardado = localStorage.getItem(KEY); } catch (e) {}
+  if (guardado && !q.has('elegir') && /^[a-z_]+\.html(\?area=(insumos|piopis))?$/.test(guardado)) location.replace(guardado);
+})();
+</script>
+<style>
+:root{--azul:#0177bf;--texto:#1d2a31;--gris:#5a6b74;--borde:#e2e6e3;--fondo:#f4f5f2}
+*{box-sizing:border-box}
+body{margin:0;background:var(--fondo);color:var(--texto);font-family:system-ui,-apple-system,"Segoe UI",sans-serif}
+header{background:var(--azul);color:#fff;padding:28px 20px 24px;text-align:center}
+header img{width:72px;height:72px;border-radius:50%;background:#fff;display:block;margin:0 auto 10px}
+header h1{margin:0;font-size:22px}
+header p{margin:6px 0 0;opacity:.85;font-size:14px}
+main{max-width:520px;margin:0 auto;padding:18px 16px 40px}
+h2{font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--gris);margin:18px 4px 8px}
+.lista{display:grid;gap:8px}
+button.panel{display:flex;align-items:center;gap:12px;width:100%;min-height:56px;padding:12px 14px;border-radius:12px;border:1px solid var(--borde);
+  background:#fff;color:var(--texto);font:600 15px system-ui,sans-serif;text-align:left;cursor:pointer}
+button.panel:active{transform:scale(.99)}
+.punto{width:12px;height:12px;border-radius:50%;flex:none}
+.sub{display:block;font-weight:400;font-size:12.5px;color:var(--gris);margin-top:2px}
+.nota{font-size:12.5px;color:var(--gris);text-align:center;margin-top:22px;line-height:1.5}
+</style>
+</head>
+<body>
+<header>
+  <img src="app/icono-192.png" alt="">
+  <h1>Fungiterra</h1>
+  <p>Elige tu panel. La app lo recordará.</p>
+</header>
+<main>
+  <h2>Administración</h2>
+  <div class="lista">
+    <button class="panel" data-url="admin_index.html"><span class="punto" style="background:#17252e"></span><span>Admin<span class="sub">Pedidos, envíos, clientes y análisis</span></span></button>
+    <button class="panel" data-url="revisor_index.html"><span class="punto" style="background:#0177bf"></span><span>Revisor<span class="sub">Pedidos sin precios</span></span></button>
+    <button class="panel" data-url="gestorweb_index.html"><span class="punto" style="background:#0177bf"></span><span>Gestor Web<span class="sub">Mercado Libre, página web y Amazon</span></span></button>
+  </div>
+  <h2>Áreas de producción</h2>
+  <div class="lista">
+    <button class="panel" data-url="fungibolsa.html"><span class="punto" style="background:#0177bf"></span><span>FungiBolsa</span></button>
+    <button class="panel" data-url="laboratorio.html"><span class="punto" style="background:#6d28d9"></span><span>Laboratorio</span></button>
+    <button class="panel" data-url="transformacion.html"><span class="punto" style="background:#28974b"></span><span>Transformación</span></button>
+    <button class="panel" data-url="insumos.html?area=insumos"><span class="punto" style="background:#834b3e"></span><span>Insumos</span></button>
+    <button class="panel" data-url="insumos.html?area=piopis"><span class="punto" style="background:#834b3e"></span><span>Piopis</span></button>
+  </div>
+  <p class="nota">Cada panel pide su contraseña de siempre.<br>Para cambiar de panel después: botón 🔔 → «Cambiar de panel».</p>
+</main>
+<script>
+document.querySelectorAll('button.panel').forEach(function(b){
+  b.addEventListener('click', function(){
+    var url = b.getAttribute('data-url');
+    try { localStorage.setItem('ft_panel_inicio', url); } catch (e) {}
+    location.href = url;
+  });
+});
+if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js', { scope: './' }).catch(function(){});
+</script>
+</body>
+</html>
