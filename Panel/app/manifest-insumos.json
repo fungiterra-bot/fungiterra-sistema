@@ -1,7 +1,7 @@
 {
   "id": "ft-insumos",
   "name": "Fungiterra Insumos y Piopis",
-  "short_name": "Insumos",
+  "short_name": "Insumos y Piopis",
   "start_url": "../insumos.html",
   "scope": "../",
   "display": "standalone",
@@ -10,17 +10,19 @@
   "lang": "es-MX",
   "icons": [
     {
-      "src": "icono-192.png",
+      "src": "icono-insumos-192.png",
       "sizes": "192x192",
-      "type": "image/png"
+      "type": "image/png",
+      "purpose": "any"
     },
     {
-      "src": "icono-512.png",
+      "src": "icono-insumos-512.png",
       "sizes": "512x512",
-      "type": "image/png"
+      "type": "image/png",
+      "purpose": "any"
     },
     {
-      "src": "icono-maskable-512.png",
+      "src": "icono-insumos-maskable-512.png",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "maskable"
