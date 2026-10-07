@@ -13,6 +13,8 @@
   var PANEL = (script && script.getAttribute('data-panel')) || 'desconocido';
   if (PANEL === 'insumos' && window.FT_AREA_ACTIVA) PANEL = window.FT_AREA_ACTIVA;
   var COLOR = (script && script.getAttribute('data-color')) || '#0177bf';
+  // data-avisos="no": app instalable y conteo de uso, sin botón de avisos (Cotizador, Repositorio)
+  var SIN_AVISOS = script && script.getAttribute('data-avisos') === 'no';
 
   var esIOS = /iphone|ipad|ipod/i.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
   var instalada = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
@@ -72,7 +74,7 @@
 
   function pintarBoton() {
     if (!btn) return;
-    var mostrar = soportaPush || (esIOS && !instalada);
+    var mostrar = !SIN_AVISOS && (soportaPush || (esIOS && !instalada));
     btn.style.display = mostrar ? 'block' : 'none';
     if (!mostrar) return;
     suscripcionActual().then(function (s) {

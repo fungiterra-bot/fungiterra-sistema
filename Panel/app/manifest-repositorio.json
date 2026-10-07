@@ -1,0 +1,31 @@
+{
+  "id": "ft-repositorio",
+  "name": "Fungiterra Repositorio",
+  "short_name": "Repositorio",
+  "start_url": "../../repositorioD.html",
+  "scope": "../../",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#2d6a2d",
+  "lang": "es-MX",
+  "icons": [
+    {
+      "src": "icono-repositorio-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "icono-repositorio-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "icono-repositorio-maskable-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ]
+}
