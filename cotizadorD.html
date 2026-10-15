@@ -243,7 +243,7 @@ textarea{resize:vertical;min-height:60px}
 </script>
 
 <header>
-  <div><h1>🍄 Sistema Fungiterra</h1><div class="header-sub">Cotizador · Generador de IDs · Cotización formal · v16</div></div>
+  <div><h1>🍄 Sistema Fungiterra</h1><div class="header-sub">Cotizador · Generador de IDs · Cotización formal · v17</div></div>
   <a id="link-repositorio" href="https://fungiterra-bot.github.io/fungiterra-sistema/repositorioD.html" target="_blank" style="color:rgba(255,255,255,.85);font-size:12px;text-decoration:none;border:1px solid rgba(255,255,255,.35);border-radius:7px;padding:6px 14px;font-family:var(--sans);font-weight:500;transition:all .2s;background:rgba(255,255,255,.08)" onmouseover="this.style.background='rgba(255,255,255,.18)'" onmouseout="this.style.background='rgba(255,255,255,.08)'">📋 Repositorio →</a>
 </header>
 
@@ -528,6 +528,7 @@ textarea{resize:vertical;min-height:60px}
 <div id="modo3" style="display:none;padding:20px 24px;max-width:860px;margin:0 auto">
   <div class="cot-acciones">
     <button class="btn btn-g btn-sm" id="btn-gen-id3" onclick="generarIDFormal()">🔑 Generar ID</button>
+    <button class="btn btn-naranja btn-sm" id="btn-guardar-cambios-3" style="display:none" onclick="guardarCambios('formal')">💾 Guardar cambios (sin nuevo ID)</button>
     <button class="btn btn-naranja btn-sm" onclick="setModo(4,null)">④ Vista final →</button>
     <button class="btn btn-sm" onclick="setModo(2,null)">← Volver</button>
     <span style="font-size:11px;color:#888">Campos con borde azul son editables</span>
@@ -819,7 +820,9 @@ function parseMonto(s){return parseFloat((s||'').replace(/[$,]/g,''))||0;}
 function getRango(c){return c<=50?0:c<=100?1:c<=500?2:3;}
 function getSocio(p){return document.getElementById(p+'-socio').value||'V';}
 
+var _modoActual=1;
 function setModo(n,btn){
+  var _modoPrevio=_modoActual; _modoActual=n;
   [1,2,3,4].forEach(i=>{
     var el=document.getElementById('modo'+i);
     if(el){el.style.display='none';el.classList.remove('active');}
@@ -829,7 +832,8 @@ function setModo(n,btn){
   document.querySelectorAll('.modo-btn').forEach(b=>b.classList.remove('active'));
   if(btn)btn.classList.add('active');
   else document.querySelectorAll('.modo-btn')[n-1].classList.add('active');
-  if(n===3)poblarFormal();
+  // v17: al regresar de la vista final (4→3) se conservan los cambios hechos en la formal
+  if(n===3){ if(_modoPrevio===4) actualizarID(idActual()); else poblarFormal(); }
   if(n===4)poblarVista4();
 }
 
@@ -933,6 +937,10 @@ window.addEventListener('load', function(){
   if(idAnterior){
     window._idAnterior=idAnterior;
     mostrarToast('✏️ Editando '+idAnterior+' — productos precargados abajo');
+    actualizarID(idAnterior);
+    var _rv=document.getElementById('res2-id-val'); if(_rv) _rv.textContent=idAnterior;
+    var _ra=document.getElementById('res2-id-area'); if(_ra) _ra.style.display='block';
+    var _b3=document.getElementById('btn-guardar-cambios-3'); if(_b3) _b3.style.display='inline-block';
     var btnGuardar=document.getElementById('btn-guardar-cambios');
     var btnGuardarForm=document.getElementById('btn-guardar-cambios-form');
     if(btnGuardar) btnGuardar.style.display='block';
@@ -1288,6 +1296,7 @@ function generarIDDesdeResumen(){
     var btnGuardarCambiosForm=document.getElementById('btn-guardar-cambios-form');
     if(btnGuardarCambios) btnGuardarCambios.style.display='inline-block';
     if(btnGuardarCambiosForm) btnGuardarCambiosForm.style.display='block';
+    var _b3=document.getElementById('btn-guardar-cambios-3'); if(_b3) _b3.style.display='inline-block';
     actualizarID(id);
     guardarCotizacion(id, socio, _cliente2, t.tot, tipo);
   }
@@ -1306,7 +1315,19 @@ function generarIDDesdeResumen(){
 }
 
 // Guardar cambios sin generar ID nuevo (cliente + productos + envío, todo junto)
-function guardarCambios(){
+// v17: items de la cotización formal (modo 3), que es lo que ve el cliente en la vista final
+function itemsFormal(){
+  var items=[];
+  document.querySelectorAll('.cf-fila').forEach(function(fila){
+    var inputs=fila.querySelectorAll('input');
+    var desc=(inputs[0]?inputs[0].value:'').trim();
+    var cant=parseFloat(inputs[1]?inputs[1].value:0)||0;
+    var precio=parseMonto(inputs[2]?inputs[2].value:'0')||0;
+    if(desc&&cant>0)items.push({desc:desc,cant:cant,precio:precio,subtotal:cant*precio});
+  });
+  return items;
+}
+function guardarCambios(origen){
   var idViejo=window._idAnterior;
   if(!idViejo){mostrarToast('⚠️ Sin ID para actualizar');return;}
   registrarOrigen('m2',idViejo); // v13: si se eligió origen al editar, se guarda/actualiza
@@ -1316,10 +1337,19 @@ function guardarCambios(){
   var pak      = (document.getElementById('env-pak')||{}).value||''; pak=pak.trim()||'—';
   var t=getTotales();
   var items=t.todos.map(function(it){return {desc:it.desc, cant:it.cant, precio:it.precio, subtotal:it.total};});
-  var botones=[document.getElementById('btn-guardar-cambios'),document.getElementById('btn-guardar-cambios-form')];
+  var envioG=t.envio, totalG=t.tot;
+  if(origen==='formal'){
+    var _if=itemsFormal();
+    if(!_if.length){mostrarToast('⚠️ La cotización formal no tiene productos');return;}
+    items=_if;
+    envioG=parseMonto((document.getElementById('cf-envio-val')||{}).value)||0;
+    totalG=items.reduce(function(s,it){return s+it.subtotal;},0)+envioG;
+  }
+  var botones=[document.getElementById('btn-guardar-cambios'),document.getElementById('btn-guardar-cambios-form'),document.getElementById('btn-guardar-cambios-3')];
   botones.forEach(function(b){if(b){b.innerHTML='<span class="spinner"></span> Guardando...';b.disabled=true;}});
   function _terminar(mensajeExito){
     botones.forEach(function(b){if(b){b.innerHTML='💾 Guardar cambios (sin nuevo ID)';b.disabled=false;}});
+    if(origen==='formal') actualizarID(idViejo);
     if(document.getElementById('panel2-res').classList.contains('active')) renderRes2();
     mostrarToast(mensajeExito);
   }
@@ -1335,13 +1365,21 @@ function guardarCambios(){
   }
   fetch(SCRIPT_URL,{method:'POST',body:JSON.stringify({
     accion:'actualizar_cliente', id:idViejo, cliente, telefono, correo,
-    items:items, envio:t.envio, paqueteria:pak, monto:t.tot
+    items:items, envio:envioG, paqueteria:pak, monto:totalG
   })}).then(r=>r.json()).then(data=>{
-    if(data.ok) _terminar('✓ '+idViejo+' actualizado (cliente y productos)');
+    if(data.ok) _terminar('✓ '+idViejo+' actualizado'+textoPedido(data));
     else _verificarYresolver(data.error);
   }).catch(function(){_verificarYresolver('Sin conexión');});
 }
 
+// v17: lo que pasó con el pedido de los paneles de área al guardar
+function textoPedido(data){
+  if(!data) return '';
+  if(data.pedido==='actualizado') return ' — también en los paneles de área';
+  if(data.pedido==='cerrado') return ' — el pedido ya estaba '+(data.estado||'enviado')+', no se tocó (se avisó a Admin)';
+  if(data.pedido==='error') return ' — ⚠️ el pedido no se pudo actualizar (se avisó a Admin)';
+  return '';
+}
 function copiarIDM2(){navigator.clipboard.writeText(idGenerado).then(()=>{var b=document.querySelector('#res2-id-area .btn-sm');b.textContent='✓';setTimeout(()=>b.textContent='📋 Copiar',2000);});}
 
 function limpiarCotizacion(){
@@ -1358,6 +1396,8 @@ function limpiarCotizacion(){
   var idVal=document.getElementById('res2-id-val'); if(idVal) idVal.textContent='—';
   var btnGuardar=document.getElementById('btn-guardar-cambios'); if(btnGuardar) btnGuardar.style.display='none';
   var btnGuardarForm=document.getElementById('btn-guardar-cambios-form'); if(btnGuardarForm) btnGuardarForm.style.display='none';
+  var btnGuardar3=document.getElementById('btn-guardar-cambios-3'); if(btnGuardar3) btnGuardar3.style.display='none';
+  actualizarID('');
   ['m2-origen','m2-origen-det'].forEach(function(i){var e=document.getElementById(i);if(e)e.value='';});
   mostrarToast('✓ Campos limpios — lista para una nueva cotización');
   showTab2('cot');
@@ -1368,11 +1408,11 @@ function copiarWA(){
   var txt='*COTIZACIÓN FUNGITERRA*\n';
   txt+='Cliente: '+nom+(emp?' ('+emp+')':'')+' | Socio: '+socio+'\n';
   txt+='Fecha: '+new Date().toLocaleDateString('es-MX')+'\n';
-  if(idGenerado)txt+='ID de compra: *'+idGenerado+'*\n';
+  if(idActual())txt+='ID de compra: *'+idActual()+'*\n';
   txt+='\n*PRODUCTOS*\n';
   t.todos.forEach(i=>{txt+='• '+i.desc+'\n  '+i.cant+' × $'+i.precio.toFixed(2)+' = $'+i.total.toFixed(2)+'\n';});
   txt+='\nSubtotal: $'+t.sub.toFixed(2)+'\nEnvío'+(pak?' ('+pak+')':'')+': $'+t.envio.toFixed(2)+'\n*TOTAL: $'+t.tot.toFixed(2)+'*\n\n';
-  if(sd.cuenta)txt+='*Datos de pago:*\n'+sd.nombre+'\n'+sd.banco+'\nCuenta: '+sd.cuenta+'\nCLABE: '+sd.clabe+'\n'+(idGenerado?'Concepto: *'+idGenerado+'* + tu nombre\n':'');
+  if(sd.cuenta)txt+='*Datos de pago:*\n'+sd.nombre+'\n'+sd.banco+'\nCuenta: '+sd.cuenta+'\nCLABE: '+sd.clabe+'\n'+(idActual()?'Concepto: *'+idActual()+'* + tu nombre\n':'');
   if(t.todos.some(function(i){return RE_PRODUCTO_VIVO.test(i.desc);}))
     txt+='\n🍄 *Producto vivo:* el micelio y los mushbags son organismos vivos. Revisa tu producto en cuanto llegue y, si notas algo fuera de lo normal, envíanos fotos dentro de las 24 horas siguientes a la llegada de tu paquete.\n';
   txt+='\nVigencia: 20 días | www.fungiterra.com.mx';
@@ -1383,7 +1423,7 @@ function copiarWA(){
 function poblarFormal(){
   document.getElementById('cf-fecha').value=new Date().toLocaleDateString('es-MX',{day:'2-digit',month:'2-digit',year:'2-digit'});
   var nom=document.getElementById('cli-nom');if(nom)document.getElementById('cf-cliente').value=nom.value||'';
-  if(idGenerado)actualizarID(idGenerado);
+  if(idActual())actualizarID(idActual());
   var t=getTotales(),todos=t.todos;
   var filas=document.getElementById('cf-filas');
   var html='';
@@ -1428,9 +1468,11 @@ function calcFilas(){
   document.getElementById('cf-total').textContent=fmx(sub+envio);
 }
 function recalcTotal(){calcFilas();}
+// v17: folio vigente — el recién generado o el que se está editando (antes al editar salía vacío / V-000)
+function idActual(){return idGenerado||window._idAnterior||'';}
 function actualizarID(id){
   var e1=document.getElementById('cf-id'),e2=document.getElementById('cf-id-p2'),e3=document.getElementById('m4-id-val');
-  if(e1)e1.value=id;if(e2)e2.textContent=id;if(e3)e3.textContent=id;
+  if(e1)e1.value=id||'';if(e2)e2.textContent=id||'— — —';if(e3)e3.textContent=id||'— — —';
 }
 function generarIDFormal(){
   if(idGenerado&&!confirm('Ya generaste el ID '+idGenerado+' con esta información. ¿Deseas generar uno nuevo?'))return;
@@ -1475,8 +1517,10 @@ function generarIDFormal(){
   function _exito3(id){
     btn.innerHTML='🔑 Generar ID';btn.disabled=false;
     idGenerado=id;
-    window._idAnterior=null;
+    window._idAnterior=id; // v17: igual que en el resumen — "Guardar cambios" ya apunta al folio nuevo
     registrarOrigen('m2',id);
+    ['btn-guardar-cambios','btn-guardar-cambios-form'].forEach(function(b){var e=document.getElementById(b);if(e)e.style.display='block';});
+    var _b3=document.getElementById('btn-guardar-cambios-3'); if(_b3) _b3.style.display='inline-block';
     actualizarID(id);
     var el=document.getElementById('res2-id-val');
     if(el){el.textContent=id;document.getElementById('res2-id-area').style.display='block';}
@@ -1518,7 +1562,7 @@ function poblarVista4(){
   function g(id){var el=document.getElementById(id);if(!el)return'';return el.tagName==='INPUT'||el.tagName==='TEXTAREA'?el.value:el.textContent;}
   // Fecha e ID
   document.getElementById('m4-fecha').textContent=g('cf-fecha');
-  var idVal=g('cf-id')||idGenerado||'—';
+  var idVal=g('cf-id')||idActual()||'—';
   document.getElementById('m4-id').textContent=idVal;
   document.getElementById('m4-id-val').textContent=idVal||'— — —';
   // Asunto y cliente
