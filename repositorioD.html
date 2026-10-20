@@ -119,6 +119,15 @@ td.gris{color:#6b7280;font-size:12px}
 .cpago-modal textarea{width:100%;padding:8px 10px;border:1.5px solid var(--border);border-radius:7px;font-size:13px;font-family:var(--sans);resize:vertical;min-height:72px;margin-bottom:14px;outline:none}
 .cpago-modal textarea:focus{border-color:#b91c1c}
 .cpago-footer{display:flex;justify-content:flex-end;gap:10px}
+/* v42: corregir datos del cliente */
+.ccli-modal h3{color:#1a3a5c}
+.ccli-modal label.ccli-l{display:block;font-size:11px;font-weight:600;color:#374151;margin:0 0 4px}
+.ccli-modal input[type=text],.ccli-modal input[type=tel],.ccli-modal input[type=email]{width:100%;padding:8px 10px;border:1.5px solid var(--border);border-radius:7px;font-size:13px;font-family:var(--sans);margin-bottom:10px;outline:none;box-sizing:border-box}
+.ccli-modal input:focus{border-color:#2563a8}
+.ccli-opc{display:flex;gap:8px;align-items:flex-start;padding:9px 10px;border:1.5px solid var(--border);border-radius:8px;margin-bottom:8px;cursor:pointer;font-size:12px;color:#374151}
+.ccli-opc input{margin-top:2px}
+.ccli-opc.sel{border-color:#2563a8;background:#f0f7ff}
+.ccli-opc b{display:block;font-size:13px;color:#1a3a5c;margin-bottom:2px}
 .btn-danger{background:#b91c1c;color:white;border-color:#b91c1c}
 .btn-danger:hover{background:#991b1b}
 
@@ -309,7 +318,7 @@ window.MODO_GW = new URLSearchParams(window.location.search).get('origen') === '
 </script>
 
 <header>
-  <div><h1>🍄 Repositorio Fungiterra</h1><div class="header-sub">Cotizaciones · Estados · Pagos · v41</div></div>
+  <div><h1>🍄 Repositorio Fungiterra</h1><div class="header-sub">Cotizaciones · Estados · Pagos · v42</div></div>
   <div style="display:flex;gap:8px;align-items:center">
     <button class="solo-admin" onclick="abrirAnalizador()" style="background:rgba(255,255,255,.15);border:1.5px solid rgba(255,255,255,.4);color:white;border-radius:7px;padding:6px 14px;cursor:pointer;font-size:12px;font-weight:600;font-family:var(--sans)">🏦 Conciliar</button>
     <button class="solo-admin" onclick="abrirReglas()" style="background:rgba(255,255,255,.15);border:1.5px solid rgba(255,255,255,.4);color:white;border-radius:7px;padding:6px 14px;cursor:pointer;font-size:12px;font-weight:600;font-family:var(--sans)">⚙️ Reglas</button>
@@ -444,6 +453,27 @@ window.MODO_GW = new URLSearchParams(window.location.search).get('origen') === '
     <div class="cpago-footer">
       <button class="btn btn-sm" onclick="cerrarCpago()">Cancelar</button>
       <button class="btn btn-sm btn-danger" onclick="confirmarCancelaPago()">Revertir pago</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ v42: MODAL CORREGIR DATOS DEL CLIENTE ══ -->
+<div class="cpago-overlay" id="ccli-overlay">
+  <div class="cpago-modal ccli-modal">
+    <h3>✏️ Corregir datos del cliente — <span id="ccli-folio"></span></h3>
+    <p>Productos, total y pagos no cambian.</p>
+    <label class="ccli-opc" id="ccli-opc-otra"><input type="radio" name="ccli-modo" value="otra_persona" onchange="ccliModo()"><span><b>Es otra persona</b>La compra queda a nombre de alguien más (regalo, empresa…). La ficha del cliente original no se toca.</span></label>
+    <label class="ccli-opc" id="ccli-opc-misma"><input type="radio" name="ccli-modo" value="misma_persona" onchange="ccliModo()"><span><b>Es la misma persona</b>Su nombre o datos estaban mal escritos. Se corrige también en sus otros pedidos.</span></label>
+    <div style="height:6px"></div>
+    <label class="ccli-l" for="ccli-nombre">Nombre</label>
+    <input type="text" id="ccli-nombre" autocomplete="off">
+    <label class="ccli-l" for="ccli-tel">Teléfono</label>
+    <input type="tel" id="ccli-tel" autocomplete="off">
+    <label class="ccli-l" for="ccli-correo">Correo</label>
+    <input type="email" id="ccli-correo" autocomplete="off">
+    <div class="cpago-footer">
+      <button class="btn btn-sm" onclick="cerrarCcli()">Cancelar</button>
+      <button class="btn btn-sm btn-a" id="ccli-guardar" onclick="confirmarCcli()">Guardar</button>
     </div>
   </div>
 </div>
@@ -959,10 +989,12 @@ function mostrarDetalle(c){
     btns=btnFungiterra+
          '<button class="btn btn-amarillo btn-sm" onclick="abrirAbono(\''+c.id+'\')">💵 Agregar abono</button>'+
          '<button class="btn btn-v btn-sm" onclick="abrirPagoCompleto(\''+c.id+'\')">✅ Marcar pagada completa</button>'+
+         '<button class="btn btn-a btn-sm" onclick="abrirCcli(\''+c.id+'\')">✏️ Corregir cliente</button>'+
          '<button class="btn btn-sm btn-r" onclick="abrirCpago(\''+c.id+'\')">↩️ Cancelar pagos</button>';
   } else if(est==='Pagada'){
     btns=btnFungiterra+
          (window.MODO_GW?'':'<button class="btn btn-a btn-sm" onclick="facturar(\''+c.id+'\')">🧾 Facturar</button>')+
+         '<button class="btn btn-a btn-sm" onclick="abrirCcli(\''+c.id+'\')">✏️ Corregir cliente</button>'+
          '<button class="btn btn-sm btn-r" onclick="abrirCpago(\''+c.id+'\')">↩️ Cancelar pago</button>';
   } else if(est==='Cancelada'){
     btns='<button class="btn btn-sm" onclick="cambiarEstado(\''+c.id+'\',\'Generada\')">↺ Reactivar</button>';
@@ -1327,6 +1359,54 @@ function confirmarCancelaPago() {
 document.getElementById('cpago-overlay').addEventListener('click', function(e){
   if (e.target === this) cerrarCpago();
 });
+
+// ══════════════════════════════════════════
+// v42: CORREGIR DATOS DEL CLIENTE (cotizaciones pagadas / pago parcial)
+// ══════════════════════════════════════════
+var _ccli_id = null;
+function _ccliVal(v){ v=(v===null||v===undefined)?'':String(v).trim(); return v==='—'?'':v; }
+function abrirCcli(id){
+  var c=_todos.find(function(x){return x.id===id;}); if(!c) return;
+  _ccli_id=id;
+  document.getElementById('ccli-folio').textContent=id;
+  document.getElementById('ccli-nombre').value=_ccliVal(c.cliente);
+  document.getElementById('ccli-tel').value=_ccliVal(c.telefono);
+  document.getElementById('ccli-correo').value=_ccliVal(c.correo);
+  document.querySelectorAll('input[name="ccli-modo"]').forEach(function(r){r.checked=false;});
+  ccliModo();
+  document.getElementById('ccli-overlay').classList.add('activo');
+}
+function ccliModo(){
+  var m=(document.querySelector('input[name="ccli-modo"]:checked')||{}).value;
+  document.getElementById('ccli-opc-otra').classList.toggle('sel',m==='otra_persona');
+  document.getElementById('ccli-opc-misma').classList.toggle('sel',m==='misma_persona');
+}
+function cerrarCcli(){
+  _ccli_id=null;
+  document.getElementById('ccli-overlay').classList.remove('activo');
+}
+function confirmarCcli(){
+  if(!_ccli_id) return;
+  var modo=(document.querySelector('input[name="ccli-modo"]:checked')||{}).value;
+  if(!modo){ toast('⚠️ Elige si es otra persona o la misma',false); return; }
+  var nombre=document.getElementById('ccli-nombre').value.trim();
+  if(!nombre){ toast('⚠️ Falta el nombre',false); document.getElementById('ccli-nombre').focus(); return; }
+  var tel=document.getElementById('ccli-tel').value.trim(), correo=document.getElementById('ccli-correo').value.trim();
+  var id=_ccli_id, btn=document.getElementById('ccli-guardar');
+  btn.disabled=true; btn.textContent='Guardando...';
+  fetch(SCRIPT_URL,{method:'POST',body:JSON.stringify({accion:'corregir_cliente',id:id,modo:modo,cliente:nombre,telefono:tel,correo:correo})})
+  .then(function(r){return r.json();})
+  .then(function(data){
+    btn.disabled=false; btn.textContent='Guardar';
+    if(!data.ok){ toast('⚠️ '+(data.error||'No se pudo guardar'),false); return; }
+    cerrarCcli();
+    if(data.sin_cambios) toast('Sin cambios en '+id);
+    else toast('✓ '+id+' ahora a nombre de '+nombre+(data.pedido==='actualizado'?' — también en el pedido':''));
+    cargar();
+  })
+  .catch(function(){ btn.disabled=false; btn.textContent='Guardar'; toast('⚠️ Sin conexión — no se guardó',false); });
+}
+document.getElementById('ccli-overlay').addEventListener('click', function(e){ if(e.target===this) cerrarCcli(); });
 
 // ══════════════════════════════════════════
 // MÓDULO DE REGLAS
