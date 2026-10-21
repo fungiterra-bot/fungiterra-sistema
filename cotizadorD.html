@@ -243,7 +243,7 @@ textarea{resize:vertical;min-height:60px}
 </script>
 
 <header>
-  <div><h1>🍄 Sistema Fungiterra</h1><div class="header-sub">Cotizador · Generador de IDs · Cotización formal · v17</div></div>
+  <div><h1>🍄 Sistema Fungiterra</h1><div class="header-sub">Cotizador · Generador de IDs · Cotización formal · v18</div></div>
   <a id="link-repositorio" href="https://fungiterra-bot.github.io/fungiterra-sistema/repositorioD.html" target="_blank" style="color:rgba(255,255,255,.85);font-size:12px;text-decoration:none;border:1px solid rgba(255,255,255,.35);border-radius:7px;padding:6px 14px;font-family:var(--sans);font-weight:500;transition:all .2s;background:rgba(255,255,255,.08)" onmouseover="this.style.background='rgba(255,255,255,.18)'" onmouseout="this.style.background='rgba(255,255,255,.08)'">📋 Repositorio →</a>
 </header>
 
@@ -632,6 +632,7 @@ textarea{resize:vertical;min-height:60px}
 <!-- MODO 4 — VISTA FINAL -->
 <div id="modo4" style="display:none;padding:20px 24px;max-width:860px;margin:0 auto">
   <div class="m4-acciones">
+    <div id="aviso-ver" style="display:none;width:100%;font-size:12px;color:#1a3a5c;background:#f0f7ff;border:1px solid #bfdbfe;border-radius:8px;padding:8px 12px;margin-bottom:8px">📄 Cotización <b></b> del repositorio — solo para descargar. Los cambios aquí no se guardan.</div>
     <button class="btn btn-naranja" onclick="descargarPDF()" id="btn-pdf">⬇️ Descargar PDF</button>
     <button class="btn btn-sm" onclick="setModo(3,null)">← Volver a editar</button>
     <span style="font-size:11px;color:#666;margin-left:8px">Vista final lista para PDF</span>
@@ -884,7 +885,10 @@ function seleccionarCliente(c){
 window.addEventListener('load', function(){
   cargarClientes();
   var p=new URLSearchParams(window.location.search);
-  if(p.get('editar')!=='1') return;
+  // v18: ?ver=1 (desde el repositorio, "📄 Descargar cotización"): carga la cotización igual que al
+  // editar, pero solo para ver/descargar el PDF — sin guardar cambios ni generar ID.
+  var modoVer=p.get('ver')==='1';
+  if(p.get('editar')!=='1' && !modoVer) return;
 
   // Ir a modo 2
   setModo(2, document.querySelectorAll('.modo-btn')[1]);
@@ -894,6 +898,7 @@ window.addEventListener('load', function(){
   if(nom&&p.get('cliente')) nom.value=decodeURIComponent(p.get('cliente'));
   if(tel&&p.get('telefono')&&p.get('telefono')!=='—') tel.value=decodeURIComponent(p.get('telefono'));
   if(cor&&p.get('correo')&&p.get('correo')!=='—') cor.value=decodeURIComponent(p.get('correo'));
+  var _pk=document.getElementById('env-pak'); if(_pk&&p.get('paqueteria')) _pk.value=p.get('paqueteria'); // v18
 
   // Socio
   var socio=p.get('socio')||'V';
@@ -934,6 +939,22 @@ window.addEventListener('load', function(){
 
   // ID anterior + aviso + botón guardar cambios
   var idAnterior=p.get('id');
+  if(modoVer){
+    window._folioVer=idAnterior||'';
+    var _bv=document.getElementById('btn-gen-id3'); if(_bv) _bv.style.display='none';
+    var _bv2=document.getElementById('btn-gen-id2'); if(_bv2) _bv2.style.display='none';
+    var _av=document.getElementById('aviso-ver'); if(_av){ _av.style.display='block'; _av.querySelector('b').textContent=idAnterior||''; }
+    var _fecha=p.get('fecha'); // AAAA-MM-DD de la cotización original
+    var _mp=_datosPagoCargados?Promise.resolve():(cargarDatosPago()||Promise.resolve());
+    _mp.then(function(){
+      setModo(3,null);
+      if(_fecha&&/^\d{4}-\d{2}-\d{2}/.test(_fecha)){ var f=_fecha.slice(0,10).split('-'); document.getElementById('cf-fecha').value=f[2]+'/'+f[1]+'/'+f[0].slice(2); }
+      actualizarID(window._folioVer);
+      setModo(4,null);
+      mostrarToast('📄 '+(idAnterior||'Cotización')+' lista — usa ⬇️ Descargar PDF');
+    });
+    return;
+  }
   if(idAnterior){
     window._idAnterior=idAnterior;
     mostrarToast('✏️ Editando '+idAnterior+' — productos precargados abajo');
@@ -1469,7 +1490,7 @@ function calcFilas(){
 }
 function recalcTotal(){calcFilas();}
 // v17: folio vigente — el recién generado o el que se está editando (antes al editar salía vacío / V-000)
-function idActual(){return idGenerado||window._idAnterior||'';}
+function idActual(){return idGenerado||window._idAnterior||window._folioVer||'';}
 function actualizarID(id){
   var e1=document.getElementById('cf-id'),e2=document.getElementById('cf-id-p2'),e3=document.getElementById('m4-id-val');
   if(e1)e1.value=id||'';if(e2)e2.textContent=id||'— — —';if(e3)e3.textContent=id||'— — —';

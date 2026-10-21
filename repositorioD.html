@@ -318,7 +318,7 @@ window.MODO_GW = new URLSearchParams(window.location.search).get('origen') === '
 </script>
 
 <header>
-  <div><h1>🍄 Repositorio Fungiterra</h1><div class="header-sub">Cotizaciones · Estados · Pagos · v42</div></div>
+  <div><h1>🍄 Repositorio Fungiterra</h1><div class="header-sub">Cotizaciones · Estados · Pagos · v43</div></div>
   <div style="display:flex;gap:8px;align-items:center">
     <button class="solo-admin" onclick="abrirAnalizador()" style="background:rgba(255,255,255,.15);border:1.5px solid rgba(255,255,255,.4);color:white;border-radius:7px;padding:6px 14px;cursor:pointer;font-size:12px;font-weight:600;font-family:var(--sans)">🏦 Conciliar</button>
     <button class="solo-admin" onclick="abrirReglas()" style="background:rgba(255,255,255,.15);border:1.5px solid rgba(255,255,255,.4);color:white;border-radius:7px;padding:6px 14px;cursor:pointer;font-size:12px;font-weight:600;font-family:var(--sans)">⚙️ Reglas</button>
@@ -978,23 +978,27 @@ function mostrarDetalle(c){
     ? '<span class="btn btn-sm" style="background:#e8f5e9;color:#2d6a2d;border:1px solid #2d6a2d;cursor:default" title="Enviado el '+c.enviadoFungiterra+'">✅ Enviado a Fungiterra</span>'
     : '<button class="btn btn-fungiterra btn-sm" onclick="enviarAFungiterra(\''+c.id+'\')" style="background:#834b3e;color:white;border-color:#834b3e">🍄 Enviar a Fungiterra</button>';
 
+  var btnDescargar='<button class="btn btn-sm" onclick="descargarCotizacion(\''+c.id+'\')">📄 Descargar cotización</button>';
   var btns='';
   if(est==='Generada'){
     btns=btnFungiterra+
          '<button class="btn btn-amarillo btn-sm" onclick="abrirAbono(\''+c.id+'\')">💵 Registrar abono</button>'+
          '<button class="btn btn-v btn-sm" onclick="abrirPagoCompleto(\''+c.id+'\')">✅ Pagada completa</button>'+
          '<button class="btn btn-a btn-sm" onclick="editarCotizacion(\''+c.id+'\')">✏️ Editar</button>'+
+         btnDescargar+
          '<button class="btn btn-sm btn-r" onclick="cambiarEstado(\''+c.id+'\',\'Cancelada\')">Cancelar</button>';
   } else if(est==='Pago parcial'){
     btns=btnFungiterra+
          '<button class="btn btn-amarillo btn-sm" onclick="abrirAbono(\''+c.id+'\')">💵 Agregar abono</button>'+
          '<button class="btn btn-v btn-sm" onclick="abrirPagoCompleto(\''+c.id+'\')">✅ Marcar pagada completa</button>'+
          '<button class="btn btn-a btn-sm" onclick="abrirCcli(\''+c.id+'\')">✏️ Corregir cliente</button>'+
+         btnDescargar+
          '<button class="btn btn-sm btn-r" onclick="abrirCpago(\''+c.id+'\')">↩️ Cancelar pagos</button>';
   } else if(est==='Pagada'){
     btns=btnFungiterra+
          (window.MODO_GW?'':'<button class="btn btn-a btn-sm" onclick="facturar(\''+c.id+'\')">🧾 Facturar</button>')+
          '<button class="btn btn-a btn-sm" onclick="abrirCcli(\''+c.id+'\')">✏️ Corregir cliente</button>'+
+         btnDescargar+
          '<button class="btn btn-sm btn-r" onclick="abrirCpago(\''+c.id+'\')">↩️ Cancelar pago</button>';
   } else if(est==='Cancelada'){
     btns='<button class="btn btn-sm" onclick="cambiarEstado(\''+c.id+'\',\'Generada\')">↺ Reactivar</button>';
@@ -1063,6 +1067,25 @@ function facturar(id){
   if(c.notas&&c.notas!=='')         params.set('notas',c.notas);
   if(c.fecha)                       params.set('fecha',c.fecha);
   window.open('https://fungiterra-bot.github.io/fungiterra-sistema/facturacionD.html?'+params.toString());
+}
+
+// v43: abrir la cotización ya armada (vista final del cotizador) solo para descargar el PDF — sirve
+// también para pagadas, donde no hay "Editar" (ej. después de "Corregir cliente").
+function descargarCotizacion(id){
+  var c=_todos.find(function(x){return x.id===id;});
+  if(!c)return;
+  var params=new URLSearchParams();
+  params.set('ver','1');
+  params.set('id',c.id);
+  if(c.cliente&&c.cliente!=='—') params.set('cliente',c.cliente);
+  if(c.telefono&&c.telefono!=='—') params.set('telefono',c.telefono);
+  if(c.correo&&c.correo!=='—') params.set('correo',c.correo);
+  if(c.socio) params.set('socio',c.socio);
+  if(c.productos&&c.productos!=='—') params.set('productos',c.productos);
+  if(c.paqueteria&&c.paqueteria!=='—') params.set('paqueteria',c.paqueteria);
+  if(c.fecha) params.set('fecha',String(c.fecha).slice(0,10));
+  if(window.MODO_GW) params.set('origen','gestorweb');
+  window.open('https://fungiterra-bot.github.io/fungiterra-sistema/cotizadorD.html?'+params.toString(),'_blank');
 }
 
 function editarCotizacion(id){
