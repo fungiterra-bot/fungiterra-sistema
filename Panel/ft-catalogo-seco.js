@@ -106,5 +106,50 @@
     return {tipo,especie,corte:tipo==="Seco"?traducirCorte(resto):"",calidad:"",uso:esp?esp.uso:"",cientifico:esp?esp.cientifico:"",trat:esp?esp.trat:""};
   }
 
-  window.FT_SECO={CATALOGO_SECO,CALIDADES_SECO,CORTES_SECO,normalizar,traducirCalidad,traducirCorte,buscarEspecie,nombreSeco,leerNombre};
+  // Fase 3: lee la hoja STOCK ACTUALIZADO tal como viene de Drive.
+  // Devuelve {mes, filas:[{etiqueta, producto|null, cantidad}]}.
+  // mes = la última columna de mes que tenga algún número (el conteo vigente).
+  function numero(t){
+    const s=String(t==null?"":t).trim().replace(/\s/g,"");
+    if(!s) return null;
+    const n=Number(/,/.test(s)&&!/\./.test(s)?s.replace(",","."):s.replace(/,/g,""));
+    return isNaN(n)?null:n;
+  }
+  function leerBitacora(valores){
+    const filas=valores||[];
+    const h=filas.findIndex(r=>r.some(c=>normalizar(c)==="especie"));
+    if(h<0) return {mes:"",filas:[],error:"No encontré el encabezado ESPECIE en la hoja"};
+    const enc=filas[h].map(normalizar);
+    const col=n=>enc.indexOf(n);
+    const cUso=col("uso"),cEsp=col("especie"),cCal=col("calidad"),cEst=col("estado"),cTra=col("tratamiento");
+    const datos=filas.slice(h+1).filter(r=>normalizar(r[cEsp])!=="especie");
+    const desde=Math.max(cUso,cEsp,cCal,cEst,cTra)+1;
+    let cMes=-1;
+    for(let c=filas[h].length-1;c>=desde;c--){
+      if(String(filas[h][c]||"").trim() && datos.some(r=>numero(r[c])!==null)){ cMes=c; break; }
+    }
+    if(cMes<0) return {mes:"",filas:[],error:"No encontré ninguna columna de mes con números"};
+    const salida=[];
+    for(const r of datos){
+      const a=r[cUso]||"",b=r[cEsp]||"",c=r[cCal]||"",d=r[cEst]||"";
+      const cant=numero(r[cMes]);
+      if(cant===null) continue;           // sin conteo ese mes: no se toca
+      const etiqueta=[a,b,c,d].map(x=>String(x).trim()).filter(Boolean).join(" · ");
+      if(!etiqueta) continue;
+      let producto=null;
+      if(/fungisopa/i.test(b)||/fungisopa/i.test(c)){
+        const e=buscarEspecie(a);
+        if(e) producto=e.comun+" — Fungisopa";
+      }else{
+        const e=buscarEspecie(b);
+        let cal=traducirCalidad(c),corte=traducirCorte(d);
+        if(e&&(!cal||!corte)&&e.combos.length===1){ cal=cal||e.combos[0][0]; corte=corte||e.combos[0][1]; }
+        if(e&&cal&&corte) producto=nombreSeco(e.comun,corte,cal);
+      }
+      salida.push({etiqueta,producto,cantidad:cant});
+    }
+    return {mes:String(filas[h][cMes]).trim(),filas:salida};
+  }
+
+  window.FT_SECO={CATALOGO_SECO,CALIDADES_SECO,CORTES_SECO,normalizar,traducirCalidad,traducirCorte,buscarEspecie,nombreSeco,leerNombre,leerBitacora};
 })();
