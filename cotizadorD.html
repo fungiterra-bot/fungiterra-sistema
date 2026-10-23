@@ -243,7 +243,7 @@ textarea{resize:vertical;min-height:60px}
 </script>
 
 <header>
-  <div><h1>🍄 Sistema Fungiterra</h1><div class="header-sub">Cotizador · Generador de IDs · Cotización formal · v18</div></div>
+  <div><h1>🍄 Sistema Fungiterra</h1><div class="header-sub">Cotizador · Generador de IDs · Cotización formal · v19</div></div>
   <a id="link-repositorio" href="https://fungiterra-bot.github.io/fungiterra-sistema/repositorioD.html" target="_blank" style="color:rgba(255,255,255,.85);font-size:12px;text-decoration:none;border:1px solid rgba(255,255,255,.35);border-radius:7px;padding:6px 14px;font-family:var(--sans);font-weight:500;transition:all .2s;background:rgba(255,255,255,.08)" onmouseover="this.style.background='rgba(255,255,255,.18)'" onmouseout="this.style.background='rgba(255,255,255,.08)'">📋 Repositorio →</a>
 </header>
 
@@ -617,7 +617,7 @@ textarea{resize:vertical;min-height:60px}
               <td style="background:white;padding:9px 14px;border-bottom:1px solid #e0e8f0"><input style="border:none;background:transparent;font-size:15px;font-weight:700;font-family:var(--sans);width:100%;outline:none;color:#1a1a2e" id="cf-ben" value=""></td></tr>
           <tr><td style="background:#1a3a5c;color:white;font-weight:700;font-size:11px;text-transform:uppercase;letter-spacing:.8px;padding:11px 14px">Banco</td>
               <td style="background:#f0f5fa;padding:9px 14px;border-bottom:1px solid #e0e8f0"><input style="border:none;background:transparent;font-size:15px;font-family:var(--mono);width:100%;outline:none;color:#1a1a2e" id="cf-banco" value=""></td></tr>
-          <tr><td style="background:#1a3a5c;color:white;font-weight:700;font-size:11px;text-transform:uppercase;letter-spacing:.8px;padding:11px 14px">Tarjeta</td>
+          <tr><td style="background:#1a3a5c;color:white;font-weight:700;font-size:11px;text-transform:uppercase;letter-spacing:.8px;padding:11px 14px"><span id="cf-tarjeta-lbl">Tarjeta (depósito en tiendas)</span></td>
               <td style="background:white;padding:9px 14px;border-bottom:1px solid #e0e8f0"><input style="border:none;background:transparent;font-size:15px;font-family:var(--mono);width:100%;outline:none;color:#1a1a2e" id="cf-tarjeta" value=""></td></tr>
           <tr><td style="background:#1a3a5c;color:white;font-weight:700;font-size:11px;text-transform:uppercase;letter-spacing:.8px;padding:11px 14px">Cuenta CLABE</td>
               <td style="background:#f0f5fa;padding:9px 14px;border-bottom:1px solid #e0e8f0"><input style="border:none;background:transparent;font-size:15px;font-family:var(--mono);width:100%;outline:none;color:#1a1a2e" id="cf-clabe" value=""></td></tr>
@@ -701,9 +701,9 @@ textarea{resize:vertical;min-height:60px}
         <table style="width:100%;border-collapse:collapse;border-radius:8px;overflow:hidden;box-shadow:0 2px 10px rgba(0,0,0,.15)">
           <tr><td style="background:#1a3a5c;color:white;font-weight:700;font-size:11px;text-transform:uppercase;letter-spacing:.8px;padding:11px 14px;width:210px">Nombre del beneficiario</td><td style="background:white;padding:11px 14px;border-bottom:1px solid #e0e8f0;font-size:15px;font-weight:700" id="m4-ben"></td></tr>
           <tr><td style="background:#1a3a5c;color:white;font-weight:700;font-size:11px;text-transform:uppercase;letter-spacing:.8px;padding:11px 14px">Banco</td><td style="background:#f0f5fa;padding:11px 14px;border-bottom:1px solid #e0e8f0;font-size:15px;font-family:'DM Mono',monospace" id="m4-banco"></td></tr>
-          <tr><td style="background:#1a3a5c;color:white;font-weight:700;font-size:11px;text-transform:uppercase;letter-spacing:.8px;padding:11px 14px">Tarjeta</td><td style="background:white;padding:11px 14px;border-bottom:1px solid #e0e8f0;font-size:15px;font-family:'DM Mono',monospace" id="m4-tarjeta"></td></tr>
+          <tr id="m4-tarjeta-row"><td style="background:#1a3a5c;color:white;font-weight:700;font-size:11px;text-transform:uppercase;letter-spacing:.8px;padding:11px 14px"><span id="m4-tarjeta-lbl">Tarjeta</span></td><td style="background:white;padding:11px 14px;border-bottom:1px solid #e0e8f0;font-size:15px;font-family:'DM Mono',monospace" id="m4-tarjeta"></td></tr>
           <tr><td style="background:#1a3a5c;color:white;font-weight:700;font-size:11px;text-transform:uppercase;letter-spacing:.8px;padding:11px 14px">Cuenta CLABE</td><td style="background:#f0f5fa;padding:11px 14px;border-bottom:1px solid #e0e8f0;font-size:15px;font-family:'DM Mono',monospace" id="m4-clabe"></td></tr>
-          <tr><td style="background:#1a3a5c;color:white;font-weight:700;font-size:11px;text-transform:uppercase;letter-spacing:.8px;padding:11px 14px">Número de cuenta</td><td style="background:white;padding:11px 14px;font-size:15px;font-family:'DM Mono',monospace" id="m4-cuenta"></td></tr>
+          <tr id="m4-cuenta-row"><td style="background:#1a3a5c;color:white;font-weight:700;font-size:11px;text-transform:uppercase;letter-spacing:.8px;padding:11px 14px">Número de cuenta</td><td style="background:white;padding:11px 14px;font-size:15px;font-family:'DM Mono',monospace" id="m4-cuenta"></td></tr>
         </table>
       </div>
     </div>
@@ -801,10 +801,14 @@ function cargarDatosPago(){
   }).catch(function(){});
 }
 window.cargarDatosPago=cargarDatosPago;
+// v19: etiqueta del renglón "Tarjeta" configurable por socio (ej. Nu usa un
+// código para depósito en tiendas, no una tarjeta). Campo opcional
+// "etiqueta_tarjeta" en SOCIOS_PAGO.
+function etiquetaTarjeta(sd){ return (sd&&sd.etiqueta_tarjeta)||'Tarjeta (depósito en tiendas)'; }
 // Socio sin cuenta registrada (ej. J mientras no se carguen sus datos) → usa los de V.
 function datosSocio(s){
   var sd=SOCIOS[s]||{};
-  return sd.cuenta?sd:(SOCIOS.V||{});
+  return (sd.clabe||sd.cuenta)?sd:(SOCIOS.V||{});
 }
 if(localStorage.getItem('ft_operativo_token')||localStorage.getItem('ft_gestorweb_token'))cargarDatosPago();
 var CEPA={Cordyceps:3000,'Hongo de Pino':5000,'Seta de Agave':5000,'Shiitake Donko':5000,'Hongo Diente de Oso':5000,'Champiñón Almendra':5000};
@@ -1279,7 +1283,7 @@ function renderRes2(){
   else{
     t.todos.forEach(it=>{h+='<div class="item-row"><div class="item-desc">'+it.desc+'<div class="item-sub">'+it.cant+' × '+fmx(it.precio)+'</div></div><div class="item-price">'+fmx(it.total)+'</div></div>';});
     h+='<div style="margin-top:12px"><div class="tr"><span>Subtotal</span><span>'+fmx(t.sub)+'</span></div><div class="tr"><span>Envío'+(pak?' ('+pak+')':'')+'</span><span>'+fmx(t.envio)+'</span></div><div class="tr big"><span>TOTAL</span><span>'+fmx(t.tot)+'</span></div></div>';
-    if(sd.cuenta)h+='<div style="margin-top:14px;padding:12px;background:#f0f7ff;border-radius:8px;font-size:12px"><div style="font-weight:700;color:#1a3a5c;margin-bottom:6px">Datos bancarios — Socio '+socio+'</div><div><strong>'+sd.nombre+'</strong> · '+sd.banco+'</div><div>Cuenta: '+sd.cuenta+'</div><div>CLABE: '+sd.clabe+'</div></div>';
+    if(sd.clabe||sd.cuenta)h+='<div style="margin-top:14px;padding:12px;background:#f0f7ff;border-radius:8px;font-size:12px"><div style="font-weight:700;color:#1a3a5c;margin-bottom:6px">Datos bancarios — Socio '+socio+'</div><div><strong>'+sd.nombre+'</strong> · '+sd.banco+'</div>'+(sd.clabe?'<div>CLABE: '+sd.clabe+'</div>':'')+(sd.tarjeta?'<div>'+etiquetaTarjeta(sd)+': '+sd.tarjeta+'</div>':'')+(sd.cuenta?'<div>Cuenta: '+sd.cuenta+'</div>':'')+'</div>';
   }
   document.getElementById('res2-card').innerHTML=h;
 }
@@ -1433,7 +1437,7 @@ function copiarWA(){
   txt+='\n*PRODUCTOS*\n';
   t.todos.forEach(i=>{txt+='• '+i.desc+'\n  '+i.cant+' × $'+i.precio.toFixed(2)+' = $'+i.total.toFixed(2)+'\n';});
   txt+='\nSubtotal: $'+t.sub.toFixed(2)+'\nEnvío'+(pak?' ('+pak+')':'')+': $'+t.envio.toFixed(2)+'\n*TOTAL: $'+t.tot.toFixed(2)+'*\n\n';
-  if(sd.cuenta)txt+='*Datos de pago:*\n'+sd.nombre+'\n'+sd.banco+'\nCuenta: '+sd.cuenta+'\nCLABE: '+sd.clabe+'\n'+(idActual()?'Concepto: *'+idActual()+'* + tu nombre\n':'');
+  if(sd.clabe||sd.cuenta)txt+='*Datos de pago:*\n'+sd.nombre+'\n'+sd.banco+'\n'+(sd.clabe?'CLABE: '+sd.clabe+'\n':'')+(sd.tarjeta?etiquetaTarjeta(sd)+': '+sd.tarjeta+'\n':'')+(sd.cuenta?'Cuenta: '+sd.cuenta+'\n':'')+(idActual()?'Concepto: *'+idActual()+'* + tu nombre\n':'');
   if(t.todos.some(function(i){return RE_PRODUCTO_VIVO.test(i.desc);}))
     txt+='\n🍄 *Producto vivo:* el micelio y los mushbags son organismos vivos. Revisa tu producto en cuanto llegue y, si notas algo fuera de lo normal, envíanos fotos dentro de las 24 horas siguientes a la llegada de tu paquete.\n';
   txt+='\nVigencia: 20 días | www.fungiterra.com.mx';
@@ -1467,12 +1471,13 @@ function poblarFormal(){
   if(!_datosPagoCargados){ cargarDatosPago(); alert('⚠️ No se pudieron cargar los datos de transferencia. Revisa tu conexión o vuelve a iniciar sesión, y regresa a esta pestaña.'); }
   document.getElementById('cf-nombre').value=sd.nombre||'';
   document.getElementById('cf-cargo').value=sd.cargo||'Ventas';
-  if(sd.cuenta){
-    document.getElementById('cf-ben').value=sd.nombre;
-    document.getElementById('cf-banco').value=sd.banco;
+  if(sd.clabe||sd.cuenta){
+    document.getElementById('cf-ben').value=sd.nombre||'';
+    document.getElementById('cf-banco').value=sd.banco||'';
     document.getElementById('cf-tarjeta').value=sd.tarjeta||'';
-    document.getElementById('cf-clabe').value=sd.clabe;
-    document.getElementById('cf-cuenta').value=sd.cuenta;
+    document.getElementById('cf-clabe').value=sd.clabe||'';
+    document.getElementById('cf-cuenta').value=sd.cuenta||'';
+    document.getElementById('cf-tarjeta-lbl').textContent=etiquetaTarjeta(sd);
   }
 }
 function calcFilas(){
@@ -1614,6 +1619,9 @@ function poblarVista4(){
   document.getElementById('m4-tarjeta').textContent=g('cf-tarjeta');
   document.getElementById('m4-clabe').textContent=g('cf-clabe');
   document.getElementById('m4-cuenta').textContent=g('cf-cuenta');
+  document.getElementById('m4-tarjeta-lbl').textContent=document.getElementById('cf-tarjeta-lbl').textContent;
+  document.getElementById('m4-tarjeta-row').style.display=g('cf-tarjeta')?'':'none';
+  document.getElementById('m4-cuenta-row').style.display=g('cf-cuenta')?'':'none';
   // v11: hoja de producto vivo
   var pg3=document.getElementById('m4-pg3');
   if(pvIncluir()){
