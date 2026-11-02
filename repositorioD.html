@@ -318,7 +318,7 @@ window.MODO_GW = new URLSearchParams(window.location.search).get('origen') === '
 </script>
 
 <header>
-  <div><h1>🍄 Repositorio Fungiterra</h1><div class="header-sub">Cotizaciones · Estados · Pagos · v43</div></div>
+  <div><h1>🍄 Repositorio Fungiterra</h1><div class="header-sub">Cotizaciones · Estados · Pagos · v44</div></div>
   <div style="display:flex;gap:8px;align-items:center">
     <button class="solo-admin" onclick="abrirAnalizador()" style="background:rgba(255,255,255,.15);border:1.5px solid rgba(255,255,255,.4);color:white;border-radius:7px;padding:6px 14px;cursor:pointer;font-size:12px;font-weight:600;font-family:var(--sans)">🏦 Conciliar</button>
     <button class="solo-admin" onclick="abrirReglas()" style="background:rgba(255,255,255,.15);border:1.5px solid rgba(255,255,255,.4);color:white;border-radius:7px;padding:6px 14px;cursor:pointer;font-size:12px;font-weight:600;font-family:var(--sans)">⚙️ Reglas</button>
@@ -453,6 +453,30 @@ window.MODO_GW = new URLSearchParams(window.location.search).get('origen') === '
     <div class="cpago-footer">
       <button class="btn btn-sm" onclick="cerrarCpago()">Cancelar</button>
       <button class="btn btn-sm btn-danger" onclick="confirmarCancelaPago()">Revertir pago</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ v44: MODAL ENVIAR A FUNGITERRA CON NOTA OPCIONAL ══ -->
+<div class="cpago-overlay" id="envft-overlay">
+  <div class="cpago-modal ccli-modal">
+    <h3 style="color:#834b3e">🍄 Enviar <span id="envft-id"></span> a Fungiterra</h3>
+    <p>La nota es opcional. Si no la necesitas, déjala vacía y envía.</p>
+    <label class="ccli-l" for="envft-nota">Nota (opcional)</label>
+    <textarea id="envft-nota" maxlength="1000" placeholder="Ej: El cliente pidió que el empaque vaya reforzado" oninput="envftActualizar()"></textarea>
+    <label class="ccli-l" for="envft-area">¿Para qué área?</label>
+    <select id="envft-area" disabled onchange="envftActualizar()" style="width:100%;padding:8px 10px;border:1.5px solid var(--border);border-radius:7px;font-size:13px;font-family:var(--sans);margin-bottom:14px;background:white">
+      <option value="">Elige un área…</option>
+      <option value="todas">Todas las áreas del pedido</option>
+      <option value="fungibolsa">FungiBolsa</option>
+      <option value="laboratorio">Laboratorio</option>
+      <option value="transformacion">Transformación</option>
+      <option value="insumos">Insumos</option>
+      <option value="piopis">Piopis</option>
+    </select>
+    <div class="cpago-footer">
+      <button class="btn btn-sm" onclick="envftCerrar()">Cancelar</button>
+      <button class="btn btn-sm" id="envft-ok" onclick="envftConfirmar()" style="background:#834b3e;color:white;border-color:#834b3e">Enviar</button>
     </div>
   </div>
 </div>
@@ -1116,7 +1140,36 @@ function enviarAFungiterra(id){
   var c=_todos.find(function(x){return x.id===id;});
   if(!c)return;
   if(c.enviadoFungiterra){toast('⚠️ Ya fue enviado el '+c.enviadoFungiterra,false);return;}
-  if(!confirm('¿Enviar '+id+' a Fungiterra?'))return;
+  _envftId=id;
+  document.getElementById('envft-id').textContent=id;
+  document.getElementById('envft-nota').value='';
+  document.getElementById('envft-area').value='';
+  envftActualizar();
+  document.getElementById('envft-overlay').classList.add('activo');
+}
+var _envftId=null;
+function envftCerrar(){document.getElementById('envft-overlay').classList.remove('activo');_envftId=null;}
+// Con nota hay que elegir área; sin nota se envía directo.
+function envftActualizar(){
+  var hayNota=!!document.getElementById('envft-nota').value.trim();
+  var sel=document.getElementById('envft-area');
+  sel.disabled=!hayNota;
+  if(!hayNota) sel.value='';
+  var ok=document.getElementById('envft-ok');
+  ok.disabled=hayNota&&!sel.value;
+  ok.style.opacity=ok.disabled?'.5':'1';
+}
+function envftConfirmar(){
+  var id=_envftId; if(!id)return;
+  var nota=document.getElementById('envft-nota').value.trim();
+  var area=document.getElementById('envft-area').value;
+  if(nota&&!area)return;
+  envftCerrar();
+  _enviarAFungiterra(id,nota,area);
+}
+function _enviarAFungiterra(id,nota,notaArea){
+  var c=_todos.find(function(x){return x.id===id;});
+  if(!c)return;
   toast('Enviando a Fungiterra...');
   
   // Parsear productos del texto
@@ -1154,6 +1207,8 @@ function enviarAFungiterra(id){
     tipo:  c.tipo  || 'Mixto',
     estado_actual: 'recibido',
     notas_admin: c.notas || '',
+    nota_envio: nota || '',
+    nota_area: notaArea || '',
     productos: productos
   };
 
@@ -1170,7 +1225,7 @@ function enviarAFungiterra(id){
       filtrar();
       if(_sel===id) mostrarDetalle(c);
     } else if(data.token){
-      toast('✅ '+id+' enviado a Fungiterra');
+      toast(data.nota_sin_productos ? '✅ '+id+' enviado. Esa área no tiene productos en este pedido: la nota le llega por correo, no en su panel' : '✅ '+id+' enviado a Fungiterra');
       c.enviadoFungiterra=new Date().toLocaleString('es-MX');
       filtrar();
       if(_sel===id) mostrarDetalle(c);
