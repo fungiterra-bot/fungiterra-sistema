@@ -1,0 +1,31 @@
+{
+  "id": "ft-contenido",
+  "name": "Fungiterra Contenido",
+  "short_name": "Contenido",
+  "start_url": "../contenido.html",
+  "scope": "../",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#28974b",
+  "lang": "es-MX",
+  "icons": [
+    {
+      "src": "icono-contenido-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "icono-contenido-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "icono-contenido-maskable-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ]
+}
