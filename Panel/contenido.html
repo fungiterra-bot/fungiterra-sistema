@@ -12,7 +12,7 @@
 <meta name="apple-mobile-web-app-title" content="Contenido">
 <link rel="icon" href="app/icono-contenido-192.png">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-<!-- Panel Contenido (v1, 2026-11-07): planeador de redes sociales.
+<!-- Panel Contenido (v2, 2026-11-07): planeador de redes sociales. v2: un contenido en varias redes y metas editables.
      Largo plazo = Año (calendario fúngico y campañas), mediano = Mes, corto = Semana.
      Biblioteca = archivos de Drive con etiquetas. API: /api/contenido/* (fungiterra-api, contenido.js).
      Entra con la contraseña de Admin o de Gestor Web; si ya iniciaste sesión en esos paneles
@@ -80,6 +80,16 @@ main{max-width:1180px;margin:0 auto;padding:18px 16px 80px;display:flex;flex-dir
 .evento.cultivo{border-left-color:var(--verde)}.evento.consumo{border-left-color:var(--cafe)}.evento.marca{border-left-color:var(--azul)}
 .tarjeta{border:1px solid var(--border);border-radius:9px;padding:8px;background:var(--surface);display:flex;flex-direction:column;gap:5px;cursor:pointer;text-align:left;width:100%}
 .tarjeta:hover{border-color:var(--azul)}
+.tambien{font-size:11px;color:var(--text3)}
+.redes-sel{display:flex;flex-wrap:wrap;gap:6px}
+.redes-sel label{display:flex;align-items:center;gap:6px;border:1.5px solid var(--border);border-radius:8px;padding:6px 10px;font-size:12.5px;font-weight:600;color:var(--text);cursor:pointer}
+.redes-sel label:has(input:checked){border-color:var(--verde);background:var(--verde-soft)}
+.versiones{display:flex;flex-direction:column;gap:6px}
+.version{display:flex;align-items:center;gap:8px;flex-wrap:wrap;border:1px solid var(--border);border-radius:8px;padding:6px 8px;font-size:12.5px;background:var(--surface);text-align:left;width:100%}
+.version.actual{border-color:var(--verde);background:var(--verde-soft)}
+.metas{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px}
+.metas label{display:flex;flex-direction:column;justify-content:flex-end;gap:4px;font-size:12px;font-weight:600;color:var(--text2)}
+.metas input{border:1.5px solid var(--border);border-radius:8px;padding:7px 9px;width:100%;font-variant-numeric:tabular-nums}
 .tarjeta .tema{font-size:12.5px;font-weight:600;line-height:1.35;overflow-wrap:anywhere}
 .fila-chips{display:flex;gap:4px;flex-wrap:wrap;align-items:center}
 .chip{font-size:10.5px;font-weight:600;padding:2px 7px;border-radius:10px;background:var(--surface2);color:var(--text2);border:1px solid var(--border);white-space:nowrap}
@@ -150,6 +160,7 @@ td.num{font-variant-numeric:tabular-nums;white-space:nowrap}
 .campo textarea{resize:vertical;min-height:110px;line-height:1.45}
 .campo small{font-size:11px;color:var(--text3)}
 .campo input:focus,.campo select:focus,.campo textarea:focus{border-color:var(--azul);outline:none}
+.campo input[type=checkbox]{width:auto;flex:none;padding:0}
 .selmedios{max-height:190px;overflow-y:auto;border:1.5px solid var(--border);border-radius:8px;padding:6px;display:flex;flex-direction:column;gap:4px}
 .selmedios label{display:flex;gap:8px;align-items:center;font-size:12.5px;font-weight:500;color:var(--text);padding:3px 4px;border-radius:5px}
 .selmedios label:hover{background:var(--surface2)}
@@ -228,7 +239,8 @@ var MESES = ['enero','febrero','marzo','abril','mayo','junio','julio','agosto','
 var DIAS = ['dom','lun','mar','mié','jue','vie','sáb'];
 var COLOR_PILAR = { cultivo: 'var(--verde)', producto: 'var(--azul)', cocina: 'var(--cafe)', salud: 'var(--morado)', ciencia: 'var(--teal)' };
 
-var S = { rol: null, token: null, cfg: null, vista: 'semana', ancla: hoy(), plan: null, medios: [], calendario: [], campanas: [] };
+var S = { rol: null, token: null, cfg: null, vista: 'semana', ancla: hoy(), plan: null, medios: [], calendario: [], campanas: [], extra: {} };
+function buscarPub(id){ return (S.plan && S.plan.publicaciones.find(function(x){ return x.id === id; })) || S.extra[id] || null; }
 
 // ── Utilidades ─────────────────────────────────────────────────
 function hoy(){ var d = new Date(); return d.getFullYear() + '-' + p2(d.getMonth()+1) + '-' + p2(d.getDate()); }
@@ -351,12 +363,17 @@ function bloqueSugerencias(){
     return '<li><span class="prio ' + x.prioridad + '"></span><span>' + esc(x.texto) + '</span></li>';
   }).join('') + '</ul></div>';
 }
+function otrasRedes(p){
+  var otras = (S.plan.publicaciones || []).filter(function(x){ return x.grupo && x.grupo === p.grupo && x.id !== p.id; });
+  if (!otras.length) return '';
+  return '<div class="tambien">También en ' + esc(otras.map(function(x){ return nombre(S.cfg.redes, x.red); }).filter(function(v, i, a){ return a.indexOf(v) === i; }).join(', ')) + '</div>';
+}
 function tarjeta(p){
   var ap = S.rol === 'admin' && p.estado === 'revision' ? '<button class="btn btn-verde btn-sm" data-aprobar="' + p.id + '" type="button">Aprobar</button>' : '';
   return '<div class="tarjeta" data-pub="' + p.id + '" role="button" tabindex="0">' +
     '<div class="fila-chips"><span class="punto" style="background:' + (COLOR_PILAR[p.pilar] || 'var(--text3)') + '" title="' + esc(nombre(S.cfg.pilares, p.pilar)) + '"></span>' +
     '<span class="chip">' + esc(nombre(S.cfg.redes, p.red)) + '</span><span class="chip">' + esc(p.formato) + '</span>' + (p.hora ? '<span class="chip">' + esc(p.hora) + '</span>' : '') + '</div>' +
-    '<div class="tema">' + esc(p.tema) + '</div>' +
+    '<div class="tema">' + esc(p.tema) + '</div>' + otrasRedes(p) +
     '<div class="fila-chips"><span class="estado e-' + p.estado + '">' + esc(nombre(S.cfg.estados, p.estado)) + '</span>' +
     ((p.medios || []).length ? '<span class="chip">' + p.medios.length + ' archivo' + (p.medios.length > 1 ? 's' : '') + '</span>' : '') + ap + '</div></div>';
 }
@@ -462,7 +479,29 @@ function vistaBalance(){
   return barraPeriodo('Balance de <span style="text-transform:capitalize">' + MESES[mes.getUTCMonth()] + '</span>') +
     '<div class="bloque"><h3>Pilares de contenido</h3>' + (total ? '<div class="barras">' + barras + '</div><p class="leyenda">' + total + ' publicaciones en el mes. La línea marca la meta de cada pilar.</p>' : '<p class="vacio">Sin publicaciones este mes.</p>') + '</div>' +
     '<div class="bloque"><h3>Frecuencia por red</h3><div class="barras">' + redes + '</div><p class="leyenda">Meta por semana: ' + c.redes.filter(function(r){ return r.por_semana; }).map(function(r){ return r.nombre + ' ' + r.por_semana; }).join(', ') + '.</p></div>' +
-    '<div class="bloque"><h3>Estados</h3><div class="fila-chips">' + (porEstado || '<span class="vacio">Sin publicaciones.</span>') + '</div></div>';
+    '<div class="bloque"><h3>Estados</h3><div class="fila-chips">' + (porEstado || '<span class="vacio">Sin publicaciones.</span>') + '</div></div>' +
+    bloqueMetas();
+}
+function bloqueMetas(){
+  var c = S.cfg, ed = S.rol === 'admin', dis = ed ? '' : ' disabled';
+  return '<form class="bloque" id="form-metas" novalidate><h3>Metas<span class="esp"></span>' + (ed ? '<button class="btn btn-verde btn-sm" type="submit">Guardar metas</button>' : '') + '</h3>' +
+    '<p class="leyenda" style="margin:0 0 10px">Publicaciones por semana en cada red (0 = sin meta) y peso de cada pilar. Las sugerencias se calculan con estas metas.' + (ed ? '' : ' Solo Admin puede cambiarlas.') + '</p>' +
+    '<div class="metas">' + c.redes.map(function(r){ return '<label for="mr-' + r.clave + '">' + esc(r.nombre) + ' por semana<input id="mr-' + r.clave + '" data-red="' + r.clave + '" type="number" min="0" max="50" step="1" inputmode="numeric" value="' + r.por_semana + '"' + dis + '></label>'; }).join('') + '</div>' +
+    '<div class="metas" style="margin-top:12px">' + c.pilares.map(function(p){ return '<label for="mp-' + p.clave + '">' + esc(p.nombre) + ' (%)<input id="mp-' + p.clave + '" data-pilar="' + p.clave + '" type="number" min="0" max="100" step="1" inputmode="numeric" value="' + p.meta + '"' + dis + '></label>'; }).join('') + '</div>' +
+    '<p class="leyenda" id="metas-suma"></p><div class="aviso" id="metas-aviso"></div></form>';
+}
+function enlazarMetas(){
+  var f = el('form-metas'); if (!f) return;
+  var suma = function(){ var t = 0; f.querySelectorAll('[data-pilar]').forEach(function(i){ t += +i.value || 0; }); el('metas-suma').textContent = 'Los pilares suman ' + t + '%' + (t === 100 ? '.' : ': deben sumar 100%.'); return t; };
+  f.querySelectorAll('[data-pilar]').forEach(function(i){ i.oninput = suma; }); suma();
+  f.onsubmit = function(e){
+    e.preventDefault(); el('metas-aviso').textContent = '';
+    if (suma() !== 100) { el('metas-aviso').textContent = 'Ajusta los pilares para que sumen 100%.'; return; }
+    var body = { redes: {}, pilares: {} };
+    f.querySelectorAll('[data-red]').forEach(function(i){ body.redes[i.getAttribute('data-red')] = Math.round(+i.value || 0); });
+    f.querySelectorAll('[data-pilar]').forEach(function(i){ body.pilares[i.getAttribute('data-pilar')] = Math.round(+i.value || 0); });
+    api('PATCH', '/metas', body).then(function(j){ S.cfg = j; toast('Metas guardadas'); cargar(); }).catch(function(x){ el('metas-aviso').textContent = x.message; });
+  };
 }
 
 // ── Eventos ────────────────────────────────────────────────────
@@ -481,6 +520,7 @@ function enlazar(){
   m.querySelectorAll('[data-nueva-ev]').forEach(function(b){ b.onclick = function(){ editarEvento(null); }; });
   m.querySelectorAll('[data-medio]').forEach(function(b){ b.onclick = function(){ editarMedio(+b.getAttribute('data-medio')); }; });
   m.querySelectorAll('[data-nuevo-medio]').forEach(function(b){ b.onclick = function(){ editarMedio(null); }; });
+  enlazarMetas();
   var fb = el('f-buscar');
   if (fb) {
     fb.oninput = function(){ filtrosB.buscar = fb.value; var pos = fb.selectionStart; pintar(); var n = el('f-buscar'); n.focus(); n.setSelectionRange(pos, pos); };
@@ -541,7 +581,7 @@ function val(id){ var x = el(id); return x ? x.value.trim() : ''; }
 function numOnull(id){ var v = val(id); return v === '' ? null : +v; }
 
 function editarPub(id, fechaNueva){
-  var p = id ? (S.plan.publicaciones.find(function(x){ return x.id === id; }) || {}) : { fecha: fechaNueva || hoy(), red: 'facebook', formato: 'foto', publico: 'productores', pilar: 'cultivo', estado: 'idea', medios: [] };
+  var p = id ? (buscarPub(id) || {}) : { fecha: fechaNueva || hoy(), red: 'facebook', formato: 'foto', publico: 'productores', pilar: 'cultivo', estado: 'idea', medios: [] };
   var c = S.cfg, esAdmin = S.rol === 'admin';
   var estados = c.estados.map(function(e){ return { clave: e.clave, nombre: e.nombre + (!esAdmin && ['aprobada','programada'].indexOf(e.clave) >= 0 ? ' (solo Admin)' : '') }; });
   var camps = (S.plan.campanas || []), evs = (S.plan.calendario || []);
@@ -551,7 +591,8 @@ function editarPub(id, fechaNueva){
   var cuerpo = '<div class="campos">' +
     campo('Fecha', '<input id="p-fecha" type="date" value="' + esc(p.fecha) + '" required>') +
     campo('Hora', '<input id="p-hora" type="time" value="' + esc(p.hora || '') + '">') +
-    campo('Red', '<select id="p-red">' + opciones(c.redes, p.red) + '</select>') +
+    (id ? campo('Red', '<select id="p-red">' + opciones(c.redes, p.red) + '</select>')
+        : campo('Redes', '<div class="redes-sel" id="p-redes">' + c.redes.map(function(r){ return '<label><input type="checkbox" value="' + r.clave + '"' + (r.clave === p.red ? ' checked' : '') + '> ' + esc(r.nombre) + '</label>'; }).join('') + '</div>', true, 'Marca varias para subir el mismo contenido a varias redes. Después puedes ajustar el texto o la fecha de cada una.')) +
     campo('Formato', '<select id="p-formato">' + opciones(c.formatos, p.formato) + '</select>') +
     campo('Público', '<select id="p-publico">' + opciones(c.publicos, p.publico) + '</select>') +
     campo('Pilar', '<select id="p-pilar">' + opciones(c.pilares, p.pilar) + '</select>') +
@@ -568,6 +609,7 @@ function editarPub(id, fechaNueva){
     campo('Alcance', '<input id="p-alcance" type="number" min="0" inputmode="numeric" value="' + (r.alcance != null ? r.alcance : '') + '">') +
     campo('Interacciones', '<input id="p-inter" type="number" min="0" inputmode="numeric" value="' + (r.interacciones != null ? r.interacciones : '') + '">') +
     campo('Mensajes o ventas', '<input id="p-msj" type="number" min="0" inputmode="numeric" value="' + (r.mensajes != null ? r.mensajes : '') + '">', false, 'Llénalos al medir la publicación.') +
+    (id ? campo('Este contenido en otras redes', '<div class="versiones" id="p-versiones"><span class="vacio">Cargando…</span></div>', true) : '') +
     '</div>';
   abrirModal(id ? 'Editar publicación' : 'Nueva publicación', cuerpo, function(){
     var estado = val('p-estado');
@@ -575,16 +617,54 @@ function editarPub(id, fechaNueva){
     if (!val('p-tema')) return Promise.reject(new Error('Escribe el tema de la publicación.'));
     var res = { alcance: numOnull('p-alcance'), interacciones: numOnull('p-inter'), mensajes: numOnull('p-msj') };
     var hayRes = res.alcance != null || res.interacciones != null || res.mensajes != null;
-    var body = { fecha: val('p-fecha'), hora: val('p-hora'), red: val('p-red'), formato: val('p-formato'), publico: val('p-publico'), pilar: val('p-pilar'),
+    var redesSel = id ? null : Array.prototype.map.call(document.querySelectorAll('#p-redes input:checked'), function(x){ return x.value; });
+    if (redesSel && !redesSel.length) return Promise.reject(new Error('Marca al menos una red.'));
+    var body = { fecha: val('p-fecha'), hora: val('p-hora'), formato: val('p-formato'), publico: val('p-publico'), pilar: val('p-pilar'),
       tema: val('p-tema'), copy: el('p-copy').value, campana_id: val('p-camp') || null, calendario_id: val('p-cal') || null,
       medios: Array.prototype.map.call(document.querySelectorAll('#p-medios input:checked'), function(x){ return +x.value; }),
       responsable: val('p-resp'), notas: val('p-notas'), resultado: hayRes ? res : (p.resultado || null) };
     if (estado !== p.estado || !id) body.estado = estado;
-    return api(id ? 'PATCH' : 'POST', '/publicaciones' + (id ? '/' + id : ''), body).then(function(){ return id ? 'Publicación guardada' : 'Publicación creada'; });
+    if (id) body.red = val('p-red'); else body.redes = redesSel;
+    return api(id ? 'PATCH' : 'POST', '/publicaciones' + (id ? '/' + id : ''), body).then(function(j){
+      if (id) return 'Publicación guardada';
+      var n = (j.publicaciones || []).length;
+      return n > 1 ? 'Contenido creado en ' + n + ' redes' : 'Publicación creada';
+    });
   }, id ? function(){ return api('DELETE', '/publicaciones/' + id); } : null);
   el('p-copy').oninput = function(){ el('p-cuenta').textContent = this.value.length; };
   var mb = el('p-mbuscar');
   if (mb) mb.oninput = function(){ var q = mb.value.toLowerCase(); document.querySelectorAll('#p-medios label').forEach(function(l){ l.hidden = q && l.getAttribute('data-n').indexOf(q) < 0; }); };
+  if (id && p.grupo) pintarVersiones(p);
+}
+
+// Versiones del mismo contenido en otras redes: abrirlas o agregar una red nueva.
+function pintarVersiones(p){
+  api('GET', '/grupo/' + encodeURIComponent(p.grupo)).then(function(j){
+    var caja = el('p-versiones'); if (!caja) return;
+    var vers = j.publicaciones || [];
+    vers.forEach(function(v){ S.extra[v.id] = v; });
+    var usadas = vers.map(function(v){ return v.red; });
+    var faltan = S.cfg.redes.filter(function(r){ return usadas.indexOf(r.clave) < 0; });
+    caja.innerHTML = vers.map(function(v){
+      return '<button type="button" class="version' + (v.id === p.id ? ' actual' : '') + '" data-ver="' + v.id + '"><b>' + esc(nombre(S.cfg.redes, v.red)) + '</b><span>' + corta(v.fecha) + (v.hora ? ' · ' + esc(v.hora) : '') + '</span><span class="estado e-' + v.estado + '">' + esc(nombre(S.cfg.estados, v.estado)) + '</span>' + (v.id === p.id ? '<span class="tambien">esta</span>' : '') + '</button>';
+    }).join('') + (faltan.length ? '<div class="fila-chips">' + faltan.map(function(r){ return '<button type="button" class="btn btn-linea btn-sm" data-sumar="' + r.clave + '">+ ' + esc(r.nombre) + '</button>'; }).join('') + '</div>' : '');
+    caja.querySelectorAll('[data-ver]').forEach(function(b){ b.onclick = function(){ var vid = +b.getAttribute('data-ver'); if (vid !== p.id) { el('modal').innerHTML = ''; editarPub(vid); } }; });
+    caja.querySelectorAll('[data-sumar]').forEach(function(b){ b.onclick = function(){
+      b.disabled = true;
+      var copia = { grupo: p.grupo, red: b.getAttribute('data-sumar'), fecha: p.fecha, hora: p.hora || '', formato: p.formato, publico: p.publico, pilar: p.pilar,
+        tema: p.tema, copy: p.copy || '', campana_id: p.campana_id || null, calendario_id: p.calendario_id || null, medios: p.medios || [], responsable: p.responsable || '', estado: 'idea' };
+      api('POST', '/publicaciones', copia).then(function(r){
+        S.extra[r.publicacion.id] = r.publicacion;
+        toast('Agregada a ' + nombre(S.cfg.redes, copia.red));
+        el('modal').innerHTML = ''; editarPub(r.publicacion.id); cargarSilencioso();
+      }).catch(function(e){ b.disabled = false; el('m-aviso').textContent = e.message; });
+    }; });
+  }).catch(function(){ var caja = el('p-versiones'); if (caja) caja.innerHTML = '<span class="vacio">No se pudieron cargar las otras redes.</span>'; });
+}
+// Recarga los datos sin borrar la pantalla (para no cerrar el editor abierto).
+function cargarSilencioso(){
+  var r = rangoVista(); if (!r) return;
+  api('GET', '/plan?desde=' + r[0] + '&hasta=' + r[1]).then(function(j){ S.plan = j; pintar(); }).catch(function(){});
 }
 
 function editarCampana(id){
