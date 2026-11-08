@@ -96,7 +96,7 @@ body{margin:0;background:#eef1f4;font-family:'Inter',sans-serif}
     <div class="ft-header">
       <div class="ft-logo-circle">FT</div>
       <div class="ft-header-text">
-        <h2>Seguimiento de pedido · v10.1</h2>
+        <h2>Seguimiento de pedido · v10.2</h2>
         <p>Fungiterra — Hongos a tu servicio</p>
       </div>
     </div>
@@ -180,11 +180,23 @@ function render(p,productos){
     "</div>"+
     dcEntregaCard()+
     "<div class=\"ft-card\"><div class=\"ft-steps\" id=\"steps-container\"></div></div>"+
+    resenaCard(p)+
     "</div>"+
     "<div id=\"tab-envio\" style=\"display:none\"></div>";
 
   renderSteps(p,productos);
   renderEnvio(p);
+}
+
+// v10.2 (2026-11-07): ya entregado, invita a dejar reseña en el Perfil de Empresa de Google.
+const RESENA_GOOGLE_URL="https://search.google.com/local/writereview?placeid=ChIJDfiVHOdl0oURE2gGtyXycyo";
+function resenaCard(p){
+  if(p.estado_actual!=="entregado") return "";
+  return "<div class=\"ft-factura-card\">"+
+    "<div class=\"ft-factura-title\">¿Cómo te fue con tu pedido?</div>"+
+    "<div class=\"ft-factura-sub\">Tu opinión en Google ayuda a otros productores a encontrarnos. Te toma un minuto.</div>"+
+    "<a class=\"ft-btn-primary\" style=\"display:block;text-align:center;text-decoration:none;margin-bottom:0\" href=\""+RESENA_GOOGLE_URL+"\" target=\"_blank\" rel=\"noopener\">⭐ Dejar mi reseña en Google</a>"+
+    "</div>";
 }
 
 const PASOS_BASE=[
