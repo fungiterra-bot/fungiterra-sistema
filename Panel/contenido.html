@@ -12,10 +12,11 @@
 <meta name="apple-mobile-web-app-title" content="Contenido">
 <link rel="icon" href="app/icono-contenido-192.png">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-<!-- Panel Contenido (v2, 2026-11-07): planeador de redes sociales. v2: un contenido en varias redes y metas editables.
+<!-- Panel Contenido (v3, 2026-11-09): planeador de redes sociales. v3: acceso de Gestor de redes (ya no Gestor Web), vista Por programar
+     con el paquete para copiar y el botón Ya la programé, aviso de cuándo se acaba lo programado. v2: varias redes por contenido y metas.
      Largo plazo = Año (calendario fúngico y campañas), mediano = Mes, corto = Semana.
      Biblioteca = archivos de Drive con etiquetas. API: /api/contenido/* (fungiterra-api, contenido.js).
-     Entra con la contraseña de Admin o de Gestor Web; si ya iniciaste sesión en esos paneles
+     Entra con la contraseña de Admin o de Gestor de redes; si ya iniciaste sesión de Admin
      en este navegador, entra directo. Solo Admin aprueba y marca como programada. -->
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
@@ -90,6 +91,24 @@ main{max-width:1180px;margin:0 auto;padding:18px 16px 80px;display:flex;flex-dir
 .metas{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px}
 .metas label{display:flex;flex-direction:column;justify-content:flex-end;gap:4px;font-size:12px;font-weight:600;color:var(--text2)}
 .metas input{border:1.5px solid var(--border);border-radius:8px;padding:7px 9px;width:100%;font-variant-numeric:tabular-nums}
+.redes-estado{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:8px}
+.red-est{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:10px 12px;display:flex;flex-direction:column;gap:2px}
+.red-est b{font-size:13px}.red-est span{font-size:12px;color:var(--text2)}
+.red-est.ok{border-left:4px solid var(--verde);border-radius:0 10px 10px 0}
+.red-est.pronto{border-left:4px solid var(--ambar);border-radius:0 10px 10px 0}
+.red-est.nada{border-left:4px solid var(--rojo);border-radius:0 10px 10px 0}
+.paquete{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:12px 14px;display:flex;flex-direction:column;gap:8px}
+.paquete.atrasada{border-color:var(--rojo)}
+.paquete-cab{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.paquete-cab .cuando{font-weight:700;font-variant-numeric:tabular-nums}
+.paquete .tema{font-weight:600;font-size:14px;overflow-wrap:anywhere}
+.paquete .copy{white-space:pre-wrap;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:8px 10px;font-size:13px;line-height:1.45;max-height:180px;overflow:auto;overflow-wrap:anywhere}
+.paquete .copy.vacio{color:var(--rojo);font-style:italic}
+.archivos{display:flex;flex-direction:column;gap:4px}
+.archivos a{color:var(--azul);font-weight:600;font-size:12.5px;text-decoration:none;overflow-wrap:anywhere}
+.grupo-red{display:flex;flex-direction:column;gap:8px}
+.grupo-red h3{font-size:14px;font-weight:700;display:flex;gap:8px;align-items:baseline}
+.grupo-red h3 span{font-size:12px;color:var(--text3);font-weight:500}
 .tarjeta .tema{font-size:12.5px;font-weight:600;line-height:1.35;overflow-wrap:anywhere}
 .fila-chips{display:flex;gap:4px;flex-wrap:wrap;align-items:center}
 .chip{font-size:10.5px;font-weight:600;padding:2px 7px;border-radius:10px;background:var(--surface2);color:var(--text2);border:1px solid var(--border);white-space:nowrap}
@@ -183,6 +202,7 @@ td.num{font-variant-numeric:tabular-nums;white-space:nowrap}
 .toast.on{opacity:1}
 .cargando{color:var(--text3);font-size:13px;padding:30px 0;text-align:center}
 
+@media (max-width:600px){.item .t{flex-basis:100%}}
 @media (max-width:900px){
   .semana{grid-template-columns:1fr}
   .dia{min-height:auto}
@@ -197,10 +217,10 @@ td.num{font-variant-numeric:tabular-nums;white-space:nowrap}
 <div class="gate" id="gate" hidden>
   <form class="gate-caja" id="gate-form">
     <h2>Contenido</h2>
-    <p>Entra con la contraseña de Admin o de Gestor Web.</p>
+    <p>Entra con la contraseña de Admin o de Gestor de redes.</p>
     <div class="seg" role="group" aria-label="Tipo de acceso">
       <button type="button" data-rol="admin" class="on">Admin</button>
-      <button type="button" data-rol="gestorweb">Gestor Web</button>
+      <button type="button" data-rol="redes">Gestor de redes</button>
     </div>
     <input id="gate-pass" type="password" placeholder="Contraseña" autocomplete="current-password">
     <button class="btn btn-verde" type="submit" style="justify-content:center">Entrar</button>
@@ -218,6 +238,7 @@ td.num{font-variant-numeric:tabular-nums;white-space:nowrap}
     </div>
     <nav class="tabs" role="tablist">
       <button class="tab on" data-vista="semana" type="button">Semana</button>
+      <button class="tab" data-vista="programar" type="button">Por programar</button>
       <button class="tab" data-vista="mes" type="button">Mes</button>
       <button class="tab" data-vista="anio" type="button">Año</button>
       <button class="tab" data-vista="biblioteca" type="button">Biblioteca</button>
@@ -233,7 +254,7 @@ td.num{font-variant-numeric:tabular-nums;white-space:nowrap}
 <script>
 (function(){
 var API = 'https://fungiterra-api-production.up.railway.app';
-var LLAVES = { admin: ['ft_admin_auth', 'ft_admin_token'], gestorweb: ['ft_gestorweb_auth', 'ft_gestorweb_token'] };
+var LLAVES = { admin: ['ft_admin_auth', 'ft_admin_token'], redes: ['ft_redes_auth', 'ft_redes_token'] };
 var AUTH_DIAS = 30;
 var MESES = ['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];
 var DIAS = ['dom','lun','mar','mié','jue','vie','sáb'];
@@ -270,7 +291,7 @@ function sesionGuardada(rol){
 }
 function elegirSesion(){
   var t = sesionGuardada('admin'); if (t) { S.rol = 'admin'; S.token = t; return true; }
-  t = sesionGuardada('gestorweb'); if (t) { S.rol = 'gestorweb'; S.token = t; return true; }
+  t = sesionGuardada('redes'); if (t) { S.rol = 'redes'; S.token = t; return true; }
   return false;
 }
 function borrarSesion(){ try { localStorage.removeItem(LLAVES[S.rol][0]); localStorage.removeItem(LLAVES[S.rol][1]); } catch (e) {} }
@@ -283,7 +304,7 @@ el('gate-form').addEventListener('submit', function(e){
   var pass = el('gate-pass').value, err = el('gate-error');
   if (!pass) { err.textContent = 'Escribe la contraseña'; return; }
   err.textContent = 'Verificando…';
-  var ruta = rolGate === 'admin' ? '/auth/verificar' : '/auth/verificar-gestorweb';
+  var ruta = rolGate === 'admin' ? '/auth/verificar' : '/auth/verificar-redes';
   fetch(API + ruta, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ passcode: pass }) })
     .then(function(r){ return r.json(); })
     .then(function(d){
@@ -321,6 +342,7 @@ window.fetch = function(url, opts){
 // ── Carga ──────────────────────────────────────────────────────
 function rangoVista(){
   if (S.vista === 'semana') { var l = lunes(S.ancla); return [l, suma(l, 6)]; }
+  if (S.vista === 'programar') return [suma(hoy(), -14), suma(hoy(), 21)];
   if (S.vista === 'mes' || S.vista === 'balance') return [inicioMes(S.ancla), finMes(S.ancla)];
   if (S.vista === 'anio') { var y = S.ancla.slice(0, 4); return [y + '-01-01', y + '-12-31']; }
   return null;
@@ -329,6 +351,7 @@ function cargar(){
   var r = rangoVista();
   el('main').innerHTML = '<div class="cargando">Cargando…</div>';
   var tareas = [api('GET', '/medios').then(function(j){ S.medios = j.medios; })];
+  if (S.vista === 'programar') tareas.push(api('GET', '/por-programar').then(function(j){ S.pp = j; j.por_programar.concat(j.programadas).forEach(function(p){ S.extra[p.id] = p; }); }));
   if (r) tareas.push(api('GET', '/plan?desde=' + r[0] + '&hasta=' + r[1]).then(function(j){ S.plan = j; }));
   if (S.vista === 'anio') {
     tareas.push(api('GET', '/calendario').then(function(j){ S.calendario = j.calendario; }));
@@ -340,13 +363,13 @@ function cargar(){
   });
 }
 function arrancar(){
-  el('quien').textContent = S.rol === 'admin' ? 'Planeador de redes · Admin' : 'Planeador de redes · Gestor Web';
+  el('quien').textContent = S.rol === 'admin' ? 'Planeador de redes · Admin' : 'Planeador de redes · Gestor de redes';
   api('GET', '/config').then(function(c){ S.cfg = c; cargar(); }).catch(function(e){ if (e.message !== 'sesion') el('main').innerHTML = '<div class="bloque">No se pudo conectar: ' + esc(e.message) + '</div>'; });
 }
 
 // ── Pintar ─────────────────────────────────────────────────────
 function pintar(){
-  var v = { semana: vistaSemana, mes: vistaMes, anio: vistaAnio, biblioteca: vistaBiblioteca, balance: vistaBalance }[S.vista];
+  var v = { semana: vistaSemana, programar: vistaProgramar, mes: vistaMes, anio: vistaAnio, biblioteca: vistaBiblioteca, balance: vistaBalance }[S.vista];
   el('main').innerHTML = v();
   enlazar();
 }
@@ -488,7 +511,9 @@ function bloqueMetas(){
     '<p class="leyenda" style="margin:0 0 10px">Publicaciones por semana en cada red (0 = sin meta) y peso de cada pilar. Las sugerencias se calculan con estas metas.' + (ed ? '' : ' Solo Admin puede cambiarlas.') + '</p>' +
     '<div class="metas">' + c.redes.map(function(r){ return '<label for="mr-' + r.clave + '">' + esc(r.nombre) + ' por semana<input id="mr-' + r.clave + '" data-red="' + r.clave + '" type="number" min="0" max="50" step="1" inputmode="numeric" value="' + r.por_semana + '"' + dis + '></label>'; }).join('') + '</div>' +
     '<div class="metas" style="margin-top:12px">' + c.pilares.map(function(p){ return '<label for="mp-' + p.clave + '">' + esc(p.nombre) + ' (%)<input id="mp-' + p.clave + '" data-pilar="' + p.clave + '" type="number" min="0" max="100" step="1" inputmode="numeric" value="' + p.meta + '"' + dis + '></label>'; }).join('') + '</div>' +
-    '<p class="leyenda" id="metas-suma"></p><div class="aviso" id="metas-aviso"></div></form>';
+    '<p class="leyenda" id="metas-suma"></p><div class="aviso" id="metas-aviso"></div></form>' +
+    (ed ? '<form class="bloque" id="form-pass-redes" novalidate><h3>Contraseña del Gestor de redes</h3><p class="leyenda" style="margin:0 0 10px">Con ella entra al panel de Contenido. Solo puede planear, copiar y marcar como programado; no ve pedidos, clientes ni finanzas.</p>' +
+      '<div class="filtros"><input id="pass-redes" type="password" autocomplete="new-password" placeholder="Nueva contraseña (mínimo 8 caracteres)"><button class="btn btn-verde btn-sm" type="submit">Guardar</button></div><div class="aviso" id="pass-redes-aviso"></div></form>' : '');
 }
 function enlazarMetas(){
   var f = el('form-metas'); if (!f) return;
@@ -502,6 +527,59 @@ function enlazarMetas(){
     f.querySelectorAll('[data-pilar]').forEach(function(i){ body.pilares[i.getAttribute('data-pilar')] = Math.round(+i.value || 0); });
     api('PATCH', '/metas', body).then(function(j){ S.cfg = j; toast('Metas guardadas'); cargar(); }).catch(function(x){ el('metas-aviso').textContent = x.message; });
   };
+}
+
+// ── Por programar: paquete para copiar y "Ya la programé" ──────
+function textoPrograma(r, pp){
+  if (!r.hasta) return r.aprobadas ? 'Nada programado; ' + r.aprobadas + ' por copiar' : 'Nada programado';
+  var dias = Math.round((fd(r.hasta) - fd(pp.hoy)) / 864e5);
+  return 'Programado hasta el ' + corta(r.hasta) + (dias <= 0 ? ' (hoy)' : dias === 1 ? ' (mañana)' : ' (' + dias + ' días)');
+}
+function paquete(p, pp){
+  var atrasada = p.fecha < pp.hoy;
+  var fechaHora = bonita(p.fecha) + (p.hora ? ' · ' + p.hora : '');
+  var botones = p.estado === 'aprobada'
+    ? '<button class="btn btn-verde btn-sm" data-programar="' + p.id + '" type="button">Ya la programé</button>'
+    : '<button class="btn btn-linea btn-sm" data-deshacer="' + p.id + '" type="button">Deshacer</button>';
+  var quien = p.programada_en ? '<span class="tambien">Programada por ' + (p.programada_por === 'admin' ? 'Admin' : p.programada_por === 'redes' ? 'Gestor de redes' : esc(p.programada_por || '—')) + ' el ' + corta(String(p.programada_en).slice(0, 10)) + '</span>' : '';
+  return '<div class="paquete' + (atrasada && p.estado === 'aprobada' ? ' atrasada' : '') + '">' +
+    '<div class="paquete-cab"><span class="cuando">' + esc(fechaHora) + '</span>' + (atrasada && p.estado === 'aprobada' ? '<span class="estado e-revision">Atrasada</span>' : '') +
+    '<span class="chip">' + esc(p.formato) + '</span><span class="punto" style="background:' + (COLOR_PILAR[p.pilar] || 'var(--text3)') + '" title="' + esc(nombre(S.cfg.pilares, p.pilar)) + '"></span>' +
+    '<span class="esp" style="flex:1"></span><button class="btn btn-linea btn-sm" data-pub="' + p.id + '" type="button">Abrir</button></div>' +
+    '<div class="tema">' + esc(p.tema) + '</div>' +
+    (p.copy ? '<div class="copy" id="copy-' + p.id + '">' + esc(p.copy) + '</div>' : '<div class="copy vacio">Falta el texto de la publicación.</div>') +
+    (p.archivos.length ? '<div class="archivos">' + p.archivos.map(function(a){ return a.enlace ? '<a href="' + esc(a.enlace) + '" target="_blank" rel="noopener">⤓ ' + esc(a.nombre) + '</a>' : '<span>' + esc(a.nombre) + ' (sin enlace)</span>'; }).join('') + '</div>' : (p.formato !== 'texto' ? '<span class="tambien">Sin foto o video asignado.</span>' : '')) +
+    '<div class="fila-chips">' + (p.copy ? '<button class="btn btn-linea btn-sm" data-copiar="copy-' + p.id + '" type="button">Copiar texto</button>' : '') +
+    '<button class="btn btn-linea btn-sm" data-copiar-txt="' + esc(fechaHora) + '" type="button">Copiar fecha y hora</button>' + botones + quien + '</div></div>';
+}
+function vistaProgramar(){
+  var pp = S.pp, c = S.cfg;
+  var redes = pp.redes.map(function(r){
+    var dias = r.hasta ? Math.round((fd(r.hasta) - fd(pp.hoy)) / 864e5) : -1;
+    var cls = !r.hasta ? 'nada' : dias <= pp.aviso_dias_antes ? 'pronto' : 'ok';
+    return '<div class="red-est ' + cls + '"><b>' + esc(r.nombre) + '</b><span>' + esc(textoPrograma(r, pp)) + '</span><span class="tambien">Se programa en ' + esc(r.programa_en || '—') + '</span></div>';
+  }).join('');
+  var porRed = {};
+  pp.por_programar.forEach(function(p){ (porRed[p.red] = porRed[p.red] || []).push(p); });
+  var listas = c.redes.filter(function(r){ return porRed[r.clave]; }).map(function(r){
+    return '<div class="grupo-red"><h3>' + esc(r.nombre) + '<span>' + porRed[r.clave].length + ' por copiar · en ' + esc(r.programa_en || '') + '</span></h3>' + porRed[r.clave].map(function(p){ return paquete(p, pp); }).join('') + '</div>';
+  }).join('');
+  var hechas = pp.programadas.length ? pp.programadas.map(function(p){ return '<div class="item"><span class="t">' + esc(p.tema) + '</span><span class="s">' + esc(nombre(c.redes, p.red)) + ' · ' + bonita(p.fecha) + (p.hora ? ' · ' + esc(p.hora) : '') + '</span><button class="btn btn-linea btn-sm" data-deshacer="' + p.id + '" type="button">Deshacer</button></div>'; }).join('') : '<p class="vacio">Nada marcado como programado de hoy en adelante.</p>';
+  return '<div class="barra"><h2>Por programar</h2><span class="cuenta">Aprobadas hasta el ' + corta(pp.hasta) + '</span></div>' +
+    '<p class="leyenda" style="margin:0">Copia cada publicación a su red, prográmala allá y presiona <b>Ya la programé</b>. El panel avisa ' + pp.aviso_dias_antes + ' días antes de que se acabe lo programado en cada red.</p>' +
+    '<div class="redes-estado">' + redes + '</div>' +
+    (listas || '<div class="bloque"><p class="vacio">No hay publicaciones aprobadas esperando. Cuando Admin apruebe, aparecen aquí listas para copiar.</p></div>') +
+    '<div class="bloque"><h3>Ya programadas</h3><div class="lista">' + hechas + '</div></div>';
+}
+function copiar(texto, boton){
+  var hecho = function(){ var t = boton.textContent; boton.textContent = 'Copiado'; setTimeout(function(){ boton.textContent = t; }, 1500); };
+  var plan = function(){
+    var ta = document.createElement('textarea'); ta.value = texto; ta.setAttribute('readonly', ''); ta.style.position = 'absolute'; ta.style.left = '-9999px';
+    document.body.appendChild(ta); ta.select();
+    try { document.execCommand('copy'); hecho(); } catch (e) { toast('Selecciona el texto y cópialo a mano'); }
+    document.body.removeChild(ta);
+  };
+  if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(texto).then(hecho, plan); else plan();
 }
 
 // ── Eventos ────────────────────────────────────────────────────
@@ -521,6 +599,19 @@ function enlazar(){
   m.querySelectorAll('[data-medio]').forEach(function(b){ b.onclick = function(){ editarMedio(+b.getAttribute('data-medio')); }; });
   m.querySelectorAll('[data-nuevo-medio]').forEach(function(b){ b.onclick = function(){ editarMedio(null); }; });
   enlazarMetas();
+  m.querySelectorAll('[data-copiar]').forEach(function(b){ b.onclick = function(){ var x = el(b.getAttribute('data-copiar')); if (x) copiar(x.textContent, b); }; });
+  m.querySelectorAll('[data-copiar-txt]').forEach(function(b){ b.onclick = function(){ copiar(b.getAttribute('data-copiar-txt'), b); }; });
+  m.querySelectorAll('[data-programar]').forEach(function(b){ b.onclick = function(){ b.disabled = true; api('PATCH', '/publicaciones/' + b.getAttribute('data-programar'), { estado: 'programada' }).then(function(){ toast('Marcada como programada'); cargar(); }).catch(function(e){ b.disabled = false; toast(e.message); }); }; });
+  m.querySelectorAll('[data-deshacer]').forEach(function(b){ b.onclick = function(){ b.disabled = true; api('PATCH', '/publicaciones/' + b.getAttribute('data-deshacer'), { estado: 'aprobada' }).then(function(){ toast('Regresó a aprobada'); cargar(); }).catch(function(e){ b.disabled = false; toast(e.message); }); }; });
+  var fpr = el('form-pass-redes');
+  if (fpr) fpr.onsubmit = function(e){
+    e.preventDefault(); var v = el('pass-redes').value.trim(), av = el('pass-redes-aviso');
+    if (v.length < 8) { av.textContent = 'Usa al menos 8 caracteres.'; return; }
+    av.textContent = '';
+    fetch(API + '/auth/passcode-redes', { method: 'PATCH', headers: { 'Content-Type': 'application/json', 'x-session-token': S.token }, body: JSON.stringify({ passcode_nuevo: v }) })
+      .then(function(r){ return r.json(); }).then(function(j){ if (!j.ok) throw new Error(j.error || 'No se pudo guardar'); el('pass-redes').value = ''; toast('Contraseña del Gestor de redes guardada'); })
+      .catch(function(x){ av.textContent = x.message; });
+  };
   var fb = el('f-buscar');
   if (fb) {
     fb.oninput = function(){ filtrosB.buscar = fb.value; var pos = fb.selectionStart; pintar(); var n = el('f-buscar'); n.focus(); n.setSelectionRange(pos, pos); };
@@ -583,7 +674,12 @@ function numOnull(id){ var v = val(id); return v === '' ? null : +v; }
 function editarPub(id, fechaNueva){
   var p = id ? (buscarPub(id) || {}) : { fecha: fechaNueva || hoy(), red: 'facebook', formato: 'foto', publico: 'productores', pilar: 'cultivo', estado: 'idea', medios: [] };
   var c = S.cfg, esAdmin = S.rol === 'admin';
-  var estados = c.estados.map(function(e){ return { clave: e.clave, nombre: e.nombre + (!esAdmin && ['aprobada','programada'].indexOf(e.clave) >= 0 ? ' (solo Admin)' : '') }; });
+  var estados = c.estados.map(function(e){
+    var nota = '';
+    if (!esAdmin && e.clave === 'aprobada' && p.estado !== 'programada') nota = ' (solo Admin)';
+    if (!esAdmin && e.clave === 'programada' && ['aprobada', 'programada'].indexOf(p.estado) < 0) nota = ' (cuando Admin la apruebe)';
+    return { clave: e.clave, nombre: e.nombre + nota };
+  });
   var camps = (S.plan.campanas || []), evs = (S.plan.calendario || []);
   var r = p.resultado || {};
   var sel = p.medios || [];
@@ -613,7 +709,8 @@ function editarPub(id, fechaNueva){
     '</div>';
   abrirModal(id ? 'Editar publicación' : 'Nueva publicación', cuerpo, function(){
     var estado = val('p-estado');
-    if (!esAdmin && ['aprobada','programada'].indexOf(estado) >= 0 && estado !== p.estado) return Promise.reject(new Error('Solo Admin puede aprobar o marcar como programada.'));
+    if (!esAdmin && estado !== p.estado && estado === 'aprobada' && p.estado !== 'programada') return Promise.reject(new Error('Solo Admin puede aprobar.'));
+    if (!esAdmin && estado !== p.estado && estado === 'programada' && p.estado !== 'aprobada') return Promise.reject(new Error('Primero Admin tiene que aprobarla.'));
     if (!val('p-tema')) return Promise.reject(new Error('Escribe el tema de la publicación.'));
     var res = { alcance: numOnull('p-alcance'), interacciones: numOnull('p-inter'), mensajes: numOnull('p-msj') };
     var hayRes = res.alcance != null || res.interacciones != null || res.mensajes != null;
@@ -727,7 +824,7 @@ function editarMedio(id){
 }
 
 // ── Inicio ─────────────────────────────────────────────────────
-try { var v0 = localStorage.getItem('ft_contenido_vista'); if (v0 && /^(semana|mes|anio|biblioteca|balance)$/.test(v0)) { S.vista = v0; document.querySelectorAll('.tab').forEach(function(x){ x.classList.toggle('on', x.getAttribute('data-vista') === v0); }); } } catch (e) {}
+try { var v0 = localStorage.getItem('ft_contenido_vista'); if (v0 && /^(semana|programar|mes|anio|biblioteca|balance)$/.test(v0)) { S.vista = v0; document.querySelectorAll('.tab').forEach(function(x){ x.classList.toggle('on', x.getAttribute('data-vista') === v0); }); } } catch (e) {}
 if (elegirSesion()) arrancar(); else pedirAcceso();
 })();
 </script>
