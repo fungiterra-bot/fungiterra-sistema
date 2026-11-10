@@ -12,7 +12,7 @@
 <meta name="apple-mobile-web-app-title" content="Contenido">
 <link rel="icon" href="app/icono-contenido-192.png">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-<!-- Panel Contenido (v4.1, 2026-11-10): planeador de redes sociales. v4.1: arregla los botones Conectar y Actualizar ahora de Facebook e Instagram. v4: conexión de solo lectura con Facebook e Instagram en Balance
+<!-- Panel Contenido (v4.2, 2026-11-10): planeador de redes sociales. v4.2: Facebook ya no da alcance por publicación; se muestran las vistas. v4.1: arregla los botones Conectar y Actualizar ahora de Facebook e Instagram. v4: conexión de solo lectura con Facebook e Instagram en Balance
      (Admin conecta; Admin y Gestor de redes actualizan, ligan cada post real con el plan y marcan si llevó pago), regreso de Facebook
      al panel con ?code y ?state, avisos de Meta en Sugerencias. API: /api/redes/* (redes.js). v3: acceso de Gestor de redes (ya no Gestor Web), vista Por programar
      con el paquete para copiar y el botón Ya la programé, aviso de cuándo se acaba lo programado. v2: varias redes por contenido y metas.
@@ -597,12 +597,12 @@ function bloquePostsMeta(){
     }
     return '<tr><td>' + esc(corta(p.fecha)) + '</td><td>' + NOMBRE_RED[p.red] + '<br><span class="leyenda" style="margin:0">' + esc(p.tipo) + '</span></td>' +
       '<td class="meta-texto">' + (p.enlace ? '<a href="' + esc(p.enlace) + '" target="_blank" rel="noopener">' : '') + esc((p.texto || '(sin texto)').slice(0, 90)) + (p.enlace ? '</a>' : '') + '</td>' +
-      '<td class="num">' + num(m.alcance) + '</td><td class="num">' + num(m.interacciones) + '</td><td>' + plan + '</td>' +
+      '<td class="num">' + num(m.alcance != null ? m.alcance : m.vistas) + (m.alcance == null && m.vistas != null ? '<br><span class="leyenda" style="margin:0">vistas</span>' : '') + '</td><td class="num">' + num(m.interacciones) + '</td><td>' + plan + '</td>' +
       '<td><label class="chk"><input type="checkbox" data-pagada="' + i + '"' + (p.pagada ? ' checked' : '') + '> Sí</label></td></tr>';
   }).join('');
   return '<div class="bloque"><h3>Publicaciones reales, últimos 35 días</h3>' +
     '<p class="leyenda" style="margin:0 0 10px">Cada post se liga solo con lo planeado si ese día hay uno en esa red; si no, elígelo aquí. Marca "Pagada" si llevó anuncio o promoción, para no compararla con lo orgánico.' + (sinLigar ? ' Sin ligar: ' + sinLigar + '.' : '') + '</p>' +
-    '<div class="tabla-wrap"><table><thead><tr><th>Fecha</th><th>Red</th><th>Publicación</th><th class="num">Alcance</th><th class="num">Interacciones</th><th>En el plan</th><th>Pagada</th></tr></thead><tbody>' + filas + '</tbody></table></div></div>';
+    '<div class="tabla-wrap"><table><thead><tr><th>Fecha</th><th>Red</th><th>Publicación</th><th class="num">Alcance o vistas</th><th class="num">Interacciones</th><th>En el plan</th><th>Pagada</th></tr></thead><tbody>' + filas + '</tbody></table></div></div>';
 }
 function enlazarMeta(){
   var m = el('main'); if (!S.meta || !S.meta.estado) return;
