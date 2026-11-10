@@ -861,13 +861,56 @@ function selTipoPrecio(v){
   }
   if(document.getElementById('fb-precio').value)fbBuscarPrecio(true);
 }
-function sugerirTipoPrecio(c){
-  if(!antesDelCambio()||tipoPrecioElegido())return;
-  var compro=c&&(Number(c.total)>0||c.ultima);
-  selTipoPrecio(compro?'antiguo':'nuevo');
-  document.getElementById('tp-nota').textContent=compro?'Sugerido: '+c.nombre+' ya tiene compras → cliente antiguo. Cámbialo si no es así.':'Sugerido: cliente nuevo. Cámbialo si no es así.';
+function sugerirTipoPrecio(c){revisarComprasCliente();}
+// v20: compras del cliente (desde el repositorio) para que quien cotiza decida nuevo/antiguo
+var _repoCache=null;
+function cargarRepoCompras(){
+  if(_repoCache)return Promise.resolve(_repoCache);
+  return fetch(SCRIPT_URL+'?accion=repositorio').then(function(r){return r.json();})
+    .then(function(d){_repoCache=d.cotizaciones||[];return _repoCache;}).catch(function(){return [];});
+}
+function _normNom(v){return String(v||'').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'').replace(/\s+/g,' ').trim();}
+function _tel10(v){var d=String(v||'').replace(/\D/g,'');return d.length>=10?d.slice(-10):'';}
+function _fechaRepo(f){
+  if(!f)return null;var m=/^(\d{1,2})\/(\d{1,2})\/(\d{4})/.exec(String(f));
+  if(m)return new Date(+m[3],+m[2]-1,+m[1],12);var d=new Date(f);return isNaN(d)?null:d;
+}
+function resumenCompras(nombre,tel,lista){
+  var n=_normNom(nombre),t=_tel10(tel),hace12=new Date(fechaHoyDate());hace12.setFullYear(hace12.getFullYear()-1);
+  var r={n12:0,monto12:0,total:0,ultima:null};
+  lista.forEach(function(c){
+    if(!/^(Pagada|Pago parcial)$/.test(c.estado||''))return;
+    var mismo=(n&&_normNom(c.cliente)===n)||(t&&_tel10(c.telefono)===t);
+    if(!mismo)return;
+    var f=_fechaRepo(c.fecha);r.total++;
+    if(f&&(!r.ultima||f>r.ultima))r.ultima=f;
+    if(f&&f>=hace12){r.n12++;r.monto12+=Number(c.total)||0;}
+  });
+  return r;
+}
+var _tpTimer=null;
+function revisarComprasCliente(){
+  clearTimeout(_tpTimer);
+  _tpTimer=setTimeout(function(){
+    var nom=(document.getElementById('cli-nom')||{}).value||'',tel=(document.getElementById('cli-tel')||{}).value||'';
+    var nota=document.getElementById('tp-nota');
+    if(!antesDelCambio()||(_normNom(nom).length<3&&!_tel10(tel)))return;
+    cargarRepoCompras().then(function(lista){
+      var r=resumenCompras(nom,tel,lista);
+      var txt;
+      if(!r.total)txt='Sin compras pagadas registradas → sugerido: cliente nuevo.';
+      else txt=r.n12+' compra(s) pagada(s) en los últimos 12 meses'+(r.n12?' ('+fmx(r.monto12)+')':'')+
+        ' · '+r.total+' en total · última: '+(r.ultima?r.ultima.toLocaleDateString('es-MX'):'—')+
+        ' → sugerido: '+(r.n12?'cliente antiguo':'cliente nuevo (no compró en el último año)')+'.';
+      var sug=r.n12?'antiguo':'nuevo';
+      if(!tipoPrecioElegido())selTipoPrecio(sug);
+      else if(tipoPrecioElegido()!==sug)txt+=' Tú elegiste cliente '+tipoPrecioElegido()+'.';
+      nota.textContent=txt;nota.className='note';
+    });
+  },500);
 }
 function iniciarTipoPrecio(){
+  ['cli-nom','cli-tel'].forEach(function(id){var e=document.getElementById(id);if(e)e.addEventListener('change',revisarComprasCliente);});
   var b=document.getElementById('tp-bloque');
   if(b&&!antesDelCambio())b.style.display='none';
 }
@@ -939,6 +982,19 @@ function ftNotaGramos(){
   if(!u||u.value!=='g'||u.style.display==='none')return;
   var g=parseFloat(document.getElementById('ft-cant').value),pk=parseFloat(document.getElementById('ft-precio').value);
   if(g>0&&pk>0){nota.textContent=g+' g = '+fmx(redondea2(pk*g/1000))+' (precio por kg '+fmx(pk)+')';nota.className='note';}
+}
+// Traduce "Especie — Fresco (250 g)" ×1 $25 → "Especie — Fresco (kg)" ×0.25 $100/kg antes de guardar,
+// para que pedidos, paneles, inventario e informes reciban exactamente lo mismo que antes.
+var RE_GRAMOS=/^(.*) \((\d+(?:\.\d+)?) g\)$/;
+function itemsAKg(items){
+  return (items||[]).map(function(it){
+    var m=RE_GRAMOS.exec((it.desc||'').trim());
+    if(!m)return it;
+    var kg=Math.round(parseFloat(m[2])*(it.cant||1))/1000;
+    var sub=(it.subtotal!=null?it.subtotal:(it.total!=null?it.total:it.cant*it.precio));
+    if(!(kg>0))return it;
+    return {desc:m[1]+' (kg)',cant:kg,precio:Math.round(sub/kg*100)/100,subtotal:sub};
+  });
 }
 function plCambioUnidad(){
   var u=document.getElementById('pl-unidad').value,ci=document.getElementById('pl-cant');
@@ -1541,7 +1597,7 @@ function generarIDDesdeResumen(){
     accion:'generar_id', socio:socio, creado_por:getCreadoPor('m2'), tipo_producto:tipo,
     monto:t.tot, envio:t.envio, cliente:_cliente2,
     telefono:_telefono2, correo:_correo2,
-    items:_items, paqueteria:_pak2v
+    items:itemsAKg(_items), paqueteria:_pak2v
   };
   if(idViejo) payload.id_anterior=idViejo;
   function _exito2(id){
@@ -1624,7 +1680,7 @@ function guardarCambios(origen){
   }
   fetch(SCRIPT_URL,{method:'POST',body:JSON.stringify({
     accion:'actualizar_cliente', id:idViejo, cliente, telefono, correo,
-    items:items, envio:envioG, paqueteria:pak, monto:totalG
+    items:itemsAKg(items), envio:envioG, paqueteria:pak, monto:totalG
   })}).then(r=>r.json()).then(data=>{
     if(data.ok) _terminar('✓ '+idViejo+' actualizado'+textoPedido(data));
     else _verificarYresolver(data.error);
@@ -1776,7 +1832,7 @@ function generarIDFormal(){
     accion:'generar_id', socio:socio, creado_por:getCreadoPor('m2'), tipo_producto:tipo,
     monto:monto, envio:_envioFormal, cliente:_clienteF,
     telefono:_telF, correo:_correoF,
-    items:_itemsFormal, paqueteria:_pakF
+    items:itemsAKg(_itemsFormal), paqueteria:_pakF
   };
   if(idViejo)payload.id_anterior=idViejo;
   function _exito3(id){
