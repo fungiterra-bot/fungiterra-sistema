@@ -12,7 +12,7 @@
 <meta name="apple-mobile-web-app-title" content="Contenido">
 <link rel="icon" href="app/icono-contenido-192.png">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-<!-- Panel Contenido (v4, 2026-11-10): planeador de redes sociales. v4: conexión de solo lectura con Facebook e Instagram en Balance
+<!-- Panel Contenido (v4.1, 2026-11-10): planeador de redes sociales. v4.1: arregla los botones Conectar y Actualizar ahora de Facebook e Instagram. v4: conexión de solo lectura con Facebook e Instagram en Balance
      (Admin conecta; Admin y Gestor de redes actualizan, ligan cada post real con el plan y marcan si llevó pago), regreso de Facebook
      al panel con ?code y ?state, avisos de Meta en Sugerencias. API: /api/redes/* (redes.js). v3: acceso de Gestor de redes (ya no Gestor Web), vista Por programar
      con el paquete para copiar y el botón Ya la programé, aviso de cuándo se acaba lo programado. v2: varias redes por contenido y metas.
@@ -607,12 +607,12 @@ function bloquePostsMeta(){
 function enlazarMeta(){
   var m = el('main'); if (!S.meta || !S.meta.estado) return;
   var posts = S.meta.posts ? S.meta.posts.filter(function(p){ return p.tipo !== 'historia'; }) : [];
-  var b = el('meta-conectar');
-  if (b) b.onclick = function(){ b.disabled = true; apiRedes('POST', '/meta/iniciar').then(function(j){ location.href = j.url; }).catch(function(e){ b.disabled = false; toast(e.message); }); };
-  b = el('meta-sync');
-  if (b) b.onclick = function(){ b.disabled = true; b.textContent = 'Actualizando…'; apiRedes('POST', '/sincronizar').then(function(){ toast('Estadísticas actualizadas'); cargar(); }).catch(function(e){ b.disabled = false; b.textContent = 'Actualizar ahora'; toast(e.message); }); };
-  b = el('meta-desconectar');
-  if (b) b.onclick = function(){
+  var bc = el('meta-conectar');
+  if (bc) bc.onclick = function(){ bc.disabled = true; apiRedes('POST', '/meta/iniciar').then(function(j){ location.href = j.url; }).catch(function(e){ bc.disabled = false; toast(e.message); }); };
+  var bs = el('meta-sync');
+  if (bs) bs.onclick = function(){ bs.disabled = true; bs.textContent = 'Actualizando…'; apiRedes('POST', '/sincronizar').then(function(){ toast('Estadísticas actualizadas'); cargar(); }).catch(function(e){ bs.disabled = false; bs.textContent = 'Actualizar ahora'; toast(e.message); }); };
+  var bd = el('meta-desconectar');
+  if (bd) bd.onclick = function(){
     el('meta-confirmar').innerHTML = '<div class="confirmar"><span>¿Desconectar? Se borran las llaves de acceso; lo ya traído se queda.</span><span class="esp" style="flex:1"></span><button class="btn btn-rojo btn-sm" type="button" id="meta-si">Sí, desconectar</button><button class="btn btn-linea btn-sm" type="button" id="meta-no">No</button></div>';
     el('meta-no').onclick = function(){ el('meta-confirmar').innerHTML = ''; };
     el('meta-si').onclick = function(){ apiRedes('DELETE', '/meta').then(function(j){ toast('Desconectado'); cargar(); }).catch(function(e){ toast(e.message); }); };
