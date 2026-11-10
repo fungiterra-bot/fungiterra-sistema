@@ -12,7 +12,9 @@
 <meta name="apple-mobile-web-app-title" content="Contenido">
 <link rel="icon" href="app/icono-contenido-192.png">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-<!-- Panel Contenido (v3, 2026-11-09): planeador de redes sociales. v3: acceso de Gestor de redes (ya no Gestor Web), vista Por programar
+<!-- Panel Contenido (v4, 2026-11-10): planeador de redes sociales. v4: conexión de solo lectura con Facebook e Instagram en Balance
+     (Admin conecta; Admin y Gestor de redes actualizan, ligan cada post real con el plan y marcan si llevó pago), regreso de Facebook
+     al panel con ?code y ?state, avisos de Meta en Sugerencias. API: /api/redes/* (redes.js). v3: acceso de Gestor de redes (ya no Gestor Web), vista Por programar
      con el paquete para copiar y el botón Ya la programé, aviso de cuándo se acaba lo programado. v2: varias redes por contenido y metas.
      Largo plazo = Año (calendario fúngico y campañas), mediano = Mes, corto = Semana.
      Biblioteca = archivos de Drive con etiquetas. API: /api/contenido/* (fungiterra-api, contenido.js).
@@ -148,6 +150,12 @@ main{max-width:1180px;margin:0 auto;padding:18px 16px 80px;display:flex;flex-dir
 .filtros{display:flex;gap:8px;flex-wrap:wrap}
 .filtros input,.filtros select{background:var(--surface);border:1.5px solid var(--border);border-radius:8px;padding:7px 10px;min-width:0}
 .filtros input{flex:1;min-width:160px}
+.meta-cuenta{display:flex;flex-wrap:wrap;gap:6px 14px;align-items:baseline;padding:8px 0;border-top:1px solid var(--border);font-size:14px}
+.meta-texto{max-width:280px}
+.hist{display:grid;grid-template-columns:repeat(7,1fr);gap:6px}
+.hist-dia{border:1px solid var(--border);border-radius:10px;padding:6px 4px;text-align:center;font-size:12px}
+.hist-dia b{display:block;font-size:18px}
+.hist-dia.cero{background:#fdecea}.hist-dia.poco{background:#fff6e0}.hist-dia.bien{background:#e8f5ec}
 .tabla-wrap{overflow-x:auto;background:var(--surface);border:1px solid var(--border);border-radius:12px}
 table{width:100%;border-collapse:collapse;min-width:640px}
 th{font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--text3);text-align:left;padding:10px 12px;border-bottom:2px solid var(--border);background:var(--surface2);white-space:nowrap}
@@ -316,8 +324,8 @@ el('gate-form').addEventListener('submit', function(e){
 });
 function pedirAcceso(){ el('gate').hidden = false; setTimeout(function(){ el('gate-pass').focus(); }, 50); }
 
-function api(metodo, ruta, body){
-  return fetch(API + '/api/contenido' + ruta, {
+function api(metodo, ruta, body, prefijo){
+  return fetch(API + (prefijo || '/api/contenido') + ruta, {
     method: metodo,
     headers: { 'Content-Type': 'application/json', 'x-session-token': S.token },
     body: body ? JSON.stringify(body) : undefined
@@ -326,6 +334,8 @@ function api(metodo, ruta, body){
     return r.json().then(function(j){ if (!r.ok || j.ok === false) throw new Error(j.error || 'Error ' + r.status); return j; });
   });
 }
+
+function apiRedes(metodo, ruta, body){ return api(metodo, ruta, body, '/api/redes'); }
 
 // ft-app.js (instalable y conteo de uso) llama al API con window.fetch: le agrega la sesión.
 var _fetch = window.fetch;
@@ -353,6 +363,7 @@ function cargar(){
   var tareas = [api('GET', '/medios').then(function(j){ S.medios = j.medios; })];
   if (S.vista === 'programar') tareas.push(api('GET', '/por-programar').then(function(j){ S.pp = j; j.por_programar.concat(j.programadas).forEach(function(p){ S.extra[p.id] = p; }); }));
   if (r) tareas.push(api('GET', '/plan?desde=' + r[0] + '&hasta=' + r[1]).then(function(j){ S.plan = j; }));
+  if (S.vista === 'balance') tareas.push(cargarMeta());
   if (S.vista === 'anio') {
     tareas.push(api('GET', '/calendario').then(function(j){ S.calendario = j.calendario; }));
     tareas.push(api('GET', '/campanas').then(function(j){ S.campanas = j.campanas; }));
@@ -364,7 +375,7 @@ function cargar(){
 }
 function arrancar(){
   el('quien').textContent = S.rol === 'admin' ? 'Planeador de redes · Admin' : 'Planeador de redes · Gestor de redes';
-  api('GET', '/config').then(function(c){ S.cfg = c; cargar(); }).catch(function(e){ if (e.message !== 'sesion') el('main').innerHTML = '<div class="bloque">No se pudo conectar: ' + esc(e.message) + '</div>'; });
+  api('GET', '/config').then(function(c){ S.cfg = c; if (!regresoMeta()) cargar(); }).catch(function(e){ if (e.message !== 'sesion') el('main').innerHTML = '<div class="bloque">No se pudo conectar: ' + esc(e.message) + '</div>'; });
 }
 
 // ── Pintar ─────────────────────────────────────────────────────
@@ -503,7 +514,7 @@ function vistaBalance(){
     '<div class="bloque"><h3>Pilares de contenido</h3>' + (total ? '<div class="barras">' + barras + '</div><p class="leyenda">' + total + ' publicaciones en el mes. La línea marca la meta de cada pilar.</p>' : '<p class="vacio">Sin publicaciones este mes.</p>') + '</div>' +
     '<div class="bloque"><h3>Frecuencia por red</h3><div class="barras">' + redes + '</div><p class="leyenda">Meta por semana: ' + c.redes.filter(function(r){ return r.por_semana; }).map(function(r){ return r.nombre + ' ' + r.por_semana; }).join(', ') + '.</p></div>' +
     '<div class="bloque"><h3>Estados</h3><div class="fila-chips">' + (porEstado || '<span class="vacio">Sin publicaciones.</span>') + '</div></div>' +
-    bloqueMetas();
+    bloqueMeta() + bloqueMetas();
 }
 function bloqueMetas(){
   var c = S.cfg, ed = S.rol === 'admin', dis = ed ? '' : ' disabled';
@@ -514,6 +525,137 @@ function bloqueMetas(){
     '<p class="leyenda" id="metas-suma"></p><div class="aviso" id="metas-aviso"></div></form>' +
     (ed ? '<form class="bloque" id="form-pass-redes" novalidate><h3>Contraseña del Gestor de redes</h3><p class="leyenda" style="margin:0 0 10px">Con ella entra al panel de Contenido. Solo puede planear, copiar y marcar como programado; no ve pedidos, clientes ni finanzas.</p>' +
       '<div class="filtros"><input id="pass-redes" type="password" autocomplete="new-password" placeholder="Nueva contraseña (mínimo 8 caracteres)"><button class="btn btn-verde btn-sm" type="submit">Guardar</button></div><div class="aviso" id="pass-redes-aviso"></div></form>' : '');
+}
+// ── Facebook e Instagram (Meta, solo lectura) ─────────────────
+var NOMBRE_RED = { facebook: 'Facebook', instagram: 'Instagram' };
+function cargarMeta(){
+  var desde = suma(hoy(), -35);
+  return Promise.all([
+    apiRedes('GET', '/estado'),
+    apiRedes('GET', '/posts?desde=' + desde),
+    api('GET', '/plan?desde=' + desde + '&hasta=' + suma(hoy(), 1))
+  ]).then(function(r){ S.meta = { estado: r[0], posts: r[1].posts, seguidores: r[1].seguidores, plan: r[2].publicaciones }; })
+    .catch(function(e){ if (e.message === 'sesion') throw e; S.meta = { error: e.message }; });
+}
+function haceCuanto(iso){
+  if (!iso) return 'nunca';
+  var min = Math.round((Date.now() - new Date(iso).getTime()) / 60000);
+  if (min < 2) return 'hace un momento'; if (min < 60) return 'hace ' + min + ' min';
+  var h = Math.round(min / 60); if (h < 24) return 'hace ' + h + ' h';
+  return 'hace ' + Math.round(h / 24) + ' días';
+}
+function num(n){ return n == null ? '—' : Number(n).toLocaleString('es-MX'); }
+function bloqueMeta(){
+  var M = S.meta || {}, ad = S.rol === 'admin';
+  var titulo = '<h3>Facebook e Instagram<span class="esp"></span>';
+  var nota = '<p class="leyenda" style="margin:0 0 10px">Solo lectura: trae las publicaciones, las historias y sus estadísticas directo de Meta. No publica, no borra y no lee mensajes.</p>';
+  if (M.error) return '<div class="bloque">' + titulo + '</h3><p class="vacio">No se pudo leer la conexión: ' + esc(M.error) + '</p></div>';
+  if (!M.estado) return '';
+  if (!M.estado.configurado) return '<div class="bloque">' + titulo + '</h3>' + nota + '<p class="vacio">La conexión todavía no está configurada en el servidor.</p></div>';
+  var cuentas = M.estado.cuentas || [];
+  if (!cuentas.length) return '<div class="bloque">' + titulo + (ad ? '<button class="btn btn-verde btn-sm" type="button" id="meta-conectar">Conectar con Facebook</button>' : '') + '</h3>' + nota +
+    '<p class="vacio">' + (ad ? 'Al conectar, Facebook te pedirá elegir la página de FungiTerra y su Instagram. Usa tu perfil con acceso a la página.' : 'Admin todavía no conecta las cuentas.') + '</p></div>';
+  var hayError = cuentas.some(function(c){ return c.ultimo_error; });
+  var filas = cuentas.map(function(c){
+    return '<div class="meta-cuenta"><b>' + NOMBRE_RED[c.red] + '</b><span>' + esc(c.nombre) + '</span>' +
+      '<span>' + num(c.seguidores) + ' seguidores</span><span>' + c.posts + (c.posts === 1 ? ' publicación' : ' publicaciones') + (c.red === 'instagram' ? ' · ' + c.historias + (c.historias === 1 ? ' historia' : ' historias') : '') + '</span>' +
+      '<span class="leyenda" style="margin:0">Actualizado ' + haceCuanto(c.ultima_sincronizacion) + '</span>' +
+      (c.ultimo_error ? '<span class="aviso" style="margin:0;flex-basis:100%">' + esc(c.ultimo_error) + '</span>' : '') + '</div>';
+  }).join('');
+  var botones = '<button class="btn btn-linea btn-sm" type="button" id="meta-sync">Actualizar ahora</button>' +
+    (ad && hayError ? ' <button class="btn btn-verde btn-sm" type="button" id="meta-conectar">Volver a conectar</button>' : '') +
+    (ad ? ' <button class="btn btn-linea btn-sm" type="button" id="meta-desconectar">Desconectar</button>' : '');
+  return '<div class="bloque">' + titulo + botones + '</h3>' + nota + filas + '<div id="meta-confirmar"></div></div>' + bloqueHistorias() + bloquePostsMeta();
+}
+function bloqueHistorias(){
+  var M = S.meta; if (!M.estado.cuentas.some(function(c){ return c.red === 'instagram'; })) return '';
+  var dias = []; for (var i = 6; i >= 0; i--) dias.push(suma(hoy(), -i));
+  var celdas = dias.map(function(d){
+    var n = M.posts.filter(function(p){ return p.tipo === 'historia' && p.fecha === d; }).length;
+    var cls = n === 0 ? 'cero' : n < 2 ? 'poco' : 'bien';
+    return '<div class="hist-dia ' + (d === hoy() ? '' : cls) + '"><span>' + DIAS[fd(d).getUTCDay()] + ' ' + fd(d).getUTCDate() + '</span><b>' + n + '</b></div>';
+  }).join('');
+  return '<div class="bloque"><h3>Historias de Instagram, últimos 7 días</h3><div class="hist">' + celdas + '</div><p class="leyenda">Referencia: 2 a 5 al día. Meta solo deja leerlas mientras están vigentes (24 h), por eso se revisan cada hora.</p></div>';
+}
+function candidatas(p){
+  return (S.meta.plan || []).filter(function(x){
+    return x.red === p.red && x.formato !== 'historia' && Math.abs((fd(x.fecha) - fd(p.fecha)) / 864e5) <= 3 &&
+      !S.meta.posts.some(function(o){ return o.publicacion_id === x.id && o.post_id !== p.post_id; });
+  }).sort(function(a, b){ return Math.abs(fd(a.fecha) - fd(p.fecha)) - Math.abs(fd(b.fecha) - fd(p.fecha)); });
+}
+function bloquePostsMeta(){
+  var posts = S.meta.posts.filter(function(p){ return p.tipo !== 'historia'; });
+  if (!posts.length) return '<div class="bloque"><h3>Publicaciones reales</h3><p class="vacio">Todavía no hay publicaciones traídas de Meta. La primera actualización tarda unos minutos.</p></div>';
+  var sinLigar = posts.filter(function(p){ return !p.publicacion_id; }).length;
+  var filas = posts.map(function(p, i){
+    var m = p.metricas || {}, plan;
+    if (p.publicacion_id) plan = '<span>' + esc(p.publicacion_tema || ('#' + p.publicacion_id)) + '</span> <button class="btn btn-linea btn-sm" type="button" data-desligar="' + i + '">Quitar</button>';
+    else {
+      var c = candidatas(p);
+      plan = c.length ? '<select data-cand="' + i + '"><option value="">Elegir del plan…</option>' + c.map(function(x){ return '<option value="' + x.id + '">' + esc(corta(x.fecha) + ' · ' + x.tema) + '</option>'; }).join('') + '</select> <button class="btn btn-verde btn-sm" type="button" data-ligar="' + i + '">Ligar</button>'
+        : '<span class="vacio">Fuera del plan</span>';
+    }
+    return '<tr><td>' + esc(corta(p.fecha)) + '</td><td>' + NOMBRE_RED[p.red] + '<br><span class="leyenda" style="margin:0">' + esc(p.tipo) + '</span></td>' +
+      '<td class="meta-texto">' + (p.enlace ? '<a href="' + esc(p.enlace) + '" target="_blank" rel="noopener">' : '') + esc((p.texto || '(sin texto)').slice(0, 90)) + (p.enlace ? '</a>' : '') + '</td>' +
+      '<td class="num">' + num(m.alcance) + '</td><td class="num">' + num(m.interacciones) + '</td><td>' + plan + '</td>' +
+      '<td><label class="chk"><input type="checkbox" data-pagada="' + i + '"' + (p.pagada ? ' checked' : '') + '> Sí</label></td></tr>';
+  }).join('');
+  return '<div class="bloque"><h3>Publicaciones reales, últimos 35 días</h3>' +
+    '<p class="leyenda" style="margin:0 0 10px">Cada post se liga solo con lo planeado si ese día hay uno en esa red; si no, elígelo aquí. Marca "Pagada" si llevó anuncio o promoción, para no compararla con lo orgánico.' + (sinLigar ? ' Sin ligar: ' + sinLigar + '.' : '') + '</p>' +
+    '<div class="tabla-wrap"><table><thead><tr><th>Fecha</th><th>Red</th><th>Publicación</th><th class="num">Alcance</th><th class="num">Interacciones</th><th>En el plan</th><th>Pagada</th></tr></thead><tbody>' + filas + '</tbody></table></div></div>';
+}
+function enlazarMeta(){
+  var m = el('main'); if (!S.meta || !S.meta.estado) return;
+  var posts = S.meta.posts ? S.meta.posts.filter(function(p){ return p.tipo !== 'historia'; }) : [];
+  var b = el('meta-conectar');
+  if (b) b.onclick = function(){ b.disabled = true; apiRedes('POST', '/meta/iniciar').then(function(j){ location.href = j.url; }).catch(function(e){ b.disabled = false; toast(e.message); }); };
+  b = el('meta-sync');
+  if (b) b.onclick = function(){ b.disabled = true; b.textContent = 'Actualizando…'; apiRedes('POST', '/sincronizar').then(function(){ toast('Estadísticas actualizadas'); cargar(); }).catch(function(e){ b.disabled = false; b.textContent = 'Actualizar ahora'; toast(e.message); }); };
+  b = el('meta-desconectar');
+  if (b) b.onclick = function(){
+    el('meta-confirmar').innerHTML = '<div class="confirmar"><span>¿Desconectar? Se borran las llaves de acceso; lo ya traído se queda.</span><span class="esp" style="flex:1"></span><button class="btn btn-rojo btn-sm" type="button" id="meta-si">Sí, desconectar</button><button class="btn btn-linea btn-sm" type="button" id="meta-no">No</button></div>';
+    el('meta-no').onclick = function(){ el('meta-confirmar').innerHTML = ''; };
+    el('meta-si').onclick = function(){ apiRedes('DELETE', '/meta').then(function(j){ toast('Desconectado'); cargar(); }).catch(function(e){ toast(e.message); }); };
+  };
+  m.querySelectorAll('[data-ligar]').forEach(function(x){ x.onclick = function(){
+    var p = posts[+x.getAttribute('data-ligar')], sel = m.querySelector('[data-cand="' + x.getAttribute('data-ligar') + '"]');
+    if (!sel || !sel.value) { toast('Elige la publicación del plan'); return; }
+    x.disabled = true; apiRedes('POST', '/ligar', { red: p.red, post_id: p.post_id, publicacion_id: +sel.value }).then(function(){ toast('Ligada al plan'); cargar(); }).catch(function(e){ x.disabled = false; toast(e.message); });
+  }; });
+  m.querySelectorAll('[data-desligar]').forEach(function(x){ x.onclick = function(){
+    var p = posts[+x.getAttribute('data-desligar')]; x.disabled = true;
+    apiRedes('POST', '/desligar', { red: p.red, post_id: p.post_id }).then(function(){ toast('Se quitó del plan'); cargar(); }).catch(function(e){ x.disabled = false; toast(e.message); });
+  }; });
+  m.querySelectorAll('[data-pagada]').forEach(function(x){ x.onchange = function(){
+    var p = posts[+x.getAttribute('data-pagada')];
+    apiRedes('POST', '/pagada', { red: p.red, post_id: p.post_id, pagada: x.checked }).then(function(){ p.pagada = x.checked; toast(x.checked ? 'Marcada como pagada' : 'Marcada como orgánica'); }).catch(function(e){ x.checked = !x.checked; toast(e.message); });
+  }; });
+}
+// Facebook regresa al panel con ?code y ?state (o ?error si se canceló). Solo Admin completa la conexión.
+function regresoMeta(){
+  var q = new URLSearchParams(location.search), state = q.get('state') || '';
+  if (state.indexOf('meta_') !== 0 && !q.get('error')) return false;
+  history.replaceState(null, '', location.pathname);
+  S.vista = 'balance'; document.querySelectorAll('.tab').forEach(function(x){ x.classList.toggle('on', x.getAttribute('data-vista') === 'balance'); });
+  if (q.get('error') || !q.get('code')) { toast('No se completó la conexión con Facebook'); cargar(); return true; }
+  if (S.rol !== 'admin') { toast('Solo Admin puede conectar las redes'); cargar(); return true; }
+  el('main').innerHTML = '<div class="cargando">Conectando con Facebook…</div>';
+  apiRedes('POST', '/meta/completar', { code: q.get('code'), state: state }).then(function(j){
+    if (j.elegir) return elegirPaginaMeta(j);
+    toast('Conectado: ' + j.facebook + (j.instagram ? ' e Instagram @' + j.instagram : '')); cargar();
+  }).catch(function(e){ if (e.message !== 'sesion') { toast(e.message); cargar(); } });
+  return true;
+}
+function elegirPaginaMeta(j){
+  var cuerpo = '<p class="leyenda">Facebook regresó varias páginas. Elige la de Fungiterra.</p>' + j.elegir.map(function(p, i){
+    return '<label class="chk" style="display:flex;margin:8px 0"><input type="radio" name="pag" value="' + esc(p.id) + '"' + (i ? '' : ' checked') + '> ' + esc(p.nombre) + (p.instagram ? ' · Instagram @' + esc(p.instagram) : ' · sin Instagram ligado') + '</label>';
+  }).join('');
+  cargar().then(function(){
+    abrirModal('Elegir página', cuerpo, function(){
+      var r = document.querySelector('input[name="pag"]:checked');
+      return apiRedes('POST', '/meta/elegir', { pagina_id: r.value, pendiente: j.pendiente }).then(function(x){ return 'Conectado: ' + x.facebook + (x.instagram ? ' e Instagram @' + x.instagram : ''); });
+    });
+  });
 }
 function enlazarMetas(){
   var f = el('form-metas'); if (!f) return;
@@ -599,6 +741,7 @@ function enlazar(){
   m.querySelectorAll('[data-medio]').forEach(function(b){ b.onclick = function(){ editarMedio(+b.getAttribute('data-medio')); }; });
   m.querySelectorAll('[data-nuevo-medio]').forEach(function(b){ b.onclick = function(){ editarMedio(null); }; });
   enlazarMetas();
+  enlazarMeta();
   m.querySelectorAll('[data-copiar]').forEach(function(b){ b.onclick = function(){ var x = el(b.getAttribute('data-copiar')); if (x) copiar(x.textContent, b); }; });
   m.querySelectorAll('[data-copiar-txt]').forEach(function(b){ b.onclick = function(){ copiar(b.getAttribute('data-copiar-txt'), b); }; });
   m.querySelectorAll('[data-programar]').forEach(function(b){ b.onclick = function(){ b.disabled = true; api('PATCH', '/publicaciones/' + b.getAttribute('data-programar'), { estado: 'programada' }).then(function(){ toast('Marcada como programada'); cargar(); }).catch(function(e){ b.disabled = false; toast(e.message); }); }; });
