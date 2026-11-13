@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Cotizador Fungiterra v20</title>
+<title>Cotizador Fungiterra v21</title>
 <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=DM+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
@@ -256,7 +256,7 @@ textarea{resize:vertical;min-height:60px}
 </script>
 
 <header>
-  <div><h1>🍄 Sistema Fungiterra</h1><div class="header-sub">Cotizador · Generador de IDs · Cotización formal · v20</div></div>
+  <div><h1>🍄 Sistema Fungiterra</h1><div class="header-sub">Cotizador · Generador de IDs · Cotización formal · v21</div></div>
   <a id="link-repositorio" href="https://fungiterra-bot.github.io/fungiterra-sistema/repositorioD.html" target="_blank" style="color:rgba(255,255,255,.85);font-size:12px;text-decoration:none;border:1px solid rgba(255,255,255,.35);border-radius:7px;padding:6px 14px;font-family:var(--sans);font-weight:500;transition:all .2s;background:rgba(255,255,255,.08)" onmouseover="this.style.background='rgba(255,255,255,.18)'" onmouseout="this.style.background='rgba(255,255,255,.08)'">📋 Repositorio →</a>
 </header>
 
@@ -1212,7 +1212,7 @@ window.addEventListener('load', function(){
     var _av=document.getElementById('aviso-ver'); if(_av){ _av.style.display='block'; _av.querySelector('b').textContent=idAnterior||''; }
     var _fecha=p.get('fecha'); // AAAA-MM-DD de la cotización original
     var _mp=_datosPagoCargados?Promise.resolve():(cargarDatosPago()||Promise.resolve());
-    _mp.then(function(){
+    Promise.all([_mp,cargarNotaCot(idAnterior)]).then(function(){ // v21: también la nota
       setModo(3,null);
       if(_fecha&&/^\d{4}-\d{2}-\d{2}/.test(_fecha)){ var f=_fecha.slice(0,10).split('-'); document.getElementById('cf-fecha').value=f[2]+'/'+f[1]+'/'+f[0].slice(2); }
       actualizarID(window._folioVer);
@@ -1224,6 +1224,7 @@ window.addEventListener('load', function(){
   if(idAnterior){
     window._idAnterior=idAnterior;
     mostrarToast('✏️ Editando '+idAnterior+' — productos precargados abajo');
+    cargarNotaCot(idAnterior); // v21
     actualizarID(idAnterior);
     var _rv=document.getElementById('res2-id-val'); if(_rv) _rv.textContent=idAnterior;
     var _ra=document.getElementById('res2-id-area'); if(_ra) _ra.style.display='block';
@@ -1616,6 +1617,7 @@ function generarIDDesdeResumen(){
     idGenerado=id;
     window._idAnterior=id;
     registrarOrigen('m2',id);
+    guardarNotaCot(id); // v21
     document.getElementById('res2-id-val').textContent=id;
     document.getElementById('res2-id-area').style.display='block';
     var btnGuardarCambios=document.getElementById('btn-guardar-cambios');
@@ -1657,6 +1659,7 @@ function guardarCambios(origen){
   var idViejo=window._idAnterior;
   if(!idViejo){mostrarToast('⚠️ Sin ID para actualizar');return;}
   registrarOrigen('m2',idViejo); // v13: si se eligió origen al editar, se guarda/actualiza
+  guardarNotaCot(idViejo); // v21
   var cliente  = (document.getElementById('cli-nom')||{}).value||''; cliente=cliente.trim()||'—';
   var telefono = (document.getElementById('cli-tel')||{}).value||''; telefono=telefono.trim()||'—';
   var correo   = (document.getElementById('cli-correo')||{}).value||''; correo=correo.trim()||'—';
@@ -1851,6 +1854,7 @@ function generarIDFormal(){
     idGenerado=id;
     window._idAnterior=id; // v17: igual que en el resumen — "Guardar cambios" ya apunta al folio nuevo
     registrarOrigen('m2',id);
+    guardarNotaCot(id); // v21
     ['btn-guardar-cambios','btn-guardar-cambios-form'].forEach(function(b){var e=document.getElementById(b);if(e)e.style.display='block';});
     var _b3=document.getElementById('btn-guardar-cambios-3'); if(_b3) _b3.style.display='inline-block';
     actualizarID(id);
@@ -1951,6 +1955,29 @@ function poblarVista4(){
 
 // ─── Toast de confirmación post-generación ───────────────────
 // El guardado real ya ocurrió en el fetch de generar_id.
+// v21: la nota personalizada de la cotización formal se guarda en la API ligada al folio y se
+// vuelve a cargar al modificar / descargar. Si la nota de un folio aún no se ha leído, una nota
+// vacía NO borra la guardada (para no perderla si se guarda antes de que termine de cargar).
+var _notaCargadaDe=null;
+function guardarNotaCot(id){
+  if(!id) return;
+  var nota=((document.getElementById('cf-nota')||{}).value||'').trim();
+  if(!nota && _notaCargadaDe!==id) return;
+  fetch(API_BASE+'/api/cotizaciones/'+encodeURIComponent(id)+'/nota',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({nota:nota})})
+    .then(function(r){ if(r.ok){ _notaCargadaDe=id; } else { mostrarToast('⚠️ No se pudo guardar la nota de '+id); } })
+    .catch(function(){ mostrarToast('⚠️ Sin conexión: no se guardó la nota de '+id); });
+}
+function cargarNotaCot(id){
+  if(!id) return Promise.resolve();
+  return fetch(API_BASE+'/api/cotizaciones/'+encodeURIComponent(id)+'/nota')
+    .then(function(r){return r.ok?r.json():null;})
+    .then(function(d){
+      if(!d||!d.ok) return;
+      var el=document.getElementById('cf-nota');
+      if(el && d.nota && !el.value.trim()) el.value=d.nota;
+      _notaCargadaDe=id;
+    }).catch(function(){});
+}
 function guardarCotizacion(id, socio, cliente, total, tipo){
   mostrarToast('✓ ID '+id+' generado y guardado en Sheets');
 }
