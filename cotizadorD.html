@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Cotizador Fungiterra v21</title>
+<title>Cotizador Fungiterra v22</title>
 <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=DM+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
@@ -256,7 +256,7 @@ textarea{resize:vertical;min-height:60px}
 </script>
 
 <header>
-  <div><h1>🍄 Sistema Fungiterra</h1><div class="header-sub">Cotizador · Generador de IDs · Cotización formal · v21</div></div>
+  <div><h1>🍄 Sistema Fungiterra</h1><div class="header-sub">Cotizador · Generador de IDs · Cotización formal · v22</div></div>
   <a id="link-repositorio" href="https://fungiterra-bot.github.io/fungiterra-sistema/repositorioD.html" target="_blank" style="color:rgba(255,255,255,.85);font-size:12px;text-decoration:none;border:1px solid rgba(255,255,255,.35);border-radius:7px;padding:6px 14px;font-family:var(--sans);font-weight:500;transition:all .2s;background:rgba(255,255,255,.08)" onmouseover="this.style.background='rgba(255,255,255,.18)'" onmouseout="this.style.background='rgba(255,255,255,.08)'">📋 Repositorio →</a>
 </header>
 
@@ -521,6 +521,11 @@ textarea{resize:vertical;min-height:60px}
         <div><label>Costo ($)</label><input type="number" id="env-monto" min="0" value="0" step="0.01"></div>
         <div><label>Paquetería</label><input type="text" id="env-pak" placeholder="Estafeta, DHL..."></div>
       </div>
+      <label style="display:flex;align-items:center;gap:8px;margin-top:10px;font-size:13px;cursor:pointer">
+        <input type="checkbox" id="env-cliente" onchange="toggleEnvioCliente(this.checked)">
+        📦 El cliente hace su propia recolección o manda su guía
+      </label>
+      <div class="note" id="env-cliente-nota" style="display:none">No se cobra envío y el sistema no va a esperar guía de Envia para este pedido.</div>
     </div>
     <button class="btn btn-g btn-block" onclick="showTab2('res')">Ver resumen →</button>
     <button class="btn btn-block btn-naranja" id="btn-guardar-cambios-form" style="display:none;margin-top:8px" onclick="guardarCambios()">💾 Guardar cambios (sin nuevo ID)</button>
@@ -1165,6 +1170,7 @@ window.addEventListener('load', function(){
   if(tel&&p.get('telefono')&&p.get('telefono')!=='—') tel.value=decodeURIComponent(p.get('telefono'));
   if(cor&&p.get('correo')&&p.get('correo')!=='—') cor.value=decodeURIComponent(p.get('correo'));
   var _pk=document.getElementById('env-pak'); if(_pk&&p.get('paqueteria')) _pk.value=p.get('paqueteria'); // v18
+  sincronizarEnvioCliente(); // v22
 
   // Socio
   var socio=p.get('socio')||'V';
@@ -1711,12 +1717,30 @@ function textoPedido(data){
 }
 function copiarIDM2(){navigator.clipboard.writeText(idGenerado).then(()=>{var b=document.querySelector('#res2-id-area .btn-sm');b.textContent='✓';setTimeout(()=>b.textContent='📋 Copiar',2000);});}
 
+// v22: envío por cuenta del cliente (su guía o su recolección). Se guarda como paquetería
+// "Por cuenta del cliente"; el backend marca el pedido para no esperar guía de Envia.
+var ENVIO_CLIENTE_TXT='Por cuenta del cliente';
+function toggleEnvioCliente(on){
+  var pk=document.getElementById('env-pak'),mt=document.getElementById('env-monto'),nt=document.getElementById('env-cliente-nota');
+  if(on){ if(pk){pk.value=ENVIO_CLIENTE_TXT;pk.readOnly=true;} if(mt) mt.value='0'; }
+  else if(pk){ if(pk.value===ENVIO_CLIENTE_TXT) pk.value=''; pk.readOnly=false; }
+  if(nt) nt.style.display=on?'block':'none';
+  if(typeof recalcTotal==='function'){ try{recalcTotal();}catch(e){} }
+}
+function sincronizarEnvioCliente(){
+  var pk=document.getElementById('env-pak'),ec=document.getElementById('env-cliente');
+  if(!pk||!ec) return;
+  var on=/^por cuenta del cliente/i.test(String(pk.value||'').trim());
+  ec.checked=on; toggleEnvioCliente(on);
+}
+
 function limpiarCotizacion(){
   if(!confirm('¿Limpiar todos los campos y empezar una cotización nueva?'))return;
   ['cli-nom','cli-emp','cli-tel','cli-correo','env-pak'].forEach(function(id){
     var el=document.getElementById(id); if(el) el.value='';
   });
   var envMonto=document.getElementById('env-monto'); if(envMonto) envMonto.value='0';
+  var _ec=document.getElementById('env-cliente'); if(_ec){_ec.checked=false;toggleEnvioCliente(false);} // v22
   ftItems=[]; fbItems=[]; otItems=[]; plItems=[];
   renderFTLista(); renderFBLista(); renderOTLista(); renderPLLista();
   idGenerado='';

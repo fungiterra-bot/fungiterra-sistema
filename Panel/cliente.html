@@ -282,6 +282,11 @@ function renderEnvio(p){
     cont.innerHTML="<div class=\"ft-card\"><p style=\"font-size:13px;color:#6b7280;margin:0\">Elegiste recoger tu pedido en planta, así que no hay envío. Te avisaremos cuando esté listo para recoger.</p></div>";
     return;
   }
+  // v11: envío por cuenta del cliente (su guía o su recolección)
+  if(_dc&&_dc.envio_cliente&&!p.guia_numero){
+    cont.innerHTML="<div class=\"ft-card\"><p style=\"font-size:13px;color:#6b7280;margin:0\">El envío de este pedido corre por tu cuenta (tu guía o tu recolección). Te avisamos cuando esté listo para salir.</p></div>";
+    return;
+  }
   if(!p.guia_numero){
     cont.innerHTML="<div class=\"ft-card\"><p style=\"font-size:13px;color:#6b7280;margin:0\">Aún no hay información de envío para este pedido. En cuanto se genere la guía, la verás aquí.</p></div>";
     return;
@@ -441,6 +446,7 @@ async function dcEnviar(){
 function dcMostrarPedido(){ render(_dcPedido,_dcProductos); }
 function dcEntregaCard(){
   const dc=_dc; if(!dc) return "";
+  if(dc.envio_cliente&&!dc.recoge_en_planta&&!dc.direccion_confirmada) return "<div class=\"ft-card\"><div class=\"dc-entrega\"><span style=\"font-size:20px;line-height:1\">📦</span><div style=\"flex:1\"><div class=\"ft-order-id\">Entrega</div><div style=\"font-size:13px;font-weight:500;color:#111827;line-height:1.4\">Tú mandas tu guía o haces tu recolección</div></div></div></div>"; // v11
   if(!dc.recoge_en_planta&&!dc.direccion_confirmada) return "";
   let h="<div class=\"ft-card\"><div class=\"dc-entrega\"><span style=\"font-size:20px;line-height:1\">"+(dc.recoge_en_planta?"🏭":"📍")+"</span><div style=\"flex:1\">";
   h+="<div class=\"ft-order-id\">"+(dc.recoge_en_planta?"Entrega":"Se envía a")+"</div>";
