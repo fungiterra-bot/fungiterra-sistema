@@ -318,7 +318,7 @@ window.MODO_GW = new URLSearchParams(window.location.search).get('origen') === '
 </script>
 
 <header>
-  <div><h1>🍄 Repositorio Fungiterra</h1><div class="header-sub">Cotizaciones · Estados · Pagos · v48</div></div>
+  <div><h1>🍄 Repositorio Fungiterra</h1><div class="header-sub">Cotizaciones · Estados · Pagos · v49</div></div>
   <div style="display:flex;gap:8px;align-items:center">
     <button class="solo-admin" onclick="abrirAnalizador()" style="background:rgba(255,255,255,.15);border:1.5px solid rgba(255,255,255,.4);color:white;border-radius:7px;padding:6px 14px;cursor:pointer;font-size:12px;font-weight:600;font-family:var(--sans)">🏦 Conciliar</button>
     <button class="solo-admin" onclick="abrirReglas()" style="background:rgba(255,255,255,.15);border:1.5px solid rgba(255,255,255,.4);color:white;border-radius:7px;padding:6px 14px;cursor:pointer;font-size:12px;font-weight:600;font-family:var(--sans)">⚙️ Reglas</button>
@@ -1108,6 +1108,7 @@ function descargarCotizacion(id){
   if(c.productos&&c.productos!=='—') params.set('productos',c.productos);
   if(c.paqueteria&&c.paqueteria!=='—') params.set('paqueteria',c.paqueteria);
   if(c.fecha) params.set('fecha',String(c.fecha).slice(0,10));
+  if(c.tipoEntrega) params.set('tipo_entrega',c.tipoEntrega); // v49
   if(window.MODO_GW) params.set('origen','gestorweb');
   window.open('https://fungiterra-bot.github.io/fungiterra-sistema/cotizadorD.html?'+params.toString(),'_blank');
 }
@@ -1124,6 +1125,8 @@ function editarCotizacion(id){
   if(c.socio) params.set('socio',c.socio);
   if(c.total) params.set('total',c.total);
   if(c.productos&&c.productos!=='—') params.set('productos',c.productos);
+  if(c.paqueteria&&c.paqueteria!=='—') params.set('paqueteria',c.paqueteria); // v49
+  if(c.tipoEntrega) params.set('tipo_entrega',c.tipoEntrega); // v49
   if(window.MODO_GW) params.set('origen','gestorweb');
   window.open('https://fungiterra-bot.github.io/fungiterra-sistema/cotizadorD.html?'+params.toString(),'_blank');
 }
